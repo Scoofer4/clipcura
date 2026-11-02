@@ -14,18 +14,19 @@ export interface FileRow {
   audio: string;     // "48 kHz"
   portrait: boolean;
   findings: { severity: Severity; label: string; value?: string }[];
+  /** Object URL of a real frame; a tinted placeholder in the clip's aspect ratio is shown until it loads. */
+  thumb?: string;
 }
 
-/** Frame placeholder in the clip's real aspect ratio, until ffmpeg thumbnails arrive (M3b). */
-function Thumb({ portrait, status }: { portrait: boolean; status: FileStatus }) {
+function Thumb({ portrait, status, src }: { portrait: boolean; status: FileStatus; src?: string }) {
+  const box = `${portrait ? "h-12 w-7" : "h-9 w-16"} rounded-[5px] border border-line`;
   return (
     <div className="flex h-12 w-16 items-center justify-center" aria-hidden>
-      <div
-        className={`${portrait ? "h-12 w-7" : "h-9 w-16"} rounded-[5px] border border-line`}
-        style={{
+      {src ? <img src={src} alt="" className={`${box} object-cover`} /> : (
+        <div className={box} style={{
           background: `linear-gradient(135deg, color-mix(in srgb, var(--${status === "needs_human" ? "human" : status}) 22%, transparent), var(--surface-raised))`,
-        }}
-      />
+        }} />
+      )}
     </div>
   );
 }
@@ -85,7 +86,7 @@ export function FileTable({ rows, selected, onToggle, onOpen }: {
                 </td>
                 <td className="px-2 py-2.5">
                   <div className="flex items-center gap-3">
-                    <Thumb portrait={r.portrait} status={r.status} />
+                    <Thumb portrait={r.portrait} status={r.status} src={r.thumb} />
                     <span className="mono max-w-[260px] truncate text-[13px] text-ink" title={r.name}>{r.name}</span>
                   </div>
                 </td>

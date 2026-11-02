@@ -79,6 +79,24 @@ def serve(port: Annotated[int | None, typer.Option(help="Port (default: from con
     run_server(port)
 
 
+@app.command("open")
+def open_gui(
+    print_only: Annotated[bool, typer.Option("--print", help="Only print the URL (contains the access key).")] = False,
+) -> None:
+    """Open the Clipsana GUI in the browser, starting the background service if needed."""
+    import webbrowser
+
+    from clipsana.api.server import gui_url, running_server, start_background
+    from clipsana.core.config import load_config
+    info = running_server() or start_background()
+    url = gui_url(info["url"], load_config().token)
+    if print_only:
+        typer.echo(url)
+    else:
+        webbrowser.open(url)
+        typer.echo(f"Clipsana is open at {info['url']}")
+
+
 @app.command()
 def scan(
     path: Annotated[Path, typer.Argument(help="Folder with footage.")],

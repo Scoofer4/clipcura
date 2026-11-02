@@ -1,0 +1,105 @@
+/**
+ * Client for the local Clipsana API (same origin as the GUI).
+ *
+ * The bearer token arrives once in the URL fragment (#token=...): fragments are never sent to a server or
+ * written to logs. It is moved to sessionStorage and removed from the address bar right away.
+ */
+export type FileStatus = "ok" | "fixable" | "needs_human" | "error";
+export type Severity = "info" | "warning" | "error";
+export type JobStatus = "awaiting_approval" | "queued" | "running" | "done" | "failed" | "cancelled" | "rejected";
+
+export interface Issue { rule_id: string; severity: Severity; message: string; auto_fixable: boolean; data: Record<string, unknown> }
+export interface VideoStream {
+  codec: string; profile: string; pix_fmt: string; width: number; height: number; r_fps: number; avg_fps: number;
+  color_transfer: string; color_primaries: string; color_space: string; rotation: number; bit_depth: number;
+}
+export interface MediaInfo {
+  path: string; size: number; duration: number; container: string; video: VideoStream | null;
+  audio: { codec: string; sample_rate: number; channels: number } | null;
+  probe_error: string | null; decode_error: string | null; pts_irregularity: number | null;
+}
+export interface FileReport { id: number; path: string; status: FileStatus; media: MediaInfo; issues: Issue[] }
+export interface ScanResult { scan_id: string; root: string; profile: string; files: FileReport[]; summary: Record<FileStatus, number> }
+export interface RecentScan { scan_id: string; root: string; profile: string; created_at: string; actor: string; summary: Record<FileStatus, number> }
+export interface PlanItem { source: string; output: string; args: string[]; fallback_args: string[]; backend: string; rule_ids: string[]; est_bytes: number; duration: number }
+export interface PlanEntry { id: number; file_id: number; status: string; item: PlanItem | null; reason: string }
+export interface Paths { decode: string; encode: string; scale: string; tonemap: string }
+export interface PlanResult { plan_id: string; scan_id: string; backend: string; paths: Paths; items: PlanEntry[]; est_bytes: number }
+export interface Job {
+  id: string; status: JobStatus; progress: number; actor: string; backend: string | null; output: string;
+  error: string | null; created_at: string; finished_at: string | null; source?: string; duration?: number; rule_ids?: string[];
+}
+export interface AuditEntry { id: number; ts: string; actor: string; action: string; target: string; result: string }
+export interface Profile { name: string; label: string; fps: number; max_long_side: number; audio_rate: number; output: { codec: string; container: string; folder: string; suffix: string } }
+export interface AppConfig { port: number; allowed_roots: string[]; approval_mode: boolean; concurrency: { gpu: number; cpu: number } }
+export interface SystemReport {
+  backend: string; paths: Paths;
+  system: { cpu: string; ram_total_mb: number; gpus: { name: string; vendor: string; driver: string; memory_total_mb: number | null; memory_used_mb: number | null; utilization_pct: number | null }[]; disks: { path: string; free_gb: number; total_gb: number }[] };
+  ffmpeg: { version: string } | null;
+}
+
+const TOKEN_KEY = "clipsana.token";
+
+function readToken(): string {
+  const match = window.location.hash.match(/token=([^&]+)/);
+  if (match) {
+    try { sessionStorage.setItem(TOKEN_KEY, decodeURIComponent(match[1])); } catch { /* private mode */ }
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+    return decodeURIComponent(match[1]);
+  }
+  try { return sessionStorage.getItem(TOKEN_KEY) ?? ""; } catch { return ""; }
+}
+
+let token = readToken();
+export const hasToken = () => token.length > 0;
+export const setToken = (t: string) => { token = t; try { sessionStorage.setItem(TOKEN_KEY, t); } catch { /* ignore */ } };
+
+export class ApiError extends Error {
+  constructor(public status: number, message: string) { super(message); }
+}
+
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method,
+    headers: { Authorization: `Bearer ${token}`, ...(body ? { "Content-Type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    let detail = res.statusText;
+    try { detail = (await res.json()).detail ?? detail; } catch { /* not JSON */ }
+    throw new ApiError(res.status, typeof detail === "string" ? detail : JSON.stringify(detail));
+  }
+  return res.json() as Promise<T>;
+}
+
+export const api = {
+  system: () => request<SystemReport>("GET", "/api/system"),
+  profiles: () => request<Profile[]>("GET", "/api/profiles"),
+  scan: (path: string, profile: string, recursive = false) =>
+    request<ScanResult>("POST", "/api/scans", { path, profile, recursive }),
+  getScan: (id: string) => request<ScanResult>("GET", `/api/scans/${id}`),
+  recentScans: (limit = 8) => request<RecentScan[]>("GET", `/api/scans?limit=${limit}`),
+  plan: (scanId: string, fileIds?: number[]) => request<PlanResult>("POST", "/api/plans", { scan_id: scanId, file_ids: fileIds }),
+  apply: (planId: string) => request<{ jobs: Job[] }>("POST", `/api/plans/${planId}/apply`),
+  jobs: (limit = 50) => request<Job[]>("GET", `/api/jobs?limit=${limit}`),
+  cancel: (id: string) => request<unknown>("POST", `/api/jobs/${id}/cancel`),
+  approve: (id: string) => request<Job>("POST", `/api/jobs/${id}/approve`),
+  reject: (id: string) => request<Job>("POST", `/api/jobs/${id}/reject`),
+  audit: (limit = 100) => request<AuditEntry[]>("GET", `/api/audit?limit=${limit}`),
+  config: () => request<AppConfig>("GET", "/api/config"),
+  patchConfig: (patch: Partial<Pick<AppConfig, "approval_mode" | "concurrency">>) => request<AppConfig>("PATCH", "/api/config", patch),
+  addRoot: (path: string) => request<AppConfig>("POST", "/api/config/roots", { path }),
+  removeRoot: (path: string) => request<AppConfig>("DELETE", "/api/config/roots", { path }),
+};
+
+/** Fetch an authenticated image (img tags cannot send the bearer header) and return an object URL. */
+export async function imageUrl(path: string): Promise<string> {
+  const res = await fetch(path, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new ApiError(res.status, res.statusText);
+  return URL.createObjectURL(await res.blob());
+}
+
+export function eventsUrl(): string {
+  const proto = window.location.protocol === "https:" ? "wss" : "ws";
+  return `${proto}://${window.location.host}/api/events?token=${encodeURIComponent(token)}`;
+}

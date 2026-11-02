@@ -5,6 +5,11 @@ from __future__ import annotations
 import json
 import os
 import socket
+import subprocess
+import sys
+import time
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 import uvicorn
@@ -24,6 +29,37 @@ def free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, 0))
         return s.getsockname()[1]
+
+
+def running_server() -> dict | None:
+    """The announced server if it actually answers (server.json can outlive a crashed process)."""
+    path = server_file()
+    if not path.is_file():
+        return None
+    try:
+        info = json.loads(path.read_text(encoding="utf-8"))
+        with urllib.request.urlopen(f"{info['url']}/api/health", timeout=1) as r:
+            return info if r.status == 200 else None
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def gui_url(base: str, token: str) -> str:
+    # The token goes in the fragment: browsers never send fragments to servers, so it stays out of logs.
+    return f"{base}/#token={urllib.parse.quote(token)}"
+
+
+def start_background() -> dict:
+    """Start `clipsana serve` detached from this console and wait until it answers."""
+    flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+    subprocess.Popen([sys.executable, "-m", "clipsana.cli", "serve"], creationflags=flags,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True)
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        if info := running_server():
+            return info
+        time.sleep(0.3)
+    raise RuntimeError("Clipsana service did not start within 30 s")
 
 
 def serve(port: int | None = None) -> None:

@@ -291,8 +291,19 @@ def get_plan(plan_id: str) -> PlanResult:
 def recent_scans(limit: int = 10) -> list[dict]:
     """Latest scans for the start screen's "recent folders" (newest first)."""
     with Database() as db:
-        return [{"scan_id": r["id"], "root": r["root"], "profile": r["profile"], "created_at": r["created_at"],
-                 "actor": r["actor"], "summary": json.loads(r["summary"] or "{}")} for r in db.recent_scans(limit)]
+        rows = db.recent_scans(limit * 5)
+    seen: set[str] = set()
+    out = []
+    for r in rows:  # newest first: keep only the latest scan of each folder
+        key = r["root"].lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append({"scan_id": r["id"], "root": r["root"], "profile": r["profile"], "created_at": r["created_at"],
+                    "actor": r["actor"], "summary": json.loads(r["summary"] or "{}")})
+        if len(out) == limit:
+            break
+    return out
 
 
 def audit_log(limit: int = 100) -> list[dict]:

@@ -29,6 +29,20 @@ def test_config_approval_can_be_switched(tmp_path):
     assert config.load_config().approval_mode is True
 
 
+def test_no_running_server_is_detected_from_stale_file(tmp_path, monkeypatch):
+    from clipsana.api import server
+    monkeypatch.setenv("CLIPSANA_HOME", str(tmp_path))
+    assert server.running_server() is None
+    (tmp_path / "server.json").write_text('{"url": "http://127.0.0.1:9", "port": 9, "pid": 1}', encoding="utf-8")
+    assert server.running_server() is None  # nothing answers there: a leftover from a crash
+
+
+def test_gui_url_carries_token_only_in_fragment():
+    from clipsana.api import server
+    url = server.gui_url("http://127.0.0.1:5000", "abc")
+    assert url == "http://127.0.0.1:5000/#token=abc"  # fragments never reach servers or logs
+
+
 def test_serve_starts_api_on_loopback_and_announces_port(tmp_path):
     home = tmp_path / "home"
     env = os.environ | {"CLIPSANA_HOME": str(home)}

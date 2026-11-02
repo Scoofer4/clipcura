@@ -18,4 +18,26 @@ jobs:
       - run: uv run python tools/fetch_ffmpeg.py
       # Runners have no GPU: this exercises the CPU path, which must always work on its own.
       - run: uv run clipsana doctor --quick
+      # Also generates the synthetic clips the GUI end-to-end tests use.
       - run: uv run pytest -q
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - run: npm ci
+        working-directory: ui
+      - run: npm run typecheck
+        working-directory: ui
+      - run: npm run build
+        working-directory: ui
+      # Playwright drives the Edge that ships with the runner (same engine as WebView2): no browser download.
+      - run: npx playwright test
+        working-directory: ui
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-results
+          path: ui/test-results
+          retention-days: 7

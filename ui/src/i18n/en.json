@@ -1,5 +1,10 @@
 {
-  "status": { "ok": "Ready", "fixable": "Fixable", "needs_human": "Needs you", "error": "Error" },
+  "status": {
+    "ok": "Ready",
+    "fixable": "Fixable",
+    "needs_human": "Needs you",
+    "error": "Error"
+  },
   "statusHint": {
     "ok": "Edit as they are",
     "fixable": "Clipsana converts these for you",
@@ -128,7 +133,26 @@
     "aurora": "Aurora",
     "language": "Language",
     "motion": "Animations",
-    "motionHint": "Off also stops 3D previews. Your Windows setting is respected either way."
+    "motionHint": "Off also stops 3D previews. Your Windows setting is respected either way.",
+    "saved": "Saved",
+    "saveFailed": "Could not save",
+    "folders": "Allowed folders",
+    "foldersIntro": "The app, assistants and automations only read and write inside these folders, including the output folder next to your footage.",
+    "noFolders": "No folder is allowed yet, so nothing can be scanned.",
+    "remove": "Remove",
+    "addFolder": "Allow folder",
+    "ai": "Assistants and jobs",
+    "approval": "Ask me before an assistant converts anything",
+    "approvalHint": "Recommended. Assistants can still scan and prepare plans.",
+    "gpuJobs": "Jobs at once on the GPU",
+    "cpuJobs": "Jobs at once on the CPU",
+    "restartHint": "Changes to concurrency apply after restarting Clipsana.",
+    "appearance": "Appearance",
+    "profiles": "Profiles",
+    "profilesIntro": "Targets for conversion. Profiles live as YAML files; an editor arrives later.",
+    "system": "System",
+    "systemIntro": "Measured by clipsana doctor. Run it again after a driver update.",
+    "backend": "Acceleration"
   },
   "ks": {
     "title": "Design system",
@@ -172,5 +196,187 @@
     "typeSmall": "Originals are never changed.",
     "logo": "Logo",
     "logoIntro": "A \"C\" left open where playback starts. Shown at app-icon sizes down to 16 px and next to the name; the arc follows the accent."
+  },
+  "rule": {
+    "vfr": {
+      "label": "Variable frame rate",
+      "why": "Frames are not evenly spaced in time. Editors expect a constant rate; uneven timing makes the timeline drift, audio slip out of sync, or the editor crash on import."
+    },
+    "fps_mismatch": {
+      "label": "Frame rate",
+      "why": "The clip runs at a different rate than your project. Mixing rates on one timeline forces the editor to drop or repeat frames on the fly, which looks choppy and costs playback speed."
+    },
+    "hdr": {
+      "label": "HDR",
+      "why": "HDR footage on a normal Rec.709 timeline looks washed out or clipped unless it is tone-mapped first."
+    },
+    "hevc_10bit": {
+      "label": "10-bit HEVC",
+      "why": "10-bit HEVC is very heavy to decode and not supported everywhere; scrubbing stutters or the clip refuses to play."
+    },
+    "resolution": {
+      "label": "Resolution",
+      "why": "Clips above the project size waste disk and processing power, and odd frame sizes make some codecs fail."
+    },
+    "audio_rate": {
+      "label": "Audio rate",
+      "why": "Video projects run at 48 kHz. Other rates get resampled during playback, which can drift over long clips."
+    },
+    "rotation": {
+      "label": "Rotation in metadata",
+      "why": "Phones store rotation as a flag. Some editors ignore it and show the clip sideways."
+    },
+    "no_audio": {
+      "label": "No audio",
+      "why": "Without an audio track the clip behaves differently from the rest when you link or sync sound."
+    },
+    "insv": {
+      "label": "Insta360 original",
+      "why": "360° originals need reframing in Insta360 Studio before any editor can use them."
+    },
+    "corrupt": {
+      "label": "Damaged file",
+      "why": "The file cannot be read reliably. Re-encoding would hide the damage, so Clipsana leaves it for you to check."
+    },
+    "color_space": {
+      "label": "Colours",
+      "why": "The pixels are coded in BT.601. On a Rec.709 timeline colours shift slightly unless they are converted."
+    }
+  },
+  "present": {
+    "noAudio": "No audio"
+  },
+  "nav": {
+    "aria": "Main",
+    "start": "Start",
+    "results": "Scan result",
+    "jobs": "Jobs",
+    "activity": "AI activity",
+    "settings": "Settings",
+    "live": "Live",
+    "offline": "Reconnecting…"
+  },
+  "palette": {
+    "title": "Commands",
+    "placeholder": "Type a command or folder",
+    "empty": "No matching command",
+    "open": "Commands",
+    "openScan": "Open {{name}}",
+    "light": "Switch to light theme",
+    "dark": "Switch to dark theme"
+  },
+  "connect": {
+    "title": "Open Clipsana from the app",
+    "body": "This page talks to the Clipsana service on this computer and needs its key. Start Clipsana, or run this in a terminal to open it with the key filled in:",
+    "token": "Or paste the key",
+    "connect": "Connect"
+  },
+  "start": {
+    "title": "Check a folder",
+    "intro": "Clipsana reads every clip, tells you what would trip up the edit and converts what needs it into a separate folder. Originals stay untouched.",
+    "pathLabel": "Folder path",
+    "pathPlaceholder": "D:\\Footage\\2026-11-02\\01_raw",
+    "scan": "Scan",
+    "scanningCount_zero": "Scanning…",
+    "scanningCount_one": "{{count}} clip read",
+    "scanningCount_other": "{{count}} clips read",
+    "scanFailed": "Scan failed",
+    "notAllowed": "Clipsana is not allowed to read this folder yet.",
+    "allowAndScan": "Allow and scan",
+    "allowed": "Folder allowed",
+    "allowFailed": "Could not allow the folder",
+    "dropBrowser": "Type or paste the folder path",
+    "dropBrowserHint": "Browsers hide where dropped files come from; the desktop app reads drops directly.",
+    "recent": "Recent folders",
+    "noRecent": "Folders you scan appear here.",
+    "rescan": "Scan again",
+    "profileSummary": "{{fps}} fps, up to {{side}} px, {{codec}}"
+  },
+  "results": {
+    "otherFolder": "Other folder",
+    "notFound": "This scan is not available",
+    "backToStart": "Back to start",
+    "emptyTitle": "No video files here",
+    "emptyBody": "The folder has no clips Clipsana can read. Check the path, or include subfolders.",
+    "allReady": "Everything here is ready to edit.",
+    "clearSelection": "Clear selection",
+    "planFailed": "Could not prepare the conversion",
+    "startFailed": "Could not start the conversion",
+    "confirmTitle_one": "Convert {{count}} clip",
+    "confirmTitle_other": "Convert {{count}} clips",
+    "confirmBody": "Results go to a separate folder. Originals stay untouched.",
+    "write": "Writes",
+    "into": "Into",
+    "paths": "Uses",
+    "startConversion": "Start conversion",
+    "skip": {
+      "done": "is already converted.",
+      "exists": "would overwrite a file Clipsana did not create.",
+      "unsupported": "cannot be converted: {{reason}}"
+    }
+  },
+  "detail": {
+    "aria": "Details of {{name}}",
+    "close": "Close details",
+    "findings": "What Clipsana found",
+    "preview": "Same frame, before and after",
+    "previewFix": "Preview the fix",
+    "before": "Before",
+    "after": "After",
+    "compare": "Move to compare before and after",
+    "values": "Measured values",
+    "codec": "Codec",
+    "resolution": "Resolution",
+    "frameRate": "Frame rate (nominal / average)",
+    "colour": "Colour",
+    "audio": "Audio",
+    "duration": "Duration",
+    "size": "File size",
+    "command": "ffmpeg command",
+    "copy": "Copy",
+    "copied": "Copied"
+  },
+  "jobs": {
+    "intro": "Conversions run one after another on the GPU and the CPU. Jobs from an AI assistant are marked.",
+    "emptyTitle": "No jobs yet",
+    "emptyBody": "Scan a folder and fix the clips that need it.",
+    "queued": "Waiting",
+    "finished": "Finished",
+    "doneToast": "Converted",
+    "failedToast": "Conversion failed",
+    "state": {
+      "done": "Converted",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
+      "rejected": "Rejected",
+      "queued": "Waiting",
+      "running": "Running",
+      "awaiting_approval": "Waiting for approval"
+    }
+  },
+  "activity": {
+    "intro": "Everything assistants and automations did through Clipsana, and the requests waiting for you.",
+    "waiting_one": "{{count}} conversion waits for your approval",
+    "waiting_other": "{{count}} conversions wait for your approval",
+    "waitingBody": "Nothing runs until you approve. Rejected requests are not converted.",
+    "approveAll": "Approve all",
+    "rejectAll": "Reject all",
+    "decided_one": "{{count}} request",
+    "decided_other": "{{count}} requests",
+    "timeline": "Timeline",
+    "filter": "Show",
+    "all": "All",
+    "human": "You",
+    "empty": "Nothing has happened yet.",
+    "action": {
+      "scan": "Scanned",
+      "plan": "Planned",
+      "request_apply": "Asked to convert",
+      "apply": "Queued",
+      "approve": "Approved",
+      "reject": "Rejected",
+      "job_finished": "Finished",
+      "cancel": "Cancelled"
+    }
   }
 }

@@ -1,5 +1,10 @@
 {
-  "status": { "ok": "V pořádku", "fixable": "Opravitelné", "needs_human": "Potřebuje tebe", "error": "Chyba" },
+  "status": {
+    "ok": "V pořádku",
+    "fixable": "Opravitelné",
+    "needs_human": "Potřebuje tebe",
+    "error": "Chyba"
+  },
   "statusHint": {
     "ok": "Můžeš stříhat rovnou",
     "fixable": "Clipsana je převede za tebe",
@@ -133,7 +138,26 @@
     "aurora": "Aurora",
     "language": "Jazyk",
     "motion": "Animace",
-    "motionHint": "Vypnutí zastaví i 3D náhledy. Nastavení Windows se respektuje vždy."
+    "motionHint": "Vypnutí zastaví i 3D náhledy. Nastavení Windows se respektuje vždy.",
+    "saved": "Uloženo",
+    "saveFailed": "Nepodařilo se uložit",
+    "folders": "Povolené složky",
+    "foldersIntro": "Aplikace, asistenti i automatizace čtou a zapisují jen uvnitř těchto složek, včetně výstupní složky vedle záběrů.",
+    "noFolders": "Zatím není povolená žádná složka, takže nejde nic zkontrolovat.",
+    "remove": "Odebrat",
+    "addFolder": "Povolit složku",
+    "ai": "Asistenti a úlohy",
+    "approval": "Zeptat se mě, než asistent cokoli převede",
+    "approvalHint": "Doporučeno. Asistenti mohou dál kontrolovat a připravovat plány.",
+    "gpuJobs": "Současných úloh na GPU",
+    "cpuJobs": "Současných úloh na CPU",
+    "restartHint": "Změna souběžnosti se projeví po restartu Clipsany.",
+    "appearance": "Vzhled",
+    "profiles": "Profily",
+    "profilesIntro": "Cíle převodu. Profily jsou soubory YAML; editor přijde později.",
+    "system": "Systém",
+    "systemIntro": "Změřeno příkazem clipsana doctor. Po aktualizaci ovladačů ho spusť znovu.",
+    "backend": "Akcelerace"
   },
   "ks": {
     "title": "Design system",
@@ -177,5 +201,191 @@
     "typeSmall": "Originály se nikdy nemění.",
     "logo": "Logo",
     "logoIntro": "„C“ otevřené tam, kde začíná přehrávání. Ve velikostech ikony až do 16 px a vedle názvu; oblouk se řídí akcentem."
+  },
+  "rule": {
+    "vfr": {
+      "label": "Proměnná snímková frekvence",
+      "why": "Snímky nejsou v čase rozmístěné rovnoměrně. Střihové programy čekají konstantní frekvenci; nerovnoměrné časování posouvá časovou osu, rozhazuje synchronizaci zvuku nebo shodí program při importu."
+    },
+    "fps_mismatch": {
+      "label": "Snímková frekvence",
+      "why": "Klip běží v jiné frekvenci než projekt. Míchání frekvencí na jedné ose nutí program za běhu vynechávat nebo opakovat snímky, což cuká a zpomaluje přehrávání."
+    },
+    "hdr": {
+      "label": "HDR",
+      "why": "HDR záběry na běžné ose Rec.709 vypadají vybledle nebo přepáleně, pokud se nejdřív nepřevedou."
+    },
+    "hevc_10bit": {
+      "label": "HEVC 10 bit",
+      "why": "10bitové HEVC je velmi náročné na dekódování a není podporované všude; posouvání cuká nebo klip nejde přehrát."
+    },
+    "resolution": {
+      "label": "Rozlišení",
+      "why": "Klipy větší než projekt plýtvají místem i výkonem a lichá velikost snímku některé kodeky shodí."
+    },
+    "audio_rate": {
+      "label": "Vzorkování zvuku",
+      "why": "Video projekty běží ve 48 kHz. Jiné vzorkování se převzorkovává za běhu a u dlouhých klipů může ujíždět."
+    },
+    "rotation": {
+      "label": "Otočení v metadatech",
+      "why": "Telefony ukládají otočení jen jako příznak. Některé programy ho ignorují a ukážou klip bokem."
+    },
+    "no_audio": {
+      "label": "Bez zvuku",
+      "why": "Bez zvukové stopy se klip při propojování a synchronizaci zvuku chová jinak než ostatní."
+    },
+    "insv": {
+      "label": "Originál Insta360",
+      "why": "360° originály je potřeba nejdřív ořezat v Insta360 Studio, jinak je žádný program nepoužije."
+    },
+    "corrupt": {
+      "label": "Poškozený soubor",
+      "why": "Soubor nejde spolehlivě přečíst. Převod by poškození zakryl, proto ho Clipsana nechává na tobě."
+    },
+    "color_space": {
+      "label": "Barvy",
+      "why": "Pixely jsou kódované v BT.601. Na ose Rec.709 se barvy mírně posunou, pokud se nepřevedou."
+    }
+  },
+  "present": {
+    "noAudio": "Bez zvuku"
+  },
+  "nav": {
+    "aria": "Hlavní",
+    "start": "Start",
+    "results": "Výsledek kontroly",
+    "jobs": "Úlohy",
+    "activity": "Aktivita AI",
+    "settings": "Nastavení",
+    "live": "Živě",
+    "offline": "Připojuji…"
+  },
+  "palette": {
+    "title": "Příkazy",
+    "placeholder": "Napiš příkaz nebo složku",
+    "empty": "Žádný odpovídající příkaz",
+    "open": "Příkazy",
+    "openScan": "Otevřít {{name}}",
+    "light": "Přepnout na světlé téma",
+    "dark": "Přepnout na tmavé téma"
+  },
+  "connect": {
+    "title": "Otevři Clipsanu z aplikace",
+    "body": "Tahle stránka mluví se službou Clipsana na tomto počítači a potřebuje její klíč. Spusť Clipsanu, nebo v terminálu spusť příkaz, který ji otevře i s klíčem:",
+    "token": "Nebo vlož klíč",
+    "connect": "Připojit"
+  },
+  "start": {
+    "title": "Zkontrolovat složku",
+    "intro": "Clipsana projde každý klip, řekne, co by zadrhlo střih, a co je potřeba, převede do samostatné složky. Originály zůstanou beze změny.",
+    "pathLabel": "Cesta ke složce",
+    "pathPlaceholder": "D:\\Natáčení\\2026-11-02\\01_raw",
+    "scan": "Zkontrolovat",
+    "scanningCount_zero": "Kontroluji…",
+    "scanningCount_one": "Přečten {{count}} klip",
+    "scanningCount_few": "Přečteny {{count}} klipy",
+    "scanningCount_other": "Přečteno {{count}} klipů",
+    "scanFailed": "Kontrola selhala",
+    "notAllowed": "Clipsana zatím nesmí číst tuto složku.",
+    "allowAndScan": "Povolit a zkontrolovat",
+    "allowed": "Složka povolena",
+    "allowFailed": "Složku se nepodařilo povolit",
+    "dropBrowser": "Napiš nebo vlož cestu ke složce",
+    "dropBrowserHint": "Prohlížeč neprozradí, odkud přetažené soubory jsou; desktopová aplikace přetažení čte přímo.",
+    "recent": "Nedávné složky",
+    "noRecent": "Zkontrolované složky se objeví tady.",
+    "rescan": "Znovu",
+    "profileSummary": "{{fps}} fps, až {{side}} px, {{codec}}"
+  },
+  "results": {
+    "otherFolder": "Jiná složka",
+    "notFound": "Tahle kontrola není k dispozici",
+    "backToStart": "Zpět na start",
+    "emptyTitle": "Žádná videa",
+    "emptyBody": "Složka neobsahuje klipy, které Clipsana umí přečíst. Zkontroluj cestu nebo zahrň podsložky.",
+    "allReady": "Všechno tady je připravené ke střihu.",
+    "clearSelection": "Zrušit výběr",
+    "planFailed": "Převod se nepodařilo připravit",
+    "startFailed": "Převod se nepodařilo spustit",
+    "confirmTitle_one": "Převést {{count}} klip",
+    "confirmTitle_few": "Převést {{count}} klipy",
+    "confirmTitle_other": "Převést {{count}} klipů",
+    "confirmBody": "Výsledky půjdou do samostatné složky. Originály zůstanou beze změny.",
+    "write": "Zapíše",
+    "into": "Do",
+    "paths": "Použije",
+    "startConversion": "Spustit převod",
+    "skip": {
+      "done": "už je převedený.",
+      "exists": "by přepsal soubor, který Clipsana nevytvořila.",
+      "unsupported": "nejde převést: {{reason}}"
+    }
+  },
+  "detail": {
+    "aria": "Detail {{name}}",
+    "close": "Zavřít detail",
+    "findings": "Co Clipsana našla",
+    "preview": "Stejný snímek před a po",
+    "previewFix": "Náhled opravy",
+    "before": "Před",
+    "after": "Po",
+    "compare": "Posuň pro porovnání před a po",
+    "values": "Naměřené hodnoty",
+    "codec": "Kodek",
+    "resolution": "Rozlišení",
+    "frameRate": "Snímková frekvence (nominální / průměr)",
+    "colour": "Barvy",
+    "audio": "Zvuk",
+    "duration": "Délka",
+    "size": "Velikost souboru",
+    "command": "Příkaz ffmpeg",
+    "copy": "Kopírovat",
+    "copied": "Zkopírováno"
+  },
+  "jobs": {
+    "intro": "Převody běží postupně na GPU a CPU. Úlohy od AI asistenta jsou označené.",
+    "emptyTitle": "Zatím žádné úlohy",
+    "emptyBody": "Zkontroluj složku a oprav klipy, které to potřebují.",
+    "queued": "Čeká",
+    "finished": "Dokončené",
+    "doneToast": "Převedeno",
+    "failedToast": "Převod selhal",
+    "state": {
+      "done": "Převedeno",
+      "failed": "Selhalo",
+      "cancelled": "Zrušeno",
+      "rejected": "Zamítnuto",
+      "queued": "Čeká",
+      "running": "Běží",
+      "awaiting_approval": "Čeká na schválení"
+    }
+  },
+  "activity": {
+    "intro": "Vše, co asistenti a automatizace přes Clipsanu udělali, a požadavky, které čekají na tebe.",
+    "waiting_one": "{{count}} převod čeká na tvé schválení",
+    "waiting_few": "{{count}} převody čekají na tvé schválení",
+    "waiting_other": "{{count}} převodů čeká na tvé schválení",
+    "waitingBody": "Nic se nespustí, dokud to neschválíš. Zamítnuté požadavky se nepřevedou.",
+    "approveAll": "Schválit vše",
+    "rejectAll": "Zamítnout vše",
+    "decided_one": "{{count}} požadavek",
+    "decided_few": "{{count}} požadavky",
+    "decided_other": "{{count}} požadavků",
+    "timeline": "Časová osa",
+    "filter": "Zobrazit",
+    "all": "Vše",
+    "human": "Ty",
+    "empty": "Zatím se nic nestalo.",
+    "action": {
+      "scan": "Zkontroloval(a)",
+      "plan": "Naplánoval(a)",
+      "request_apply": "Požádal(a) o převod",
+      "apply": "Zařadil(a) do fronty",
+      "approve": "Schválil(a)",
+      "reject": "Zamítl(a)",
+      "job_finished": "Dokončeno",
+      "cancel": "Zrušil(a)"
+    }
   }
 }

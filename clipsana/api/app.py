@@ -9,6 +9,7 @@ time to resolve dependencies that are local to create_app().
 import asyncio
 import os
 import secrets
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, Literal
@@ -103,11 +104,27 @@ def create_app() -> FastAPI:
 
     api = APIRouter(prefix="/api", dependencies=[Depends(require_token)])
 
+    system_cache: dict[str, tuple[float, dict]] = {}
+
     @api.get("/system")
     def system() -> dict:
         from clipsana.core.doctor import load_report, run_doctor
-        report = load_report() or run_doctor(run_probes=False)
-        return report.model_dump()
+        report = load_report()
+        if report is not None:
+            return report.model_dump()
+        # No measured report yet: a quick hardware read plus the probe-based paths, cached briefly because
+        # reading GPU and disk details takes a couple of seconds and the start screen asks on every visit.
+        cached = system_cache.get("quick")
+        if cached and time.monotonic() - cached[0] < 60:
+            return cached[1]
+        # Free space where footage and outputs live (the allowed folders), not where the server started.
+        roots = [Path(r) for r in config.load_config().allowed_roots if Path(r).exists()]
+        quick = run_doctor(disk_paths=roots or None, run_probes=False)
+        quick.paths = service.detect_paths()
+        quick.backend = quick.paths.encode
+        data = quick.model_dump()
+        system_cache["quick"] = (time.monotonic(), data)
+        return data
 
     @api.get("/profiles")
     def list_profiles() -> list[dict]:

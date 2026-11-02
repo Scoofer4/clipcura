@@ -75,6 +75,10 @@ def test_recent_scans_audit_and_previews(api, raw_folder):
     scan = api.post("/api/scans", json={"path": str(raw)}).json()
     recent = api.get("/api/scans", params={"limit": 5}).json()
     assert recent[0]["scan_id"] == scan["scan_id"] and recent[0]["summary"]["fixable"] == 1
+    # Scanning the same folder again replaces it in "recent folders" instead of listing it twice.
+    again = api.post("/api/scans", json={"path": str(raw)}).json()
+    recent = api.get("/api/scans", params={"limit": 5}).json()
+    assert [r["scan_id"] for r in recent if r["root"] == scan["root"]] == [again["scan_id"]]
 
     file_id = scan["files"][0]["id"]
     before = api.get(f"/api/files/{file_id}/thumbnail", params={"at": 0.5})

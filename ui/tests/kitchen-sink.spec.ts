@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 // Screenshots for the owner's visual review (CLAUDE.md §9): every theme x accent, plus key interactive states.
-const OUT = "../docs/screenshots/m3a";
+// Committed review screenshots are only rewritten on request (npm run screenshots), not on every test run.
+const OUT = process.env.CLIPSANA_SCREENSHOTS ? "../docs/screenshots/m3a" : "test-results/screens/m3a";
 
 for (const theme of ["dark", "light"] as const) {
   for (const accent of ["brand", "aurora"] as const) {
