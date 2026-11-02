@@ -58,12 +58,15 @@ test.afterAll(() => {
 });
 
 async function shoot(page: Page, name: string) {
+  // CI runners have no GPU: software WebGL makes a screenshot of the 3D views take most of a minute.
+  if (process.env.CI && !process.env.CLIPSANA_SCREENSHOTS) return;
   mkdirSync(OUT, { recursive: true });
   await page.waitForTimeout(700);
   await page.screenshot({ path: join(OUT, `${name}.png`) });
 }
 
 test("whole cycle with the keyboard only: scan, fix, watch jobs finish", async ({ page }) => {
+  test.setTimeout(240_000); // three real conversions; CPU-only runners are slow
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${base}/?theme=dark&accent=brand&lang=en#token=${token}`);
