@@ -1,12 +1,128 @@
 """Data models shared by the core, CLI, API and MCP (pydantic, so they serialize to JSON as-is)."""
 from __future__ import annotations
 
-from typing import Literal
+from dataclasses import dataclass, field
+from typing import Literal, Protocol
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PositiveFloat, PositiveInt
 
 Backend = Literal["cuda", "qsv", "cpu"]
 Vendor = Literal["nvidia", "intel", "amd", "other"]
+Severity = Literal["info", "warning", "error"]
+FileStatus = Literal["ok", "fixable", "needs_human", "error"]
+
+
+class VideoStream(BaseModel):
+    codec: str
+    profile: str = ""
+    pix_fmt: str = ""
+    width: int = 0
+    height: int = 0
+    r_fps: float = 0.0       # nominal rate the container claims (r_frame_rate)
+    avg_fps: float = 0.0     # frames / duration (avg_frame_rate)
+    color_transfer: str = ""
+    color_primaries: str = ""
+    color_space: str = ""
+    rotation: int = 0        # degrees from the display matrix, as ffprobe reports it
+    bit_depth: int = 8
+
+    @property
+    def rotated(self) -> bool:
+        return abs(self.rotation) % 180 == 90
+
+    @property
+    def display_width(self) -> int:
+        return self.height if self.rotated else self.width
+
+    @property
+    def display_height(self) -> int:
+        return self.width if self.rotated else self.height
+
+
+class AudioStream(BaseModel):
+    codec: str
+    sample_rate: int = 0
+    channels: int = 0
+
+
+class MediaInfo(BaseModel):
+    path: str
+    size: int = 0
+    mtime: float = 0.0
+    duration: float = 0.0
+    container: str = ""
+    video: VideoStream | None = None
+    audio: AudioStream | None = None
+    probe_error: str | None = None
+    decode_error: str | None = None
+    # Share of frame intervals deviating >20 % from the mean (None = deep check not run).
+    pts_irregularity: float | None = None
+
+
+class OutputSettings(BaseModel):
+    codec: str
+    container: Literal["mov", "mp4", "mkv"]
+    folder: str = "../02_edit"
+    suffix: str = "_edit"
+
+
+class RuleSettings(BaseModel):
+    disabled: list[str] = Field(default_factory=list)
+    vfr_deep_check: bool = False
+    add_silent_audio: bool = False
+
+
+class Profile(BaseModel):
+    name: str
+    label: str
+    fps: PositiveFloat
+    max_long_side: PositiveInt
+    audio_rate: PositiveInt
+    color: Literal["rec709-sdr"] = "rec709-sdr"
+    output: OutputSettings
+    rules: RuleSettings = Field(default_factory=RuleSettings)
+
+
+class PlanItem(BaseModel):
+    source: str
+    output: str
+    args: list[str]               # ffmpeg arguments (without the binary and progress flags)
+    fallback_args: list[str]      # same job on the CPU, used when the GPU path fails at runtime
+    backend: Backend
+    rule_ids: list[str]
+    plan_hash: str                # identifies "same input, same recipe" so reruns can skip finished files
+    est_bytes: int
+    duration: float
+
+
+# Rule plugin contract (CLAUDE.md §6). Plain dataclasses keep third-party rules dependency-free.
+@dataclass
+class Issue:
+    rule_id: str
+    severity: Severity
+    message: str
+    auto_fixable: bool
+    data: dict = field(default_factory=dict)
+
+
+@dataclass
+class FixStep:
+    order: int                      # filter position: rotation < HDR < scale < fps
+    video_filters: list[str] = field(default_factory=list)
+    audio_filters: list[str] = field(default_factory=list)
+    output_args: list[str] = field(default_factory=list)
+    gpu_variant: dict[str, list[str]] | None = None
+    # Extra inputs such as a generated silent audio track: each entry is the argument list before "-i".
+    extra_inputs: list[list[str]] = field(default_factory=list)
+
+
+class Rule(Protocol):
+    id: str
+    title: str
+
+    def detect(self, media: MediaInfo, profile: Profile) -> Issue | None: ...
+
+    def fix(self, issue: Issue, profile: Profile) -> FixStep | None: ...
 
 
 class Probe(BaseModel):
