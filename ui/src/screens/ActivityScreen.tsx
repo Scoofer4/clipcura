@@ -1,4 +1,4 @@
-import { Bot, Check, CircleCheck, FileSearch, ListChecks, Play, User, Workflow, X } from "lucide-react";
+import { Bot, Check, CircleCheck, Cpu, FileSearch, ListChecks, Play, RotateCcw, User, Workflow, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, type AuditEntry, type Job } from "../api/client";
@@ -12,9 +12,10 @@ import { Panel } from "../design-system/Panel";
 
 const actionIcon: Record<string, typeof Bot> = {
   scan: FileSearch, plan: ListChecks, request_apply: Play, apply: Play, approve: Check, reject: X,
-  job_finished: CircleCheck, cancel: X,
+  job_finished: CircleCheck, cancel: X, job_recovered: RotateCcw,
 };
-const actorIcon = { ai: Bot, human: User, n8n: Workflow } as const;
+// "system": Clipsana itself, e.g. resuming jobs a stopped service left behind.
+const actorIcon = { ai: Bot, human: User, n8n: Workflow, system: Cpu } as const;
 
 /** Screen 5: what assistants did over MCP, and the requests waiting for a human decision. */
 export function ActivityScreen() {
@@ -32,9 +33,9 @@ export function ActivityScreen() {
   useEventListener(["audit", "job.status"], refresh);
 
   const decide = async (jobs: Job[], approve: boolean) => {
-    for (const j of jobs) {
-      try { await (approve ? api.approve(j.id) : api.reject(j.id)); } catch { /* already decided elsewhere */ }
-    }
+    // All at once: a long batch must not stay half-decided when the window is closed mid-way. A request that
+    // was decided elsewhere in the meantime just fails and is skipped.
+    await Promise.allSettled(jobs.map((j) => (approve ? api.approve(j.id) : api.reject(j.id))));
     toast(approve ? t("toast.approved") : t("toast.rejected"), t("activity.decided", { count: jobs.length }));
     refresh();
   };

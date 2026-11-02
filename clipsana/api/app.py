@@ -74,6 +74,7 @@ def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         worker.start()
+        service.recover(worker)  # jobs a killed earlier service left queued or half-done
         yield
         worker.stop()
 

@@ -52,8 +52,19 @@ def gui_url(base: str, token: str) -> str:
 def start_background() -> dict:
     """Start `clipsana serve` detached from this console and wait until it answers."""
     flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-    subprocess.Popen([sys.executable, "-m", "clipsana.cli", "serve"], creationflags=flags,
-                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True)
+    cmd = [sys.executable, "-m", "clipsana.cli", "serve"]
+    # MCP clients may run their server in a Windows job object that kills every member when the session ends;
+    # the service (and the conversions a person approves later) must outlive the session, so leave the job.
+    # Not every job allows that; then the service lives as long as the session and the next start resumes jobs.
+    breakaway = getattr(subprocess, "CREATE_BREAKAWAY_FROM_JOB", 0x01000000) if sys.platform == "win32" else 0
+    for extra in ((breakaway, 0) if breakaway else (0,)):
+        try:
+            subprocess.Popen(cmd, creationflags=flags | extra, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                             close_fds=True)
+            break
+        except OSError:
+            if not extra:
+                raise
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         if info := running_server():

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import uuid
 from datetime import UTC, datetime
@@ -26,12 +27,16 @@ CREATE TABLE IF NOT EXISTS plan_items (
 CREATE TABLE IF NOT EXISTS jobs (
     id TEXT PRIMARY KEY, plan_item_id INTEGER NOT NULL REFERENCES plan_items(id), status TEXT NOT NULL,
     progress REAL NOT NULL DEFAULT 0, actor TEXT NOT NULL, backend TEXT, output TEXT, error TEXT,
-    plan_hash TEXT NOT NULL, created_at TEXT NOT NULL, finished_at TEXT);
+    plan_hash TEXT NOT NULL, created_at TEXT NOT NULL, finished_at TEXT, owner_pid INTEGER);
 CREATE TABLE IF NOT EXISTS audit (
     id INTEGER PRIMARY KEY, ts TEXT NOT NULL, actor TEXT NOT NULL, action TEXT NOT NULL,
     target TEXT NOT NULL, result TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS jobs_done ON jobs(plan_hash, output, status);
 """
+
+
+# States in which a job is tied to the process that queued or runs it (jobs.owner_pid).
+OWNED = ("queued", "running")
 
 
 def now() -> str:
@@ -62,6 +67,10 @@ class Database:
         if "paths" not in plan_cols:
             with self.conn:
                 self.conn.execute("ALTER TABLE plans ADD COLUMN paths TEXT")
+        job_cols = {r["name"] for r in self.conn.execute("PRAGMA table_info(jobs)")}
+        if "owner_pid" not in job_cols:
+            with self.conn:
+                self.conn.execute("ALTER TABLE jobs ADD COLUMN owner_pid INTEGER")
 
     def close(self) -> None:
         self.conn.close()
@@ -145,8 +154,10 @@ class Database:
     def create_job(self, plan_item_id: int, plan_hash: str, output: str, actor: str,
                    status: str = "queued") -> str:
         job_id = new_id()
-        self._write("INSERT INTO jobs (id, plan_item_id, status, actor, output, plan_hash, created_at) "
-                    "VALUES (?,?,?,?,?,?,?)", (job_id, plan_item_id, status, actor, output, plan_hash, now()))
+        # A queued job belongs to the process that will run it; one awaiting approval belongs to nobody yet.
+        owner = os.getpid() if status in OWNED else None
+        self._write("INSERT INTO jobs (id, plan_item_id, status, actor, output, plan_hash, created_at, owner_pid) "
+                    "VALUES (?,?,?,?,?,?,?,?)", (job_id, plan_item_id, status, actor, output, plan_hash, now(), owner))
         return job_id
 
     def update_job(self, job_id: str, **fields) -> None:
@@ -165,8 +176,18 @@ class Database:
     def set_job_status_if(self, job_id: str, expected: str, new: str) -> bool:
         """Atomic state transition, so a cancel and a worker pick-up can never both win."""
         with self.conn:
-            cur = self.conn.execute("UPDATE jobs SET status=? WHERE id=? AND status=?", (new, job_id, expected))
+            if new in OWNED:
+                cur = self.conn.execute("UPDATE jobs SET status=?, owner_pid=? WHERE id=? AND status=?",
+                                        (new, os.getpid(), job_id, expected))
+            else:
+                cur = self.conn.execute("UPDATE jobs SET status=? WHERE id=? AND status=?", (new, job_id, expected))
         return cur.rowcount == 1
+
+    def owned_jobs(self) -> list[sqlite3.Row]:
+        """Jobs some process has promised to run (queued) or is running."""
+        marks = ",".join("?" * len(OWNED))
+        return self.conn.execute(f"SELECT * FROM jobs WHERE status IN ({marks}) ORDER BY created_at",
+                                 tuple(OWNED)).fetchall()
 
     def get_jobs(self, job_ids: list[str]) -> list[sqlite3.Row]:
         marks = ",".join("?" * len(job_ids))

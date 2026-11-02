@@ -2,17 +2,46 @@
 
 Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 
-## 2.–3. 11. 2026 – M3b (obrazovky 1–6) – rozpracováno, vlastník dovolil pokračovat bez čekání
+## 3. 11. 2026 – M4 (MCP server + schvalování) – hotovo, čeká na ukázku vlastníkovi
 
-Plán:
-1. API: servírování UI (SPA) ze stejného originu, historie skenů, audit (časová osa AI), nastavení
-   (povolené složky, schvalování, souběžnost; mění je jen člověk), náhledy snímků před a po, seznam úloh.
-2. UI: klient API (token se předá ve fragmentu URL, ne v query, takže se neloguje), živé události
-   přes WebSocket, rozvržení aplikace s navigací a paletou příkazů Ctrl+K.
-3. Obrazovky: Start (složka, nedávné složky, profil, HUD), Výsledek kontroly, Detail souboru (boční
-   panel: hodnoty, proč to vadí, náhled před/po s posuvníkem, příkaz ffmpeg), Úlohy, Aktivita AI
-   a schvalování, Nastavení.
-4. Testy: API (pytest), end-to-end přes skutečný server v Edge (Playwright), CI pro UI.
+### Hotovo
+
+- `clipsana/mcp/server.py` (MCP SDK 2.3, `MCPServer`, stdio) a příkaz `clipsana mcp`. Je to tenký klient
+  lokálního API a volá ho jako actor `ai`. Nástroje odpovídají kap. 8: `system_info`, `list_profiles`,
+  `list_rules`, `scan_folder`, `get_report`, `plan_fixes`, `apply_fixes`, `job_status`, `cancel_job`.
+  Nástroj pro schválení záměrně neexistuje. Odpovědi jsou strukturovaný JSON a krátké shrnutí (`lang` en/cs).
+- Složka mimo whitelist: chyba s pokynem, ať ji povolí uživatel (AI povolené složky měnit nemůže).
+- Když aplikace neběží, MCP spustí headless službu. Pod klientem v Node (tak MCP servery spouští
+  Claude Code) služba ukončení MCP relace přežije, ověřeno. Klient MCP v Pythonu ji drží v job objektu
+  Windows a zabije ji s relací. Proto vznikla:
+- Obnova po pádu: úloha si pamatuje PID procesu, který ji vlastní (`jobs.owner_pid`). Nová služba po
+  startu převezme jen úlohy mrtvého procesu: běžící úlohu restartuje a smaže její `.partial` soubor,
+  čekající úlohu zařadí do fronty. Úlohy živého procesu (např. souběžné `clipsana apply`) nechá být.
+  V časové ose je to akce „Obnoveno po restartu“ (actor `system`).
+- Hromadné schválení/zamítnutí v GUI posílá požadavky souběžně (dřív postupně, mohlo zůstat napůl).
+- Ukázka M4 na skutečné stdio relaci: AI udělá scan → report → plán → apply, 3 převody čekají v GUI,
+  člověk schválí, převody doběhnou s odznakem AI. Screenshoty jsou v `docs/screenshots/m4/`.
+- CI: e2e test dostal víc času; na runneru bez GPU se nefotí (software WebGL). Cesta k temp se
+  rozlišuje na dlouhý tvar (runner má 8.3 `RUNNER~1`).
+
+### Ověřeno
+
+- pytest 175 prošlo / 1 přeskočen (skutečné vzorky), ruff OK, tsc OK, Playwright 9/9 lokálně.
+
+### Otevřené
+
+- Registrace MCP v Claude Code je konfigurace mimo repozitář, a tu podle pravidel bez souhlasu neměním.
+  Příkaz je v README: `claude mcp add clipsana -- uv run --project <cesta> clipsana mcp`.
+
+## 2.–3. 11. 2026 – M3b (obrazovky 1–6) – hotovo
+
+- API: GUI se servíruje ze stejného originu (SPA), historie skenů, audit, nastavení (mění jen člověk),
+  náhledy před/po, seznam úloh.
+- UI: token se předává ve fragmentu URL, živé události přes WebSocket, paleta Ctrl+K, obrazovky Start,
+  Výsledek, Detail, Úlohy, Aktivita AI, Nastavení. Screenshoty v `docs/screenshots/m3b/`.
+- Akceptace: celý cyklus jde projít jen klávesnicí (e2e test přes skutečný server v Edge).
+- Otevřené: editor profilů s validací (zatím jen čtení), změna souběžnosti se projeví až po restartu,
+  notifikace Windows a ikona v oznamovací oblasti patří do M5.
 
 ## 2. 11. 2026 – M3a (design system + /_kitchen-sink) – schváleno vlastníkem
 

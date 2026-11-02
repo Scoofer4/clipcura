@@ -79,6 +79,13 @@ def serve(port: Annotated[int | None, typer.Option(help="Port (default: from con
     run_server(port)
 
 
+@app.command("mcp")
+def mcp_server() -> None:
+    """Run the MCP server on stdio for AI assistants (starts the background service if needed)."""
+    from clipsana.mcp.server import main
+    main()
+
+
 @app.command("open")
 def open_gui(
     print_only: Annotated[bool, typer.Option("--print", help="Only print the URL (contains the access key).")] = False,

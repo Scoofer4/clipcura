@@ -52,7 +52,7 @@ def parse_progress(block: dict[str, str], duration: float) -> Progress:
     return Progress(round(percent, 1), _num(block.get("fps")), speed, eta, out_time)
 
 
-def _partial_path(out: Path) -> Path:
+def partial_path(out: Path) -> Path:
     # Hidden name in the output folder: same volume, so the final rename is atomic.
     return out.with_name(f".{out.stem}.partial{out.suffix}")
 
@@ -112,7 +112,7 @@ def run_item(item: PlanItem, on_progress: Callable[[Progress], None] | None = No
         return result("failed", item.backend, f"Not enough free space: need ~{needed / 2**30:.1f} GB")
 
     out.parent.mkdir(parents=True, exist_ok=True)
-    partial = _partial_path(out)
+    partial = partial_path(out)
     attempts: list[tuple[DecodePath, list[str]]] = [(item.backend, item.args)]
     if item.fallback_args != item.args:  # any GPU decode, filter or encoder in the recipe
         attempts.append(("cpu", item.fallback_args))

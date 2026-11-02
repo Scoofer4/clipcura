@@ -133,3 +133,27 @@ def collect(disk_paths: list[Path]) -> SystemInfo:
         gpus=detect_gpus(),
         disks=[disk_usage(p) for p in disk_paths if p.exists()],
     )
+
+
+def pid_alive(pid: int | None) -> bool:
+    """Whether a process with this id still runs. PIDs can be reused, but only long after the process ended."""
+    if not pid or pid <= 0:
+        return False
+    if sys.platform != "win32":
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        except PermissionError:
+            return True
+        return True
+    # os.kill(pid, 0) would terminate the process on Windows; ask the kernel instead.
+    kernel32 = ctypes.windll.kernel32
+    handle = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+    if not handle:
+        return False
+    try:
+        code = ctypes.c_ulong()
+        return bool(kernel32.GetExitCodeProcess(handle, ctypes.byref(code))) and code.value == 259  # STILL_ACTIVE
+    finally:
+        kernel32.CloseHandle(handle)

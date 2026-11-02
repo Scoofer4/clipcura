@@ -19,8 +19,8 @@ and resolutions, HDR, 10-bit HEVC and non-48 kHz audio.
 | M0 | Environment, `clipsana doctor` | ✅ |
 | M1 | Core, rules, CLI, tests | ✅ |
 | M2 | Local API, worker, events | ✅ |
-| M3 | Design system and GUI | ⏳ |
-| M4 | MCP server and approvals | ⏳ |
+| M3 | Design system and GUI | ✅ |
+| M4 | MCP server and approvals | ✅ |
 | M5 | Windows installer | ⏳ |
 
 ## Development (Windows)
@@ -61,6 +61,21 @@ uv run clipsana serve                     # API + job worker on 127.0.0.1 (port 
 All routes except `/api/health` need `Authorization: Bearer <token>` (token in `config.json` in the app data
 folder). Progress and events stream over the WebSocket `/api/events?token=...`. Requests sent with
 `X-Clipsana-Actor: ai` or `n8n` wait for human approval while the approval mode is on (default).
+
+## AI assistants (MCP)
+
+`clipsana mcp` is an MCP server on stdio. It starts the background service when no Clipsana window is open and
+calls the local API as actor `ai`, so an assistant has the same actions as the GUI and nothing more:
+`system_info`, `list_profiles`, `list_rules`, `scan_folder`, `get_report`, `plan_fixes`, `apply_fixes`,
+`job_status`, `cancel_job`. There is no approve tool. While the approval mode is on (default), every
+conversion an assistant requests waits in **AI activity** until a person approves it. Only folders allowed by a
+person (`clipsana config allow` or Settings) can be used.
+
+Register it in Claude Code, for example:
+
+```powershell
+claude mcp add clipsana -- uv run --project D:\path\to\clipsana clipsana mcp
+```
 
 ## Project layout
 

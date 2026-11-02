@@ -385,7 +385,8 @@
       "approve": "Schválil(a)",
       "reject": "Zamítl(a)",
       "job_finished": "Dokončeno",
-      "cancel": "Zrušil(a)"
+      "cancel": "Zrušil(a)",
+      "job_recovered": "Obnoveno po restartu"
     }
   }
 }

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,7 +30,8 @@ test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
   test.skip(!NEEDED.every((n) => existsSync(join(CLIPS, n))), "generated clips missing: run pytest first");
-  home = mkdtempSync(join(tmpdir(), "clipsana-e2e-"));
+  // Long path form: the runner's temp dir is an 8.3 short name (RUNNER~1), the service stores resolved paths.
+  home = realpathSync.native(mkdtempSync(join(tmpdir(), "clipsana-e2e-")));
   raw = join(home, "footage", "raw");
   mkdirSync(raw, { recursive: true });
   for (const n of NEEDED) copyFileSync(join(CLIPS, n), join(raw, n));

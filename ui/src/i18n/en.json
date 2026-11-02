@@ -376,7 +376,8 @@
       "approve": "Approved",
       "reject": "Rejected",
       "job_finished": "Finished",
-      "cancel": "Cancelled"
+      "cancel": "Cancelled",
+      "job_recovered": "Resumed after a restart"
     }
   }
 }

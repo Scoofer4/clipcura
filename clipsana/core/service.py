@@ -6,6 +6,7 @@ human can (CLAUDE.md §2). `actor` records who asked, for the audit log.
 from __future__ import annotations
 
 import json
+import os
 import threading
 from collections.abc import Callable
 from dataclasses import asdict
@@ -365,6 +366,29 @@ def approve(job_id: str, worker: Worker, actor: str = "human") -> dict:
     snapshot = status([job_id])[0]  # same reasoning as enqueue(): report the state we created
     worker.submit(job_id, _slot(item))
     return snapshot
+
+
+def recover(worker: Worker) -> list[str]:
+    """Take over the jobs of a Clipsana process that ended without a clean shutdown (killed, crashed, power
+    loss). Its ffmpeg died with it, so a half-written output is removed and the job runs again; queued jobs
+    go to this worker. Jobs of a process that still runs are left alone, and requests awaiting approval keep
+    waiting. Returns the ids handed to the worker."""
+    from clipsana.core.sysinfo import pid_alive
+    taken = []
+    with Database() as db:
+        for job in db.owned_jobs():
+            if job["owner_pid"] == os.getpid() or pid_alive(job["owner_pid"]):
+                continue
+            if not db.set_job_status_if(job["id"], job["status"], "queued"):
+                continue  # changed under us
+            item = PlanItem.model_validate_json(db.get_plan_item(job["plan_item_id"])["item"])
+            if job["status"] == "running":
+                executor.partial_path(Path(item.output)).unlink(missing_ok=True)
+                db.update_job(job["id"], progress=0.0)
+                _audit(db, "system", "job_recovered", item.source, "queued")
+            worker.submit(job["id"], _slot(item))
+            taken.append(job["id"])
+    return taken
 
 
 def reject(job_id: str, actor: str = "human") -> dict:
