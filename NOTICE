@@ -1,0 +1,9 @@
+Clipsana
+Copyright 2026 Metaverse Media s.r.o.
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party components:
+- FFmpeg (https://ffmpeg.org) is NOT part of this source repository. Installers bundle a
+  redistributable GPL build of FFmpeg without "nonfree" components as a separate program.
+  Its license and a link to the corresponding source code are shipped with the installer.

@@ -1,0 +1,15 @@
+# Lehké soubory pro střih na iPadu a notebooku
+name: ipad-light
+label: "iPad / notebook · 1080p"
+fps: 30
+max_long_side: 1920
+audio_rate: 48000
+color: rec709-sdr
+output:
+  codec: auto_h264       # h264_nvenc → h264_qsv → libx264 podle dostupnosti
+  container: mp4
+  folder: "../02_edit"
+  suffix: "_light"
+rules:
+  disabled: []
+  vfr_deep_check: false

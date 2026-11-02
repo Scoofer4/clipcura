@@ -1,0 +1,13 @@
+# CI: lint a testy na Windows (cílová platforma) při každém push a PR
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: uv python install 3.12
+      - run: uv sync --group dev
+      - run: uv run ruff check .
+      - run: uv run pytest -q

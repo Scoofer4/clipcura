@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+build/
+dist/
+
+# Node / UI
+node_modules/
+ui/dist/
+
+# Externí binárky a data (velké nebo citlivé)
+vendor/
+tests/fixtures/real/*
+!tests/fixtures/real/.gitkeep
+tests/fixtures/generated/
+*.mov
+*.mp4
+*.mxf
+*.insv
+*.insp
+*.lrv
+
+# Lokální stav a tajné údaje
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.env
+config.local.*
+
+# Reporty z běhu
+video_prep_report.*
+
+# OS / editory
+Thumbs.db
+.DS_Store
+.claude/settings.local.json
+.vscode/*
+!.vscode/extensions.json
+.idea/

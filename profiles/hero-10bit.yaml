@@ -1,0 +1,15 @@
+# Hero videa: 10 bitů, bez zmenšení
+name: hero-10bit
+label: "Hero · 10-bit"
+fps: 30
+max_long_side: 99999
+audio_rate: 48000
+color: rec709-sdr
+output:
+  codec: dnxhr_hqx
+  container: mov
+  folder: "../02_edit"
+  suffix: "_hero"
+rules:
+  disabled: []
+  vfr_deep_check: true

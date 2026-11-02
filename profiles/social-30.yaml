@@ -1,0 +1,15 @@
+# Výchozí profil pro sociální sítě
+name: social-30
+label: "Sociální sítě · 30 fps"
+fps: 30
+max_long_side: 3840
+audio_rate: 48000
+color: rec709-sdr
+output:
+  codec: dnxhr_hq        # dnxhr_hq | dnxhr_hqx | prores_422 | h264_nvenc | hevc_nvenc | h264_qsv | libx264
+  container: mov
+  folder: "../02_edit"
+  suffix: "_edit"
+rules:
+  disabled: []
+  vfr_deep_check: false
