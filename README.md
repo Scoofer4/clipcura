@@ -26,8 +26,9 @@ and resolutions, HDR, 10-bit HEVC and non-48 kHz audio.
 ## Development (Windows)
 
 ```powershell
-uv sync --group dev          # Python environment
-uv run clipsana doctor       # hardware and FFmpeg capabilities (from M0)
+uv sync --group dev                     # Python environment
+uv run python tools/fetch_ffmpeg.py     # pinned, SHA-256 verified FFmpeg 8.1 build into vendor/ffmpeg
+uv run clipsana doctor                  # hardware and FFmpeg capabilities (add --json for machines)
 uv run pytest                # tests
 ```
 

@@ -34,6 +34,8 @@ packages = ["clipsana"]
 [tool.ruff]
 line-length = 110
 target-version = "py312"
+# Frozen reference implementation of the first rules; kept byte-for-byte for comparison.
+extend-exclude = ["tools/prototype"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

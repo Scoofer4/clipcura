@@ -48,7 +48,7 @@ High-tech vzhled (animace, sklo, glow, plynulé grafy) se ve webovém stacku dě
 | Oblast | Volba |
 |---|---|
 | Jazyk jádra | Python 3.12, správa prostředí `uv` |
-| Média | ffmpeg/ffprobe 7.x **redistribuovatelný GPL build bez „nonfree“** pro Windows (např. BtbN `win64-gpl`) s NVENC/NVDEC, QSV, zscale, libplacebo |
+| Média | ffmpeg/ffprobe 8.1 (řada 7.x už v BtbN není; rozhodnutí vlastníka 2. 11. 2026) **redistribuovatelný GPL build bez „nonfree“** pro Windows (např. BtbN `win64-gpl`) s NVENC/NVDEC, QSV, zscale, libplacebo |
 | API | FastAPI + uvicorn, pydantic v2 |
 | Data | SQLite (WAL), profily YAML |
 | MCP | oficiální MCP Python SDK (FastMCP), stdio |
