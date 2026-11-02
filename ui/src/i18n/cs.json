@@ -175,17 +175,7 @@
     "typeSection": "Proměnná snímková frekvence",
     "typeBody": "Telefon natáčel v 60 fps, ale snímky zapisoval nepravidelně.",
     "typeSmall": "Originály se nikdy nemění.",
-    "logo": "Koncepty loga",
-    "logoIntro": "Čtyři směry, každý velký, ve velikostech ikony až do 16 px a vedle názvu. Všechny se řídí přepínačem akcentu."
-  },
-  "logo": {
-    "viewfinder": "Hledáček",
-    "viewfinderWhy": "Rámeček kamery kolem fajfky: záběr je připravený ke střihu. Čitelný i v 16 px a navazuje na drop zónu.",
-    "pulse": "Puls",
-    "pulseWhy": "Filmové políčko, jehož srdeční rytmus končí fajfkou. „Sana“ je latinsky zdravá.",
-    "cube": "Krychle",
-    "cubeWhy": "Krychle Metaverse Media s fajfkou: rodinná podobnost s mateřskou značkou.",
-    "monogram": "Monogram",
-    "monogramWhy": "„C“ otevřené tam, kde začíná přehrávání. Nejabstraktnější ze čtyř."
+    "logo": "Logo",
+    "logoIntro": "„C“ otevřené tam, kde začíná přehrávání. Ve velikostech ikony až do 16 px a vedle názvu; oblouk se řídí akcentem."
   }
 }

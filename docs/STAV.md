@@ -2,7 +2,10 @@
 
 Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 
-## 2. 11. 2026 – M3a (design system + /_kitchen-sink) – návrh čeká na schválení vlastníkem
+## 2. 11. 2026 – M3a (design system + /_kitchen-sink) – schváleno vlastníkem
+
+Rozhodnutí: vizuální styl schválen, výchozí akcent **Brand** (Aurora zůstává jako volba), logo **Monogram**.
+Další krok: M3b, tedy obrazovky 1–6 napojené na lokální API, paleta příkazů Ctrl+K, testy UI v CI.
 
 ### Hotovo
 
@@ -19,13 +22,10 @@ Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
   3D běží na úsporné GPU a během převodu stojí.
 - Funkční prototyp obrazovek 1–5 nad ukázkovými daty: karty filtrují tabulku, výběr klávesnicí, F opraví
   výběr, simulace úlohy, schválení nebo zamítnutí požadavku AI, dialog, oznámení.
-- 4 koncepty loga (Hledáček, Puls, Krychle, Monogram), všechny vektorové a řízené akcentem.
+- Logo: ze 4 konceptů vlastník vybral **Monogram**. Ostatní koncepty jsou z kódu odstraněné, zůstaly
+  v historii gitu (commit `ca2a858`, screenshoty návrhu).
 - Playwright přes nainstalovaný Edge (bez stahování prohlížeče): 6 testů, screenshoty v
   `docs/screenshots/m3a/`.
-
-### Čeká na vlastníka
-
-- Schválit vizuální styl a vybrat akcent (Brand / Aurora) a logo (4 koncepty).
 
 ### Bezpečnostní poznámka (mimo Clipsanu)
 

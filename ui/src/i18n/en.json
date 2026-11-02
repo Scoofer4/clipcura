@@ -170,17 +170,7 @@
     "typeSection": "Variable frame rate",
     "typeBody": "The phone recorded at 60 fps but wrote frames unevenly.",
     "typeSmall": "Originals are never changed.",
-    "logo": "Logo concepts",
-    "logoIntro": "Four directions, each shown large, at app-icon sizes down to 16 px, and next to the name. All follow the accent switch."
-  },
-  "logo": {
-    "viewfinder": "Viewfinder",
-    "viewfinderWhy": "A camera frame around a check: the shot is ready to edit. Reads well at 16 px and echoes the drop zone.",
-    "pulse": "Pulse",
-    "pulseWhy": "A film frame whose heartbeat ends in a check. \"Sana\" is Latin for healthy.",
-    "cube": "Cube",
-    "cubeWhy": "The Metaverse Media cube, checked: a family resemblance with the parent brand.",
-    "monogram": "Monogram",
-    "monogramWhy": "A \"C\" left open where playback starts. The most abstract of the four."
+    "logo": "Logo",
+    "logoIntro": "A \"C\" left open where playback starts. Shown at app-icon sizes down to 16 px and next to the name; the arc follows the accent."
   }
 }

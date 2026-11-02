@@ -6,7 +6,7 @@ import { AiBadge, FindingChip, StatusChip, type FileStatus } from "../design-sys
 import { DropZone } from "../design-system/DropZone";
 import { FileTable, type FileRow } from "../design-system/FileTable";
 import { Hud, type SystemView } from "../design-system/Hud";
-import { LOGO_CONCEPTS, LogoMark, Lockup, type LogoConcept } from "../design-system/Logo";
+import { LogoMark, Lockup } from "../design-system/Logo";
 import { Tilt } from "../design-system/Motion";
 import { Panel, StatCard } from "../design-system/Panel";
 import { JobCard, ProgressBar } from "../design-system/Progress";
@@ -186,7 +186,7 @@ export function KitchenSink() {
       <div className="mx-auto max-w-[1280px] px-6 pb-24 pt-8 md:px-10">
         {/* ---------- top bar: identity + appearance controls (the settings screen will reuse them) ---------- */}
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <Lockup concept="viewfinder" size={34} />
+          <Lockup size={34} />
           <div className="flex flex-wrap items-center gap-3">
             <Segmented label={t("settings.theme")} value={appearance.theme} onChange={appearance.setTheme}
                        options={[{ value: "dark", label: t("settings.dark") }, { value: "light", label: t("settings.light") }]} />
@@ -439,24 +439,16 @@ export function KitchenSink() {
           </Panel>
         </section>
 
-        {/* ---------- logo concepts ---------- */}
+        {/* ---------- logo ---------- */}
         <section className="mt-12">
           <SectionTitle title={t("ks.logo")} intro={t("ks.logoIntro")} />
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {LOGO_CONCEPTS.map((c: LogoConcept) => (
-              <Panel key={c} className="p-5">
-                <div className="flex items-end gap-4">
-                  <LogoMark concept={c} size={96} title={t(`logo.${c}`)} />
-                  <div className="flex items-end gap-3 pb-1 text-ink">
-                    <LogoMark concept={c} size={32} /><LogoMark concept={c} size={20} /><LogoMark concept={c} size={16} />
-                  </div>
-                </div>
-                <div className="mt-4"><Lockup concept={c} size={28} /></div>
-                <div className="mt-4 text-sm font-medium text-ink">{t(`logo.${c}`)}</div>
-                <p className="mt-1 text-xs text-muted">{t(`logo.${c}Why`)}</p>
-              </Panel>
-            ))}
-          </div>
+          <Panel className="flex flex-wrap items-end gap-10 p-6">
+            <LogoMark size={128} title="Clipsana" />
+            <div className="flex items-end gap-5 pb-2">
+              <LogoMark size={64} /><LogoMark size={32} /><LogoMark size={20} /><LogoMark size={16} />
+            </div>
+            <div className="pb-3"><Lockup size={44} /></div>
+          </Panel>
         </section>
       </div>
 

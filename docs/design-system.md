@@ -79,5 +79,14 @@ Tab moves between rows, Space selects, Enter opens the detail, F fixes the selec
 
 ## Logo
 
-Four concepts are on the kitchen-sink page, each shown large, at 32, 20 and 16 px, and next to the
-wordmark. The owner picks one; the favicon currently uses "Viewfinder".
+**Monogram** (owner's choice, 2026-11-02): a "C" left open on the right, where playback starts. The arc
+carries the accent gradient and the play triangle uses the text colour, so the mark works on both themes.
+It stays legible at 16 px (tray icon). Source: `ui/src/design-system/Logo.tsx`, favicon `ui/public/favicon.svg`.
+The wordmark is lowercase "clipsana" in Inter Semibold with −0.035 em tracking.
+
+The viewfinder corners remain the drop zone's motif. They are not part of the logo.
+
+## Decisions
+
+- 2026-11-02: visual style approved by the owner; Brand accent (Metaverse Media crimson) is the default and
+  Aurora stays as an option in settings; logo is the Monogram.

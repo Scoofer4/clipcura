@@ -165,7 +165,7 @@ Kopírují akce v GUI. Odpovědi = strukturovaný JSON + krátké shrnutí v jaz
 
 ### Vizuální jazyk
 - **Tmavé téma jako výchozí** (světlé volitelně): pozadí grafit/téměř černá s jemným šumem a radiálním přechodem, panely jako „sklo“ (průhlednost + blur + tenký světlý okraj).
-- **Akcent:** elektrická fialová → azurová (gradient) pro hlavní akce a průběh; stavové barvy: OK zelená, opravitelné ambrová, vyžaduje člověka oranžová, chyba červená. Všechny barvy jako design tokeny (CSS proměnné), aby šly sladit s brandem.
+- **Akcent (rozhodnutí vlastníka 2. 11. 2026):** výchozí je brand Metaverse Media, karmínová `#BF1B2C → #E52C3F → #FE6C61` změřená z loga. Fialová → azurová („Aurora“) zůstává jako volba v nastavení. Hlavní akce a průběh nesou akcent. Logo: **Monogram** (otevřené „C“ s tlačítkem přehrávání). Vizuální styl M3a vlastník schválil. Stavové barvy: OK zelená, opravitelné ambrová, vyžaduje člověka oranžová, chyba červená. Všechny barvy jako design tokeny (CSS proměnné), aby šly sladit s brandem.
 - **Typografie:** Inter pro text, JetBrains Mono pro technické hodnoty (fps, kodeky, cesty).
 - **Pohyb:** Framer Motion, krátké (150–250 ms) a funkční animace: glow drop zóny při přetažení, plynulé přeskupení řádků při změně stavu, „pulz“ aktivní úlohy. Respektovat `prefers-reduced-motion` a přepínač v nastavení.
 - **Kontrast** min. WCAG AA, ovládání klávesnicí, viditelný focus.
