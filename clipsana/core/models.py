@@ -88,7 +88,7 @@ class PlanItem(BaseModel):
     output: str
     args: list[str]               # ffmpeg arguments (without the binary and progress flags)
     fallback_args: list[str]      # same job on the CPU, used when the GPU path fails at runtime
-    backend: Backend
+    backend: DecodePath           # decoding path of `args`
     rule_ids: list[str]
     plan_hash: str                # identifies "same input, same recipe" so reruns can skip finished files
     est_bytes: int
@@ -134,6 +134,30 @@ class Probe(BaseModel):
     detail: str = ""
 
 
+class Benchmarks(BaseModel):
+    """Measured throughput in frames per second per path (0 = path failed on this machine)."""
+    # Whole-job throughput (decode -> filters -> DNxHR encode) on a camera-like 4K HEVC sample: measuring a
+    # step in isolation picked the CPU decoder although the GPU was 2.6x faster on real footage.
+    decode: dict[str, float] = Field(default_factory=dict)    # cpu | cuda | d3d11va
+    scale: dict[str, float] = Field(default_factory=dict)     # cpu | scale_cuda | libplacebo, 4K -> 1080p
+    tonemap: dict[str, float] = Field(default_factory=dict)   # zscale | libplacebo, HLG -> Rec.709
+
+
+# Decoding goes through hwaccels that hand frames back in system memory at the source bit depth; QSV decoding
+# would keep them on the GPU and break the CPU filter chain, so Intel GPUs decode through D3D11VA.
+DecodePath = Literal["cpu", "cuda", "d3d11va"]
+ScalePath = Literal["cpu", "scale_cuda", "libplacebo"]
+TonemapPath = Literal["zscale", "libplacebo"]
+
+
+class Paths(BaseModel):
+    """Which implementation each processing step uses (CLAUDE.md §4: quality first, then measured speed)."""
+    decode: DecodePath = "cpu"
+    encode: Backend = "cpu"         # backend for auto_* encoders (nvenc / qsv / cpu)
+    scale: ScalePath = "cpu"
+    tonemap: TonemapPath = "zscale"
+
+
 class FfmpegInfo(BaseModel):
     ffmpeg: str
     ffprobe: str
@@ -143,6 +167,7 @@ class FfmpegInfo(BaseModel):
     encoders: list[str] = Field(default_factory=list)
     filters: list[str] = Field(default_factory=list)
     probes: list[Probe] = Field(default_factory=list)
+    benchmarks: Benchmarks | None = None
 
     def works(self, name: str) -> bool:
         return any(p.name == name and p.ok for p in self.probes)
@@ -177,6 +202,7 @@ class DoctorReport(BaseModel):
     created_at: str
     clipsana_version: str
     backend: Backend
+    paths: Paths = Field(default_factory=Paths)
     system: SystemInfo
     ffmpeg: FfmpegInfo | None = None
     problems: list[str] = Field(default_factory=list)

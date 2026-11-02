@@ -28,11 +28,24 @@ class ResolutionRule:
             return None
         severity = "warning" if factor < 1 else "error"  # odd sizes make encoders fail outright
         return Issue(self.id, severity, localize(MESSAGES, w=w, h=h, tw=tw, th=th), True,
-                     {"width": w, "height": h, "target_width": tw, "target_height": th})
+                     {"width": w, "height": h, "target_width": tw, "target_height": th, "pix_fmt": v.pix_fmt})
 
     def fix(self, issue: Issue, profile: Profile) -> FixStep:
         d = issue.data
-        return FixStep(order=30, video_filters=[f"scale={d['target_width']}:{d['target_height']}:flags=lanczos"])
+        tw, th = d["target_width"], d["target_height"]
+        # Same lanczos kernel on every path, so the planner may pick purely by measured speed (issue #5).
+        variants = {"scale:libplacebo": [f"libplacebo=w={tw}:h={th}:downscaler=lanczos:upscaler=lanczos"]}
+        upload_fmt = _CUDA_UPLOAD_FORMAT.get(d.get("pix_fmt", ""))
+        if upload_fmt:
+            chain = (f"format={upload_fmt},hwupload_cuda,scale_cuda={tw}:{th}:interp_algo=lanczos,"
+                     f"hwdownload,format={upload_fmt}")
+            variants["scale:scale_cuda"] = [chain]
+        return FixStep(order=30, video_filters=[f"scale={tw}:{th}:flags=lanczos"], gpu_variant=variants)
+
+
+# Only 4:2:0 sources go through scale_cuda: uploading 4:2:2/4:4:4 would mean subsampling chroma first.
+_CUDA_UPLOAD_FORMAT = {"yuv420p": "yuv420p", "yuvj420p": "yuv420p", "nv12": "yuv420p",
+                       "yuv420p10le": "p010le", "p010le": "p010le"}
 
 
 RULE = ResolutionRule()

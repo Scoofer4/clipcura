@@ -16,13 +16,13 @@ from pydantic import BaseModel
 from clipsana import rules
 from clipsana.core import backends, executor, planner, probe, profiles
 from clipsana.core.db import Database
-from clipsana.core.models import Backend, FileStatus, Issue, MediaInfo, PlanItem, Profile
+from clipsana.core.models import Backend, DecodePath, FileStatus, Issue, MediaInfo, Paths, PlanItem, Profile
 
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".mts", ".m2ts", ".mkv", ".avi", ".mxf", ".insv", ".insp"}
 _NOT_PROBED = {".insv", ".insp"}  # reported by the insv rule only; reading 360° originals adds nothing
 
 _running: dict[str, threading.Event] = {}
-_backend_cache: dict[str, Backend] = {}
+_paths_cache: dict[str, Paths] = {}
 
 
 class FileReport(BaseModel):
@@ -53,7 +53,8 @@ class PlanEntry(BaseModel):
 class PlanResult(BaseModel):
     plan_id: str
     scan_id: str
-    backend: Backend
+    backend: DecodePath
+    paths: Paths
     items: list[PlanEntry]
     est_bytes: int
 
@@ -66,14 +67,20 @@ def file_status(issues: list[Issue]) -> FileStatus:
     return "fixable" if any(i.auto_fixable and rules.is_standalone(i.rule_id) for i in issues) else "ok"
 
 
-def detect_backend() -> Backend:
-    """Best acceleration backend on this machine (probed once per process)."""
-    if "value" not in _backend_cache:
+def detect_paths() -> Paths:
+    """Processing paths for this machine: from the last `clipsana doctor` (with measurements) if there is
+    one, otherwise from quick capability probes (once per process)."""
+    from clipsana.core.doctor import load_report
+
+    report = load_report()
+    if report is not None and report.ffmpeg is not None and report.ffmpeg.probes:
+        return report.paths
+    if "value" not in _paths_cache:
         try:
-            _backend_cache["value"] = backends.choose_backend(backends.inspect_ffmpeg(run_probes=True))
+            _paths_cache["value"] = backends.choose_paths(backends.inspect_ffmpeg(run_probes=True))
         except FileNotFoundError:
-            _backend_cache["value"] = "cpu"
-    return _backend_cache["value"]
+            _paths_cache["value"] = Paths()
+    return _paths_cache["value"]
 
 
 def _list_files(root: Path, recursive: bool, output_dir: Path) -> list[Path]:
@@ -131,10 +138,16 @@ def get_scan(scan_id: str) -> ScanResult:
 
 
 def plan(scan_id: str, file_ids: list[int] | None = None, backend: Backend | None = None,
-         actor: str = "human") -> PlanResult:
+         actor: str = "human", paths: Paths | None = None) -> PlanResult:
+    """Build commands for the scan's fixable files. `paths` (or just a decode `backend`) overrides the
+    measured choice, e.g. for tests or to force the CPU."""
     report = get_scan(scan_id)
     prof: Profile = profiles.load_profile(report.profile)
-    backend = backend or detect_backend()
+    if paths is None:
+        # Intel GPUs decode through D3D11VA (see DecodePath); QSV remains their encoder.
+        paths = Paths(decode="d3d11va" if backend == "qsv" else backend, encode=backend) if backend \
+            else detect_paths()
+    backend = paths.decode
     root = Path(report.root)
     entries: list[PlanEntry] = []
     with Database() as db:
@@ -143,7 +156,7 @@ def plan(scan_id: str, file_ids: list[int] | None = None, backend: Backend | Non
             if f.status != "fixable" or (file_ids is not None and f.id not in file_ids):
                 continue
             try:
-                item = planner.build_item(f.media, f.issues, prof, backend, root)
+                item = planner.build_item(f.media, f.issues, prof, backend, root, paths)
             except planner.UnsupportedError as e:
                 entry_id = db.add_plan_item(plan_id, f.id, "unsupported", "", "", None)
                 entries.append(PlanEntry(id=entry_id, file_id=f.id, status="unsupported", item=None,
@@ -160,7 +173,7 @@ def plan(scan_id: str, file_ids: list[int] | None = None, backend: Backend | Non
             entry_id = db.add_plan_item(plan_id, f.id, status, item.plan_hash, item.output, item.model_dump())
             entries.append(PlanEntry(id=entry_id, file_id=f.id, status=status, item=item))
         db.audit(actor, "plan", scan_id, f"{len(entries)} items")
-    return PlanResult(plan_id=plan_id, scan_id=scan_id, backend=backend, items=entries,
+    return PlanResult(plan_id=plan_id, scan_id=scan_id, backend=backend, paths=paths, items=entries,
                       est_bytes=sum(e.item.est_bytes for e in entries if e.status == "pending" and e.item))
 
 

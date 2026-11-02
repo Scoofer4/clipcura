@@ -129,8 +129,9 @@ def _print_plan(result, show_commands: bool) -> None:
     if not result.items:
         console.print("[green]Nothing to fix.[/]")
         return
-    console.print(f"\n[bold]Plan {result.plan_id}[/] · backend {_BACKEND_LABEL[result.backend]} · "
-                  f"~{result.est_bytes / 2**30:.2f} GB to write")
+    p = result.paths
+    console.print(f"\n[bold]Plan {result.plan_id}[/] · decode {p.decode} · scale {p.scale} · tonemap {p.tonemap}"
+                  f" · ~{result.est_bytes / 2**30:.2f} GB to write")
     for e in result.items:
         if e.item is None:
             console.print(f"  [{_STATUS_STYLE[e.status]}]{e.status}[/] file #{e.file_id}: {escape(e.reason)}")
@@ -223,6 +224,16 @@ def _print_doctor(report: DoctorReport, saved: Path) -> None:
                 probes.add_row(_PROBE_KIND_LABEL[kind], p.name, result, f"{p.seconds:.2f} s")
         if f.probes:
             console.print(probes)
+        if f.benchmarks:
+            chosen = {"decode": report.paths.decode, "scale": report.paths.scale, "tonemap": report.paths.tonemap}
+            bench = Table(title="Measured speed (frames/s) and chosen path", title_justify="left")
+            for col in ("Step", "Candidates", "Chosen"):
+                bench.add_column(col)
+            for step, measured in (("decode", f.benchmarks.decode), ("scale", f.benchmarks.scale),
+                                   ("tonemap", f.benchmarks.tonemap)):
+                cells = "  ".join(f"{k} {v:g}" if v else f"{k} [red]failed[/]" for k, v in measured.items())
+                bench.add_row(step, cells, f"[bold cyan]{chosen[step]}[/]")
+            console.print(bench)
 
     for problem in report.problems:
         console.print(f"[bold orange1]![/] {problem}")

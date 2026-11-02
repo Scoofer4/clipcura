@@ -89,7 +89,7 @@ def test_hdr_detected_and_tone_mapped(trc):
     issue = detect("hdr", media(color_transfer=trc))
     step = rules.get_rule("hdr").fix(issue, PROFILE)
     assert "tonemap" in step.video_filters[0]
-    assert "libplacebo" in step.gpu_variant
+    assert "tonemap:libplacebo" in step.gpu_variant
 
 
 # --- hevc_10bit ---------------------------------------------------------------------------------------

@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from clipsana.core import backends, service
+from clipsana.core.models import Paths
 from tests.conftest import needs_ffmpeg
 
 pytestmark = needs_ffmpeg
@@ -65,6 +66,33 @@ def test_bt601_alone_does_not_trigger_conversion(raw_folder):
     assert scan.files[0].status == "ok"
     assert [i.rule_id for i in scan.files[0].issues] == ["color_space"]
     assert service.plan(scan.scan_id).items == []
+
+
+def _gpu_paths_working() -> bool:
+    info = backends.inspect_ffmpeg(run_probes=True)
+    return info.works("cuda") and info.works("libplacebo")
+
+
+@pytest.mark.parametrize(("scale", "tonemap"), [("scale_cuda", "zscale"), ("libplacebo", "libplacebo")])
+def test_gpu_filter_paths_produce_the_same_result(raw_folder, scale, tonemap):
+    if not _gpu_paths_working():
+        pytest.skip("needs CUDA and Vulkan/libplacebo")
+    for name, expected in (("big6k.mp4", (3840, 1920)), ("hlg.mp4", (320, 180))):
+        raw = raw_folder(name)
+        scan = service.scan(raw, profile="social-30")
+        paths = Paths(decode="cuda", encode="cuda", scale=scale, tonemap=tonemap)
+        results = service.apply(service.plan(scan.scan_id, paths=paths).plan_id)
+        assert [r.status for r in results] == ["done"], [r.error for r in results]
+        assert results[0].backend_used == "cuda"  # GPU path itself worked, no CPU fallback
+        v = video(ffprobe(Path(results[0].output)))
+        assert (v["width"], v["height"], v["color_transfer"]) == (*expected, "bt709")
+
+
+def test_output_of_untagged_source_carries_explicit_rec709_tags(raw_folder):
+    # Editors guess when tags are missing; every output must state Rec.709 explicitly.
+    _, out = fix_one(raw_folder, "a44k.mp4")
+    v = video(ffprobe(out))
+    assert (v.get("color_primaries"), v.get("color_transfer"), v.get("color_space")) == ("bt709", "bt709", "bt709")
 
 
 def test_hevc_10bit_becomes_editing_codec(raw_folder):

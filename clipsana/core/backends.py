@@ -15,7 +15,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from clipsana.core.models import Backend, FfmpegInfo, Probe
+from clipsana.core.models import Backend, Benchmarks, FfmpegInfo, Paths, Probe
 from clipsana.core.paths import vendored_ffmpeg_dir
 
 _EXE = ".exe" if sys.platform == "win32" else ""
@@ -25,7 +25,7 @@ PROBE_TIMEOUT_S = 30
 _SRC = ["-f", "lavfi", "-i", "testsrc2=size=256x144:rate=30", "-frames:v", "5"]
 _NULL = ["-f", "null", "-"]
 
-DEVICE_PROBES = ["cuda", "qsv", "vulkan"]
+DEVICE_PROBES = ["cuda", "qsv", "d3d11va", "vulkan"]
 ENCODER_PROBES: dict[str, list[str]] = {
     "libx264": ["-c:v", "libx264"],
     "h264_nvenc": ["-c:v", "h264_nvenc"],
@@ -43,6 +43,7 @@ FILTER_PROBES: dict[str, list[str]] = {
 DECODER_PROBES: dict[str, list[str]] = {
     "hevc10_cuda": ["-hwaccel", "cuda", "-hwaccel_output_format", "cuda"],
     "hevc10_qsv": ["-hwaccel", "qsv", "-hwaccel_output_format", "qsv"],
+    "hevc10_d3d11va": ["-hwaccel", "d3d11va"],
 }
 
 
@@ -103,6 +104,28 @@ def choose_backend(info: FfmpegInfo) -> Backend:
     return "cpu"
 
 
+def _fastest(measured: dict[str, float], default: str) -> str | None:
+    working = {k: v for k, v in measured.items() if v > 0}
+    if not working:
+        return None
+    return max(working, key=lambda k: (working[k], k == default))  # ties go to the simpler default
+
+
+def choose_paths(info: FfmpegInfo | None) -> Paths:
+    """Quality first, then measured speed on this machine (CLAUDE.md §4, issue #5)."""
+    if info is None:
+        return Paths()
+    encode = choose_backend(info)
+    b = info.benchmarks
+    unmeasured_decode = "cuda" if encode == "cuda" else "d3d11va" if info.works("d3d11va") else "cpu"
+    decode = (_fastest(b.decode, "cpu") if b else None) or unmeasured_decode
+    scale = (_fastest(b.scale, "cpu") if b else None) or "cpu"
+    # libplacebo tone-maps with BT.2390 and peak detection: better than zscale+hable, so it wins whenever it
+    # works, regardless of speed.
+    placebo_ok = b.tonemap.get("libplacebo", 0) > 0 if b and b.tonemap else info.works("libplacebo")
+    return Paths(decode=decode, encode=encode, scale=scale, tonemap="libplacebo" if placebo_ok else "zscale")
+
+
 def _run(cmd: list[str], timeout: float = PROBE_TIMEOUT_S) -> subprocess.CompletedProcess:
     # Always an argument list, never a shell string (CLAUDE.md §6).
     return subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
@@ -120,14 +143,84 @@ def _probe(ffmpeg: str, name: str, kind: str, args: list[str]) -> Probe:
                  detail="" if ok else detail[:300])
 
 
-def _make_hevc10_sample(ffmpeg: str, directory: Path) -> Path | None:
-    sample = directory / "hevc10.mp4"
-    p = _run([ffmpeg, "-hide_banner", "-nostdin", "-v", "error", *_SRC, "-c:v", "libx265",
+def _make_hevc10_sample(ffmpeg: str, directory: Path, size: str = "256x144", frames: int = 5) -> Path | None:
+    sample = directory / f"hevc10_{size}.mp4"
+    src = ["-f", "lavfi", "-i", f"testsrc2=size={size}:rate=30", "-frames:v", str(frames)]
+    p = _run([ffmpeg, "-hide_banner", "-nostdin", "-v", "error", *src, "-c:v", "libx265", "-preset", "ultrafast",
               "-pix_fmt", "yuv420p10le", "-x265-params", "log-level=error", "-y", str(sample)])
     return sample if p.returncode == 0 else None
 
 
-def inspect_ffmpeg(run_probes: bool = True) -> FfmpegInfo:
+def _bench_size() -> tuple[str, int]:
+    # Tests set CLIPSANA_BENCH_FAST to keep the suite quick; real measurements need camera-sized work.
+    return ("1280x720", 20) if os.environ.get("CLIPSANA_BENCH_FAST") else ("3840x2160", 60)
+
+
+def _make_camera_sample(ffmpeg: str, directory: Path) -> Path | None:
+    """HEVC at ~40 Mbit/s with film-grain-like noise: as hard to decode as phone footage. A clean synthetic
+    clip decodes so cheaply that CPU and GPU look equal although real footage differs 2.6x."""
+    size, frames = _bench_size()
+    sample = directory / "camera_sample.mp4"
+    p = _run([ffmpeg, "-hide_banner", "-nostdin", "-v", "error", "-f", "lavfi", "-i", f"testsrc2=s={size}:r=30",
+              "-frames:v", str(frames), "-vf", "noise=alls=12:allf=t", "-c:v", "libx265", "-preset", "ultrafast",
+              "-x265-params", "log-level=error:bitrate=40000", "-pix_fmt", "yuv420p", "-y", str(sample)],
+             timeout=300)
+    return sample if p.returncode == 0 else None
+
+
+def _measure_fps(ffmpeg: str, args: list[str], frames: int) -> float:
+    """Whole-job frames per second. A short warm-up run first absorbs one-time costs such as CUDA kernel JIT
+    compilation (seconds on a cold driver cache) that no real job pays again."""
+    cmd = [ffmpeg, "-hide_banner", "-nostdin", "-v", "error", *args]
+    try:
+        warm = _run([*cmd, "-frames:v", "5", *_NULL], timeout=120)
+        if warm.returncode != 0:
+            return 0.0
+        start = time.perf_counter()
+        p = _run([*cmd, *_NULL], timeout=300)
+    except subprocess.TimeoutExpired:
+        return 0.0
+    elapsed = time.perf_counter() - start
+    return round(frames / elapsed, 1) if p.returncode == 0 and elapsed > 0 else 0.0
+
+
+def run_benchmarks(info: FfmpegInfo, workdir: Path) -> Benchmarks:
+    """Measure whole jobs (decode -> filters -> DNxHR HQ encode), greedily: decoder first, then the scalers
+    with the winning decoder, because a GPU scaler only pays off when frames come from a GPU decoder."""
+    from clipsana.rules.hdr import LIBPLACEBO_TONEMAP, ZSCALE_TONEMAP
+
+    ffmpeg = info.ffmpeg
+    bench = Benchmarks()
+    size, frames = _bench_size()
+    w, h = (int(x) for x in size.split("x"))
+    encode = ["-vf", "{vf}fps=fps=30,format=yuv422p", "-c:v", "dnxhd", "-profile:v", "dnxhr_hq"]
+
+    def job(decode_args: list[str], vf: str = "") -> list[str]:
+        return [*decode_args, "-i", str(sample), *[a.format(vf=vf) for a in encode]]
+
+    sample = _make_camera_sample(ffmpeg, workdir)
+    if sample:
+        decoders = {"cpu": []} | {d: ["-hwaccel", d] for d in ("cuda", "d3d11va") if info.works(d)}
+        bench.decode = {k: _measure_fps(ffmpeg, job(a), frames) for k, a in decoders.items()}
+        best = _fastest(bench.decode, "cpu") or "cpu"
+        tw, th = w // 2, h // 2
+        scalers = {"cpu": f"scale={tw}:{th}:flags=lanczos,"}
+        if info.works("cuda") and "scale_cuda" in info.filters:
+            scalers["scale_cuda"] = (f"format=yuv420p,hwupload_cuda,scale_cuda={tw}:{th}:interp_algo=lanczos,"
+                                     "hwdownload,format=yuv420p,")
+        if info.works("libplacebo"):
+            scalers["libplacebo"] = f"libplacebo=w={tw}:h={th}:downscaler=lanczos:upscaler=lanczos,"
+        bench.scale = {k: _measure_fps(ffmpeg, job(decoders[best], vf), frames) for k, vf in scalers.items()}
+
+    # Tone-mapping is chosen by quality (libplacebo wins whenever it works); its speed is informational.
+    hlg = ["-f", "lavfi", "-i", f"testsrc2=s=1280x720:r=30:d={frames / 30}", "-vf",
+           "setparams=color_primaries=bt2020:color_trc=arib-std-b67:colorspace=bt2020nc,format=yuv420p10le,{tm}"]
+    tonemap = {"zscale": ZSCALE_TONEMAP} | ({"libplacebo": LIBPLACEBO_TONEMAP} if info.works("libplacebo") else {})
+    bench.tonemap = {k: _measure_fps(ffmpeg, [*hlg[:-1], hlg[-1].format(tm=tm)], frames) for k, tm in tonemap.items()}
+    return bench
+
+
+def inspect_ffmpeg(run_probes: bool = True, run_benchmarks_too: bool = False) -> FfmpegInfo:
     ffmpeg, ffprobe = find_ffmpeg()
     info = FfmpegInfo(
         ffmpeg=ffmpeg,
@@ -156,4 +249,7 @@ def inspect_ffmpeg(run_probes: bool = True) -> FfmpegInfo:
         # Probes are independent and mostly wait on drivers, so running a few at once keeps doctor snappy.
         with ThreadPoolExecutor(max_workers=4) as pool:
             info.probes = list(pool.map(lambda j: _probe(ffmpeg, *j), jobs))
+        # Benchmarks run one at a time: parallel runs would compete for the same GPU and skew the numbers.
+        if run_benchmarks_too:
+            info.benchmarks = run_benchmarks(info, Path(tmp))
     return info

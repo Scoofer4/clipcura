@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from clipsana.core import planner
-from clipsana.core.models import AudioStream, FixStep, Issue, MediaInfo, Profile, VideoStream
+from clipsana.core.models import AudioStream, FixStep, Issue, MediaInfo, Paths, Profile, VideoStream
 
 
 def profile(**over) -> Profile:
@@ -22,6 +22,9 @@ def media(path="D:/footage/raw/clip.mp4", audio=True, **video) -> MediaInfo:
 
 def issue(rule_id: str, **data) -> Issue:
     return Issue(rule_id, "warning", "msg", True, data)
+
+
+REC709 = "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709"
 
 
 def flag_value(args: list[str], flag: str) -> str:
@@ -42,7 +45,7 @@ def test_merge_filters_keeps_multi_filter_chains_intact():
 def test_steps_are_ordered_rotation_hdr_scale_fps():
     steps = [FixStep(40, ["fps=fps=30"]), FixStep(30, ["scale=1280:720"]), FixStep(20, ["tonemap=x"])]
     args = planner.build_args(media(), steps, profile(), "cpu", Path("out.mov"))
-    assert flag_value(args, "-vf") == "tonemap=x,scale=1280:720,fps=fps=30,format=yuv422p"
+    assert flag_value(args, "-vf") == f"tonemap=x,scale=1280:720,fps=fps=30,{REC709},format=yuv422p"
 
 
 def test_vfr_and_audio_rate_produce_one_command_with_merged_audio_and_single_cfr_flag():
@@ -59,6 +62,70 @@ def test_vfr_and_audio_rate_produce_one_command_with_merged_audio_and_single_cfr
     assert args[-1] == "out.mov"
 
 
+def _scale_step(src_pix="yuv420p"):
+    from clipsana import rules
+    from clipsana.rules.resolution import RULE
+    m = media(width=3840, height=2160, pix_fmt=src_pix)
+    p = profile(max_long_side=1920)
+    return m, p, RULE.fix(RULE.detect(m, p), p), rules
+
+
+_CUDA = "hwupload_cuda,scale_cuda=1920:1080:interp_algo=lanczos,hwdownload"
+
+
+@pytest.mark.parametrize(("pix", "chain"), [
+    # Explicit format before upload: GPU-decoded frames arrive as nv12, and hwdownload must match exactly.
+    ("yuv420p", f"format=yuv420p,{_CUDA},format=yuv420p"),
+    ("yuv420p10le", f"format=p010le,{_CUDA},format=p010le"),
+])
+def test_scale_cuda_variant_keeps_bit_depth(pix, chain):
+    m, p, step, _ = _scale_step(pix)
+    paths = Paths(decode="cuda", encode="cuda", scale="scale_cuda")
+    args = planner.build_args(m, [step], p, "cuda", Path("o.mov"), paths=paths)
+    assert flag_value(args, "-vf") == f"{chain},{REC709},format=yuv422p"
+
+
+def test_scale_cuda_is_not_used_for_422_sources():
+    # Uploading 4:2:2 would mean subsampling chroma first: a quality loss the rule forbids.
+    m, p, step, _ = _scale_step("yuv422p")
+    args = planner.build_args(m, [step], p, "cuda", Path("o.mov"), paths=Paths(decode="cuda", encode="cuda",
+                                                                              scale="scale_cuda"))
+    assert flag_value(args, "-vf").startswith("scale=1920:1080:flags=lanczos")
+
+
+def test_libplacebo_scale_variant():
+    m, p, step, _ = _scale_step()
+    args = planner.build_args(m, [step], p, "cpu", Path("o.mov"), paths=Paths(decode="cpu", encode="cpu",
+                                                                             scale="libplacebo"))
+    assert flag_value(args, "-vf").startswith("libplacebo=w=1920:h=1080:downscaler=lanczos")
+
+
+def test_hdr_uses_libplacebo_tonemapping_and_keeps_cpu_scaling_after_it():
+    from clipsana.rules.hdr import RULE as HDR
+    m, p, scale_step, _ = _scale_step("yuv420p10le")
+    m.video.color_transfer = "arib-std-b67"
+    hdr_step = HDR.fix(HDR.detect(m, p), p)
+    paths = Paths(decode="cuda", encode="cuda", scale="scale_cuda", tonemap="libplacebo")
+    vf = flag_value(planner.build_args(m, [hdr_step, scale_step], p, "cuda", Path("o.mov"), paths=paths), "-vf")
+    assert vf.startswith("libplacebo=colorspace=bt709")
+    assert "scale_cuda" not in vf  # pixel format after tone-mapping is not a plain 4:2:0 upload
+    assert "scale=1920:1080:flags=lanczos" in vf
+
+
+def test_fallback_args_never_contain_gpu_filters():
+    m, p, _, _ = _scale_step()
+    paths = Paths(decode="cuda", encode="cuda", scale="scale_cuda", tonemap="libplacebo")
+    item = planner.build_item(m, [Issue("resolution", "warning", "m", True, step_data(m, p))], p, "cuda",
+                              Path("D:/footage/raw"), paths=paths)
+    assert "scale_cuda" in " ".join(item.args)
+    assert "scale_cuda" not in " ".join(item.fallback_args) and "-hwaccel" not in item.fallback_args
+
+
+def step_data(m, p):
+    from clipsana.rules.resolution import RULE
+    return RULE.detect(m, p).data
+
+
 def test_gpu_backend_decodes_on_gpu_and_fallback_is_cpu_only():
     item = planner.build_item(media(), [issue("audio_rate", sample_rate=44100)], profile(), "cuda",
                               Path("D:/footage/raw"))
@@ -66,10 +133,17 @@ def test_gpu_backend_decodes_on_gpu_and_fallback_is_cpu_only():
     assert "-hwaccel" not in item.fallback_args
 
 
+@pytest.mark.parametrize(("decode", "hwaccel"), [("cuda", ["-hwaccel", "cuda"]), ("d3d11va", ["-hwaccel", "d3d11va"]),
+                                                ("cpu", [])])
+def test_decode_path_sets_hwaccel_that_downloads_frames(decode, hwaccel):
+    args = planner.build_args(media(), [], profile(), decode, Path("o.mov"))
+    assert args[:args.index("-i")] == hwaccel
+
+
 @pytest.mark.parametrize(("backend", "encoder"), [("cuda", "h264_nvenc"), ("qsv", "h264_qsv"), ("cpu", "libx264")])
 def test_auto_h264_picks_encoder_for_backend(backend, encoder):
     p = profile(output={"codec": "auto_h264", "container": "mp4"})
-    args = planner.build_args(media(), [], p, backend, Path("o.mp4"))
+    args = planner.build_args(media(), [], p, "cpu", Path("o.mp4"), paths=Paths(encode=backend))
     assert flag_value(args, "-c:v") == encoder
     assert "+faststart" in args
 
@@ -77,6 +151,8 @@ def test_auto_h264_picks_encoder_for_backend(backend, encoder):
 def test_gpu_encoder_in_profile_falls_back_to_cpu_equivalent():
     p = profile(output={"codec": "hevc_nvenc", "container": "mp4"})
     assert flag_value(planner.build_args(media(), [], p, "cpu", Path("o.mp4")), "-c:v") == "libx265"
+    gpu = planner.build_args(media(), [], p, "cpu", Path("o.mp4"), paths=Paths(encode="cuda"))
+    assert flag_value(gpu, "-c:v") == "hevc_nvenc"
 
 
 def test_silent_track_is_mapped_from_generated_input():

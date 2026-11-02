@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 
 from clipsana import rules
-from clipsana.core.models import Backend, FixStep, Issue, MediaInfo, PlanItem, Profile
+from clipsana.core.models import Backend, DecodePath, FixStep, Issue, MediaInfo, Paths, PlanItem, Profile
 
 
 class PlanError(ValueError):
@@ -51,9 +51,13 @@ _CPU_EQUIVALENT = {"h264_nvenc": "libx264", "h264_qsv": "libx264", "hevc_nvenc":
 # Rough output bits per pixel, only for the free-space check and the size estimate shown before a run.
 _BITS_PER_PIXEL = {"dnxhr_hq": 2.33, "dnxhr_hqx": 3.5, "prores_422": 2.4, "libx264": 0.12, "libx265": 0.08,
                    "h264_nvenc": 0.12, "hevc_nvenc": 0.08, "h264_qsv": 0.12, "hevc_qsv": 0.08}
-_HWACCEL = {"cuda": ["-hwaccel", "cuda"], "qsv": ["-hwaccel", "qsv"], "cpu": []}
+_HWACCEL = {"cuda": ["-hwaccel", "cuda"], "d3d11va": ["-hwaccel", "d3d11va"], "cpu": []}
 _CONTAINER = {"mov": ["-f", "mov"], "mp4": ["-f", "mp4", "-movflags", "+faststart"], "mkv": ["-f", "matroska"]}
 _REC709 = ["-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709", "-color_range", "tv"]
+# Encoder options alone are not enough: ffmpeg 8 writes primaries/transfer from the frames, which stay
+# "unknown" for untagged sources. By this point every frame is Rec.709 (HDR tone-mapped, other colour spaces
+# converted by the color_space rule, untagged treated as Rec.709), so labelling the frames is truthful.
+_REC709_FRAMES = "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709"
 
 
 def resolve_codec(codec: str, backend: Backend) -> str:
@@ -103,9 +107,28 @@ def _dedupe_pairs(args: list[str]) -> list[str]:
     return out
 
 
-def build_args(media: MediaInfo, steps: list[FixStep], profile: Profile, backend: Backend, output: Path) -> list[str]:
+def _video_filters(steps: list[FixStep], paths: Paths | None) -> list[str]:
+    """Each step's CPU filters, or its GPU variant when the chosen paths say so."""
+    selected = {f"scale:{paths.scale}", f"tonemap:{paths.tonemap}"} if paths else set()
+    # scale_cuda uploads plain 4:2:0 frames; after tone-mapping or colour conversion that is no longer given.
+    reformatted = any(s.order < 30 and s.video_filters for s in steps)
+    filters: list[str] = []
+    for s in steps:
+        chosen = s.video_filters
+        for key, variant in (s.gpu_variant or {}).items():
+            if key in selected and not (key == "scale:scale_cuda" and reformatted):
+                chosen = variant
+                break
+        filters += chosen
+    return filters
+
+
+def build_args(media: MediaInfo, steps: list[FixStep], profile: Profile, backend: DecodePath, output: Path,
+               paths: Paths | None = None) -> list[str]:
+    """ffmpeg arguments for one file. `backend` is the decode path; `paths` (if given) picks GPU filter
+    variants and the backend for auto_* encoders. Without `paths` everything but decoding runs on the CPU."""
     steps = sorted(steps, key=lambda s: s.order)
-    codec = resolve_codec(profile.output.codec, backend)
+    codec = resolve_codec(profile.output.codec, paths.encode if paths else "cpu")
     video_args, pix_fmt, intra = _ENCODERS[codec]
     fps = str(round(profile.fps))
 
@@ -119,7 +142,7 @@ def build_args(media: MediaInfo, steps: list[FixStep], profile: Profile, backend
     elif extra:
         args += ["-map", "1:a:0", "-shortest"]
 
-    vf = merge_filters([f for s in steps for f in s.video_filters]) + [f"format={pix_fmt}"]
+    vf = merge_filters(_video_filters(steps, paths)) + [_REC709_FRAMES, f"format={pix_fmt}"]
     args += ["-vf", ",".join(vf)]
     af = merge_filters([f for s in steps for f in s.audio_filters])
     if af:
@@ -170,8 +193,8 @@ def _estimate_bytes(media: MediaInfo, vf: list[str], codec: str, profile: Profil
     return int(video + audio)
 
 
-def build_item(media: MediaInfo, issues: list[Issue], profile: Profile, backend: Backend,
-               scan_root: Path) -> PlanItem | None:
+def build_item(media: MediaInfo, issues: list[Issue], profile: Profile, backend: DecodePath,
+               scan_root: Path, paths: Paths | None = None) -> PlanItem | None:
     fixable = [i for i in issues if i.auto_fixable]
     if not any(rules.is_standalone(i.rule_id) for i in fixable):
         return None
@@ -184,12 +207,14 @@ def build_item(media: MediaInfo, issues: list[Issue], profile: Profile, backend:
         if w < mw or h < mh:
             raise UnsupportedError(rules.localize(_TOO_SMALL, w=w, h=h, codec="DNxHR", mw=mw, mh=mh))
     out = output_path(Path(media.path), scan_root, profile)
-    args = build_args(media, steps, profile, backend, out)
-    fallback = build_args(media, steps, profile, "cpu", out) if backend != "cpu" else args
+    args = build_args(media, steps, profile, backend, out, paths)
+    # The fallback is the plain CPU recipe: no GPU decode, no GPU filters, no GPU encoder.
+    fallback = build_args(media, steps, profile, "cpu", out)
     recipe = json.dumps({"args": fallback, "size": media.size, "mtime": media.mtime}, sort_keys=True)
     return PlanItem(
         source=media.path, output=str(out), args=args, fallback_args=fallback, backend=backend,
         rule_ids=sorted({i.rule_id for i in fixable}),
         plan_hash=hashlib.sha256(recipe.encode()).hexdigest()[:16],
-        est_bytes=_estimate_bytes(media, vf, resolve_codec(profile.output.codec, backend), profile),
+        est_bytes=_estimate_bytes(media, vf, resolve_codec(profile.output.codec, paths.encode if paths else "cpu"),
+                                  profile),
         duration=media.duration)

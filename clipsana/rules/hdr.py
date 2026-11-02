@@ -30,7 +30,8 @@ class HdrRule:
                      {"color_transfer": v.color_transfer, "color_primaries": v.color_primaries})
 
     def fix(self, issue: Issue, profile: Profile) -> FixStep:
-        return FixStep(order=20, video_filters=[ZSCALE_TONEMAP], gpu_variant={"libplacebo": [LIBPLACEBO_TONEMAP]})
+        return FixStep(order=20, video_filters=[ZSCALE_TONEMAP],
+                       gpu_variant={"tonemap:libplacebo": [LIBPLACEBO_TONEMAP]})
 
 
 RULE = HdrRule()

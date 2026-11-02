@@ -19,7 +19,7 @@ def run_doctor(disk_paths: list[Path] | None = None, run_probes: bool = True) ->
     problems: list[str] = []
     ffmpeg = None
     try:
-        ffmpeg = backends.inspect_ffmpeg(run_probes=run_probes)
+        ffmpeg = backends.inspect_ffmpeg(run_probes=run_probes, run_benchmarks_too=run_probes)
     except FileNotFoundError as e:
         problems.append(str(e))
 
@@ -35,10 +35,21 @@ def run_doctor(disk_paths: list[Path] | None = None, run_probes: bool = True) ->
         created_at=datetime.now(UTC).isoformat(timespec="seconds"),
         clipsana_version=__version__,
         backend=backends.choose_backend(ffmpeg) if ffmpeg and run_probes else "cpu",
+        paths=backends.choose_paths(ffmpeg if run_probes else None),
         system=system,
         ffmpeg=ffmpeg,
         problems=problems,
     )
+
+
+def load_report() -> DoctorReport | None:
+    path = app_data_dir() / REPORT_NAME
+    if not path.is_file():
+        return None
+    try:
+        return DoctorReport.model_validate_json(path.read_text(encoding="utf-8"))
+    except ValueError:  # written by an older version: measure again rather than trust partial data
+        return None
 
 
 def save_report(report: DoctorReport) -> Path:

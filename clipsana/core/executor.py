@@ -13,7 +13,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 from clipsana.core.backends import find_ffmpeg
-from clipsana.core.models import Backend, PlanItem
+from clipsana.core.models import DecodePath, PlanItem
 
 SPACE_MARGIN = 1.1  # size estimates are rough; keep headroom so a disk never fills up mid-encode
 
@@ -32,7 +32,7 @@ class JobResult(BaseModel):
     status: Literal["done", "failed", "cancelled"]
     source: str
     output: str
-    backend_used: Backend
+    backend_used: DecodePath  # "cpu" also when a GPU recipe failed and the CPU fallback produced the file
     error: str = ""
     seconds: float = 0.0
 
@@ -103,7 +103,7 @@ def run_item(item: PlanItem, on_progress: Callable[[Progress], None] | None = No
     started = time.perf_counter()
     out = Path(item.output)
 
-    def result(status, backend: Backend, error: str = "") -> JobResult:
+    def result(status, backend: DecodePath, error: str = "") -> JobResult:
         return JobResult(status=status, source=item.source, output=item.output, backend_used=backend,
                          error=error, seconds=round(time.perf_counter() - started, 2))
 
@@ -113,8 +113,8 @@ def run_item(item: PlanItem, on_progress: Callable[[Progress], None] | None = No
 
     out.parent.mkdir(parents=True, exist_ok=True)
     partial = _partial_path(out)
-    attempts: list[tuple[Backend, list[str]]] = [(item.backend, item.args)]
-    if item.backend != "cpu" and item.fallback_args != item.args:
+    attempts: list[tuple[DecodePath, list[str]]] = [(item.backend, item.args)]
+    if item.fallback_args != item.args:  # any GPU decode, filter or encoder in the recipe
         attempts.append(("cpu", item.fallback_args))
 
     error = ""

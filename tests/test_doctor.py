@@ -31,6 +31,7 @@ def _ffmpeg_available() -> bool:
 @pytest.mark.skipif(not _ffmpeg_available(), reason="ffmpeg not installed (run tools/fetch_ffmpeg.py)")
 def test_doctor_json_reports_capabilities_and_saves_report(tmp_path, monkeypatch):
     monkeypatch.setenv("CLIPSANA_HOME", str(tmp_path))
+    monkeypatch.setenv("CLIPSANA_BENCH_FAST", "1")
     result = CliRunner().invoke(app, ["doctor", "--json"])
     assert result.exit_code == 0, result.output
     report = json.loads(result.output)
@@ -39,3 +40,7 @@ def test_doctor_json_reports_capabilities_and_saves_report(tmp_path, monkeypatch
     # CPU encoding must always work: the app has to be fully usable without a GPU.
     assert any(p["name"] == "libx264" and p["ok"] for p in report["ffmpeg"]["probes"])
     assert json.loads(Path(tmp_path / "doctor.json").read_text(encoding="utf-8"))["backend"] == report["backend"]
+    # Measurements for issue #5: the CPU paths always work, so they always have a speed.
+    bench = report["ffmpeg"]["benchmarks"]
+    assert bench["decode"]["cpu"] > 0 and bench["scale"]["cpu"] > 0 and bench["tonemap"]["zscale"] > 0
+    assert report["paths"]["scale"] in {"cpu", "scale_cuda", "libplacebo"}

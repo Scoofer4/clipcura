@@ -69,7 +69,7 @@ Realizace a první provoz jsou na Romanově notebooku (HW ověřit). **První kr
 - `ffmpeg -hwaccels`, dostupné enkodéry (`h264_nvenc`, `hevc_nvenc`, `h264_qsv`, `hevc_qsv`) a filtry (`libplacebo`, `zscale`, `scale_qsv`),
 - volné místo, RAM, CPU.
 
-Backendy akcelerace v pořadí: **CUDA/NVENC → Intel QSV → CPU**. Aplikace musí plně fungovat i na CPU. Výběr backendu ukazuje GUI.
+Backendy akcelerace v pořadí: **CUDA/NVENC → Intel QSV → CPU**. Aplikace musí plně fungovat i na CPU. Výběr backendu ukazuje GUI. Pořadí platí jen bez měření. `clipsana doctor` měří celé úlohy (dekódování → filtry → kódování) a podle kap. 4 vybere nejrychlejší cestu. Měření jednotlivých kroků izolovaně vedlo ke špatné volbě (CPU místo 2,6× rychlejší CUDA). Intel GPU dekóduje přes D3D11VA, QSV slouží ke kódování.
 
 ## 6. Pravidla (pluginy)
 
