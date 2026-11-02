@@ -151,7 +151,6 @@
     "approvalHint": "Doporučeno. Asistenti mohou dál kontrolovat a připravovat plány.",
     "gpuJobs": "Současných úloh na GPU",
     "cpuJobs": "Současných úloh na CPU",
-    "restartHint": "Změna souběžnosti se projeví po restartu Clipsany.",
     "appearance": "Vzhled",
     "profiles": "Profily",
     "profilesIntro": "Cíle převodu. Profily jsou soubory YAML; editor přijde později.",

@@ -93,7 +93,6 @@ export function SettingsScreen() {
               <Stepper label={t("settings.cpuJobs")} value={cfg.concurrency.cpu}
                        onChange={(v) => save({ concurrency: { ...cfg.concurrency, cpu: v } })} />
             </div>
-            <p className="text-xs text-faint">{t("settings.restartHint")}</p>
           </div>
         )}
       </Section>

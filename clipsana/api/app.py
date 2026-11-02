@@ -228,6 +228,7 @@ def create_app() -> FastAPI:
             cfg_now.approval_mode = req.approval_mode
         if req.concurrency is not None:
             cfg_now.concurrency = req.concurrency
+            worker.resize(req.concurrency.gpu, req.concurrency.cpu)
         config.save_config(cfg_now)
         return cfg_now.model_dump(exclude={"token"})
 

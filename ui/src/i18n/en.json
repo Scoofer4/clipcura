@@ -146,7 +146,6 @@
     "approvalHint": "Recommended. Assistants can still scan and prepare plans.",
     "gpuJobs": "Jobs at once on the GPU",
     "cpuJobs": "Jobs at once on the CPU",
-    "restartHint": "Changes to concurrency apply after restarting Clipsana.",
     "appearance": "Appearance",
     "profiles": "Profiles",
     "profilesIntro": "Targets for conversion. Profiles live as YAML files; an editor arrives later.",
