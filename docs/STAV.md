@@ -25,6 +25,10 @@ Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
   rozlišuje na dlouhý tvar (runner má 8.3 `RUNNER~1`).
 
 - #8: změna souběžnosti v Nastavení se projeví hned, bez restartu (worker mění počet slotů za běhu).
+- #7: editor profilů v Nastavení (upravit, duplikovat, obnovit nebo smazat). Úprava vestavěného profilu
+  vytvoří uživatelskou kopii v app data; vestavěný soubor zůstane nedotčen. Validace navíc proti schématu:
+  kodek, kontejner (střihový kodek jen MOV/MKV), výstupní složka (absolutní jen uvnitř povolených), žádný
+  výstup vedle originálu bez přípony, známá pravidla. Profily mění jen člověk.
 - Měření pro akceptaci „s GPU je HEVC 10-bit měřitelně rychlejší“ je v `docs/benchmarks.md`
   (nástroj `tools/benchmark_hevc10.py`). Klip 4K HLG HEVC 10-bit, 10 s, na notebooku i7-9750H +
   GTX 1650 Max-Q: `social-30` CPU 17,5 s, GPU 9,6 s (1,82×); `ipad-light` CPU 20,6 s, GPU 10,7 s (1,93×).
@@ -33,7 +37,7 @@ Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 
 ### Ověřeno
 
-- pytest 179 prošlo / 1 přeskočen (skutečné vzorky), ruff OK, tsc OK, Playwright 9/9 lokálně i v režimu CI,
+- pytest 191 prošlo / 1 přeskočen (skutečné vzorky), ruff OK, tsc OK, Playwright 10/10 lokálně i v režimu CI,
   CI na GitHubu: success (13b2771).
 
 ### Otevřené (issues)
@@ -43,7 +47,7 @@ Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 - #14 GPU enkodéry H.264: shoda kvality s libx264 není ověřená (NVENC píše profil Main).
 - #15 pravidlo `loudness` (akceptace „nové pravidlo jedním souborem“): potřebuje cílovou hlasitost
   a rozhodnutí, zda jen hlásit, nebo i opravovat.
-- #7 editor profilů, #9 okno aplikace + tray + notifikace (M5), #1 #2 technický dluh.
+- #9 okno aplikace + tray + notifikace (M5), #1 #2 technický dluh.
 
 ## 2.–3. 11. 2026 – M3b (obrazovky 1–6) – hotovo
 

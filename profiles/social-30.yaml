@@ -1,6 +1,6 @@
-# Výchozí profil pro sociální sítě
+# Default profile for social media
 name: social-30
-label: "Sociální sítě · 30 fps"
+label: "Social media · 30 fps"
 fps: 30
 max_long_side: 3840
 audio_rate: 48000

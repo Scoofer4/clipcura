@@ -1,1 +1,1 @@
-"""Jádro: probe, plánování oprav, fronta úloh, worker, SQLite (M1)."""
+"""Core: probe, fix planning, job queue, worker, SQLite."""

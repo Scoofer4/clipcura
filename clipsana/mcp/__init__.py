@@ -1,1 +1,1 @@
-"""MCP server (stdio) – AI ovládá stejné akce jako GUI (M4)."""
+"""MCP server (stdio): AI assistants get the same actions as the GUI."""

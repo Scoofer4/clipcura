@@ -1,4 +1,4 @@
-"""Základní test, že balíček jde naimportovat (CI kontrola kostry)."""
+"""The package imports (basic CI check)."""
 import clipsana
 
 
