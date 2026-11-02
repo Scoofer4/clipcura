@@ -53,6 +53,15 @@ class Database:
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA foreign_keys=ON")
         self.conn.executescript(SCHEMA)
+        self._migrate()
+
+    def _migrate(self) -> None:
+        # Additive migrations for databases created by earlier versions (CREATE TABLE IF NOT EXISTS keeps
+        # existing tables as they are).
+        plan_cols = {r["name"] for r in self.conn.execute("PRAGMA table_info(plans)")}
+        if "paths" not in plan_cols:
+            with self.conn:
+                self.conn.execute("ALTER TABLE plans ADD COLUMN paths TEXT")
 
     def close(self) -> None:
         self.conn.close()
@@ -90,11 +99,26 @@ class Database:
     def get_files(self, scan_id: str) -> list[sqlite3.Row]:
         return self.conn.execute("SELECT * FROM files WHERE scan_id=? ORDER BY id", (scan_id,)).fetchall()
 
-    def create_plan(self, scan_id: str, backend: str, actor: str) -> str:
+    def create_plan(self, scan_id: str, backend: str, actor: str, paths: dict | None = None) -> str:
         plan_id = new_id()
-        self._write("INSERT INTO plans (id, scan_id, backend, actor, created_at) VALUES (?,?,?,?,?)",
-                    (plan_id, scan_id, backend, actor, now()))
+        self._write("INSERT INTO plans (id, scan_id, backend, actor, created_at, paths) VALUES (?,?,?,?,?,?)",
+                    (plan_id, scan_id, backend, actor, now(), json.dumps(paths or {})))
         return plan_id
+
+    def recent_scans(self, limit: int) -> list[sqlite3.Row]:
+        return self.conn.execute("SELECT * FROM scans ORDER BY created_at DESC, rowid DESC LIMIT ?",
+                                 (limit,)).fetchall()
+
+    def get_file(self, file_id: int) -> sqlite3.Row | None:
+        return self.conn.execute("SELECT * FROM files WHERE id=?", (file_id,)).fetchone()
+
+    def audit_log(self, limit: int) -> list[sqlite3.Row]:
+        return self.conn.execute("SELECT * FROM audit ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
+
+    def recent_jobs(self, limit: int) -> list[sqlite3.Row]:
+        return self.conn.execute(
+            "SELECT jobs.*, plan_items.item AS item FROM jobs JOIN plan_items ON plan_items.id = jobs.plan_item_id "
+            "ORDER BY jobs.created_at DESC, jobs.rowid DESC LIMIT ?", (limit,)).fetchall()
 
     def add_plan_item(self, plan_id: str, file_id: int, status: str, plan_hash: str, output: str,
                       item: dict | None) -> int:

@@ -2,6 +2,18 @@
 
 Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 
+## 2.–3. 11. 2026 – M3b (obrazovky 1–6) – rozpracováno, vlastník dovolil pokračovat bez čekání
+
+Plán:
+1. API: servírování UI (SPA) ze stejného originu, historie skenů, audit (časová osa AI), nastavení
+   (povolené složky, schvalování, souběžnost; mění je jen člověk), náhledy snímků před a po, seznam úloh.
+2. UI: klient API (token se předá ve fragmentu URL, ne v query, takže se neloguje), živé události
+   přes WebSocket, rozvržení aplikace s navigací a paletou příkazů Ctrl+K.
+3. Obrazovky: Start (složka, nedávné složky, profil, HUD), Výsledek kontroly, Detail souboru (boční
+   panel: hodnoty, proč to vadí, náhled před/po s posuvníkem, příkaz ffmpeg), Úlohy, Aktivita AI
+   a schvalování, Nastavení.
+4. Testy: API (pytest), end-to-end přes skutečný server v Edge (Playwright), CI pro UI.
+
 ## 2. 11. 2026 – M3a (design system + /_kitchen-sink) – schváleno vlastníkem
 
 Rozhodnutí: vizuální styl schválen, výchozí akcent **Brand** (Aurora zůstává jako volba), logo **Monogram**.

@@ -155,7 +155,7 @@ def plan(scan_id: str, file_ids: list[int] | None = None, backend: Backend | Non
     root = Path(report.root)
     entries: list[PlanEntry] = []
     with Database() as db:
-        plan_id = db.create_plan(scan_id, backend, actor)
+        plan_id = db.create_plan(scan_id, backend, actor, paths.model_dump())
         for f in report.files:
             if f.status != "fixable" or (file_ids is not None and f.id not in file_ids):
                 continue
@@ -265,10 +265,72 @@ def enqueue(plan_id: str, worker: Worker, actor: str = "human", force: bool = Fa
     approval mode is on (default), so an AI can prepare work but never start it on its own."""
     awaiting = approval_mode and actor != "human"
     created = _create_jobs(plan_id, actor, force, awaiting)
+    # Snapshot before handing jobs to the worker: a fast worker may already have started one, and the answer
+    # to "queue this" must describe the state at queueing time, not a race with the worker thread.
+    snapshot = status([job_id for job_id, _ in created])
     if not awaiting:
         for job_id, item in created:
             worker.submit(job_id, _slot(item))
-    return status([job_id for job_id, _ in created])
+    return snapshot
+
+
+def get_plan(plan_id: str) -> PlanResult:
+    with Database() as db:
+        row = db.get_plan(plan_id)
+        if row is None:
+            raise KeyError(f"Unknown plan {plan_id}")
+        entries = []
+        for r in db.get_plan_items(plan_id):
+            item = None if r["item"] == "null" else PlanItem.model_validate_json(r["item"])
+            entries.append(PlanEntry(id=r["id"], file_id=r["file_id"], status=r["status"], item=item))
+    paths = Paths.model_validate(json.loads(row["paths"] or "{}"))
+    return PlanResult(plan_id=plan_id, scan_id=row["scan_id"], backend=row["backend"], paths=paths, items=entries,
+                      est_bytes=sum(e.item.est_bytes for e in entries if e.status == "pending" and e.item))
+
+
+def recent_scans(limit: int = 10) -> list[dict]:
+    """Latest scans for the start screen's "recent folders" (newest first)."""
+    with Database() as db:
+        return [{"scan_id": r["id"], "root": r["root"], "profile": r["profile"], "created_at": r["created_at"],
+                 "actor": r["actor"], "summary": json.loads(r["summary"] or "{}")} for r in db.recent_scans(limit)]
+
+
+def audit_log(limit: int = 100) -> list[dict]:
+    with Database() as db:
+        return [dict(r) for r in db.audit_log(limit)]
+
+
+def recent_jobs(limit: int = 50) -> list[dict]:
+    with Database() as db:
+        rows = db.recent_jobs(limit)
+    jobs = []
+    for r in rows:
+        job = {k: r[k] for k in r.keys() if k != "item"}  # noqa: SIM118 - sqlite3.Row has no dict iteration
+        item = json.loads(r["item"]) if r["item"] and r["item"] != "null" else {}
+        job |= {"source": item.get("source", ""), "duration": item.get("duration", 0),
+                "rule_ids": item.get("rule_ids", [])}
+        jobs.append(job)
+    return jobs
+
+
+def file_source(file_id: int) -> Path:
+    with Database() as db:
+        row = db.get_file(file_id)
+    if row is None:
+        raise KeyError(f"Unknown file {file_id}")
+    return Path(row["path"])
+
+
+def plan_item_preview_source(plan_item_id: int) -> tuple[Path, str]:
+    """Source path and the filter chain the plan will apply, for the "after" preview."""
+    from clipsana.core.previews import filters_from_args
+    with Database() as db:
+        row = db.get_plan_item(plan_item_id)
+    if row is None or row["item"] == "null":
+        raise KeyError(f"Unknown plan item {plan_item_id}")
+    item = PlanItem.model_validate_json(row["item"])
+    # The CPU recipe: previews must not compete with a running job for the GPU.
+    return Path(item.source), filters_from_args(item.fallback_args)
 
 
 def plan_outputs(plan_id: str, force: bool = False) -> list[str]:
@@ -289,8 +351,9 @@ def approve(job_id: str, worker: Worker, actor: str = "human") -> dict:
         item = PlanItem.model_validate_json(db.get_plan_item(db.get_job(job_id)["plan_item_id"])["item"])
         _audit(db, actor, "approve", item.source, "queued")
         _job_event(db, job_id)
+    snapshot = status([job_id])[0]  # same reasoning as enqueue(): report the state we created
     worker.submit(job_id, _slot(item))
-    return status([job_id])[0]
+    return snapshot
 
 
 def reject(job_id: str, actor: str = "human") -> dict:

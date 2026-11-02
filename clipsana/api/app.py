@@ -7,8 +7,10 @@ No `from __future__ import annotations` here: FastAPI must evaluate the route si
 time to resolve dependencies that are local to create_app().
 """
 import asyncio
+import os
 import secrets
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Annotated, Literal
 
 from fastapi import (
@@ -21,12 +23,14 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
 )
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from pydantic import BaseModel
 
 from clipsana import __version__, rules
-from clipsana.core import config, events, profiles, security, service
+from clipsana.core import config, events, previews, profiles, security, service
+from clipsana.core.config import Concurrency
 from clipsana.core.models import Paths
+from clipsana.core.paths import REPO_ROOT
 from clipsana.core.worker import Worker
 
 Actor = Literal["human", "ai", "n8n"]
@@ -38,6 +42,15 @@ class ScanRequest(BaseModel):
     profile: str = "social-30"
     recursive: bool = False
     deep: bool | None = None
+
+
+class ConfigPatch(BaseModel):
+    approval_mode: bool | None = None
+    concurrency: Concurrency | None = None
+
+
+class RootRequest(BaseModel):
+    path: str
 
 
 class PlanRequest(BaseModel):
@@ -141,8 +154,76 @@ def create_app() -> FastAPI:
         return {"jobs": jobs}
 
     @api.get("/jobs")
-    def get_jobs(ids: str) -> list[dict]:
+    def get_jobs(ids: str | None = None, limit: int = 50) -> list[dict]:
+        if ids is None:
+            return service.recent_jobs(limit)
         return service.status([i for i in ids.split(",") if i])
+
+    @api.get("/scans")
+    def list_scans(limit: int = 10) -> list[dict]:
+        return service.recent_scans(limit)
+
+    @api.get("/plans/{plan_id}")
+    def get_plan(plan_id: str) -> dict:
+        try:
+            return service.get_plan(plan_id).model_dump()
+        except KeyError as e:
+            raise HTTPException(404, str(e)) from e
+
+    @api.get("/audit")
+    def audit(limit: int = 100) -> list[dict]:
+        return service.audit_log(limit)
+
+    def jpeg(source: Path, at: float, filters: str = "") -> Response:
+        allowed(str(source))  # re-checked on every request: removing a folder revokes its previews at once
+        try:
+            return Response(previews.frame_jpeg(source, at, filters), media_type="image/jpeg",
+                            headers={"Cache-Control": "private, max-age=3600"})
+        except (OSError, RuntimeError) as e:
+            raise HTTPException(422, f"Preview not available: {e}") from e
+
+    @api.get("/files/{file_id}/thumbnail")
+    def thumbnail(file_id: int, at: float = 1.0) -> Response:
+        try:
+            return jpeg(service.file_source(file_id), at)
+        except KeyError as e:
+            raise HTTPException(404, str(e)) from e
+
+    @api.get("/plan-items/{item_id}/preview")
+    def after_preview(item_id: int, at: float = 1.0) -> Response:
+        try:
+            source, filters = service.plan_item_preview_source(item_id)
+        except KeyError as e:
+            raise HTTPException(404, str(e)) from e
+        return jpeg(source, at, filters)
+
+    @api.get("/config")
+    def get_config() -> dict:
+        # The token is never sent back: clients already have it, and the page must not be able to leak it.
+        return config.load_config().model_dump(exclude={"token"})
+
+    @api.patch("/config")
+    def patch_config(req: ConfigPatch, who: Annotated[Actor, Depends(actor)]) -> dict:
+        human_only(who)
+        cfg_now = config.load_config()
+        if req.approval_mode is not None:
+            cfg_now.approval_mode = req.approval_mode
+        if req.concurrency is not None:
+            cfg_now.concurrency = req.concurrency
+        config.save_config(cfg_now)
+        return cfg_now.model_dump(exclude={"token"})
+
+    @api.post("/config/roots")
+    def add_root(req: RootRequest, who: Annotated[Actor, Depends(actor)]) -> dict:
+        human_only(who)  # an assistant widening its own sandbox would defeat the whitelist
+        if not Path(req.path).is_dir():
+            raise HTTPException(400, f"Not a folder: {req.path}")
+        return config.allow_root(req.path).model_dump(exclude={"token"})
+
+    @api.delete("/config/roots")
+    def remove_root(req: RootRequest, who: Annotated[Actor, Depends(actor)]) -> dict:
+        human_only(who)
+        return config.disallow_root(req.path).model_dump(exclude={"token"})
 
     @api.get("/jobs/{job_id}")
     def get_job(job_id: str) -> dict:
@@ -158,9 +239,9 @@ def create_app() -> FastAPI:
         return {"job_id": job_id, "cancel": "requested"}
 
     def human_only(who: Actor) -> None:
-        # Approval is the human checkpoint over AI actions; letting the requester approve would void it.
+        # Approvals and settings are the human checkpoint over AI actions; letting the requester decide voids it.
         if who != "human":
-            raise HTTPException(403, "Only a human can approve or reject jobs")
+            raise HTTPException(403, "Only a human can do this")
 
     @api.post("/jobs/{job_id}/approve")
     def approve_job(job_id: str, who: Annotated[Actor, Depends(actor)]) -> dict:
@@ -199,4 +280,42 @@ def create_app() -> FastAPI:
         finally:
             unsubscribe()
 
+    # ---- the GUI itself, served from this origin (registered last so /api routes always win) ----
+    @app.get("/{path:path}", include_in_schema=False)
+    def ui(path: str) -> Response:
+        if path == "api" or path.startswith("api/"):
+            raise HTTPException(404, "Not found")
+        root = ui_dir()
+        index = root / "index.html"
+        if not index.is_file():
+            return PlainTextResponse("The GUI is not built yet: run `npm run build` in ui/.", status_code=404)
+        target = (root / path).resolve()
+        # Only files inside the UI folder; anything else (including ../ tricks) gets the app shell.
+        if path and target.is_file() and target.is_relative_to(root.resolve()):
+            return FileResponse(target, headers=_static_headers(target))
+        return FileResponse(index, headers={**_CSP, "Cache-Control": "no-cache"})
+
     return app
+
+
+# Same-origin only: scripts, styles, fonts and API calls come from this server; WebSocket to loopback.
+_CSP = {
+    "Content-Security-Policy": (
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; "
+        "font-src 'self' data:; connect-src 'self' ws://127.0.0.1:* ws://localhost:*; frame-ancestors 'none'; "
+        "base-uri 'none'; form-action 'none'"),
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+}
+
+
+def _static_headers(target: Path) -> dict:
+    # Vite puts a content hash in asset names, so they can be cached for good.
+    immutable = target.parent.name == "assets"
+    return {"X-Content-Type-Options": "nosniff",
+            "Cache-Control": "public, max-age=31536000, immutable" if immutable else "no-cache"}
+
+
+def ui_dir() -> Path:
+    override = os.environ.get("CLIPSANA_UI_DIR")
+    return Path(override) if override else REPO_ROOT / "ui" / "dist"

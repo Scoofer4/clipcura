@@ -43,6 +43,14 @@ def load_config() -> Config:
     return cfg
 
 
+def disallow_root(folder: Path | str) -> Config:
+    cfg = load_config()
+    resolved = str(Path(folder).resolve())
+    cfg.allowed_roots = [r for r in cfg.allowed_roots if Path(r).resolve() != Path(resolved)]
+    save_config(cfg)
+    return cfg
+
+
 def allow_root(folder: Path | str) -> Config:
     cfg = load_config()
     resolved = str(Path(folder).resolve())
