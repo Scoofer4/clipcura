@@ -20,18 +20,24 @@ Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 
 ### Rozpracováno / čeká na vlastníka
 
-- M0 je commitnuté a pushnuté do `main` (se svolením vlastníka). Oprava CI (#3) je jeho součástí.
-- Rozhodnutí o `scale_cuda` (#4).
-- Úklid disku C: (pracovní data patří na D:), cílové adresáře potvrzuje vlastník.
+- M0 je v `main` (commit `960d2fe`, push se svolením vlastníka), CI zelené.
+- Rozhodnutí vlastníka 2. 11. 2026 (zapsáno v CLAUDE.md):
+  - referenční recept ze Shutter Encoderu nebude, aplikace má potřebné opravy zjistit sama (kap. 6);
+  - vždy se použije kvalitnější nebo rychlejší cesta, mezi stejně kvalitními ta nejrychlejší podle měření
+    na daném stroji, `scale_cuda` je povolený (kap. 4, issue #5).
+- Vzorky ve složce `data/` (git je ignoruje): klip z telefonu (HEVC 8-bit 4K, VFR 60→58,3, rotace −90°)
+  a dva záznamy obrazovky na výšku 1080×2340 se silným VFR (mezery mezi snímky až 0,9 s). Další vzorky dodá vlastník.
+- Disk C: uklizen, vývojové cache a spouštěče jsou na D:.
 
 ### Issues
 
 - #1 překlad komentářů v kostře do angličtiny (low)
 - #2 `init_repo.ps1` (low)
-- #3 CI selhává na ruffu (high, oprava v commitu M0)
-- #4 ffmpeg 8.1 místo 7.x a otázka `scale_cuda` (medium, rozhodnutí)
+- #3 CI selhává na ruffu – **uzavřeno** (opraveno v `960d2fe`, CI zelené)
+- #4 ffmpeg 8.1 a `scale_cuda` – **uzavřeno** rozhodnutím
+- #5 výběr nejrychlejší cesty stejné kvality podle měření (M1, medium)
 
 ### Další krok
 
-Ověřit zelené CI, pak plán M1 (jádro, pravidla, profily, SQLite, CLI scan/plan/apply).
-Pro M1 jsou potřeba podklady z kap. 15 zadání: nastavení Shutter Encoderu a vzorky videí.
+Plán M1 (jádro, pravidla, profily, SQLite, CLI scan/plan/apply, issue #5).
+Otevřená otázka do plánu M1: orientace na výšku (9:16) u záznamů obrazovky a telefonu vs. profil `social-30`.

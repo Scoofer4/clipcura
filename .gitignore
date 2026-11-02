@@ -15,6 +15,7 @@ ui/dist/
 
 # Externí binárky a data (velké nebo citlivé)
 vendor/
+data/
 tests/fixtures/real/*
 !tests/fixtures/real/.gitkeep
 tests/fixtures/generated/

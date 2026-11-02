@@ -58,7 +58,9 @@ High-tech vzhled (animace, sklo, glow, plynulé grafy) se ve webovém stacku dě
 | Testy | pytest, testovací klipy generované přes ffmpeg lavfi, Playwright pro UI smoke testy |
 | Balení | PyInstaller (onedir) + Inno Setup instalátor |
 
-Fonty (Inter, JetBrains Mono) přibalit lokálně, žádné CDN. ffmpeg se šíří jako samostatný program vedle aplikace (volání přes subprocess), takže licence Apache-2.0 naší aplikace je v pořádku. Šířit smí jen build **bez nonfree** částí: `scale_cuda` a libnpp v něm nejsou, škálování na GPU proto přes **libplacebo**. Instalátor musí obsahovat licenci ffmpeg (GPL) a odkaz na odpovídající zdrojový kód. Ověřit u konkrétního buildu před vydáním.
+Fonty (Inter, JetBrains Mono) přibalit lokálně, žádné CDN. ffmpeg se šíří jako samostatný program vedle aplikace (volání přes subprocess), takže licence Apache-2.0 naší aplikace je v pořádku. Šířit smí jen build **bez nonfree** částí: libnpp (`scale_npp`) v něm není. `scale_cuda` (přes `cuda-llvm`) v něm je a šířit ho smíme. Na GPU se proto škáluje přes **libplacebo** nebo **`scale_cuda`** podle pravidla níže. Instalátor musí obsahovat licenci ffmpeg (GPL) a odkaz na odpovídající zdrojový kód. Ověřit u konkrétního buildu před vydáním.
+
+**Volba cesty zpracování (rozhodnutí vlastníka 2. 11. 2026):** když existuje kvalitnější nebo rychlejší cesta, použije se. Kvalita výstupu nesmí klesnout. Mezi cestami se stejnou kvalitou vyhrává ta nejrychlejší **na daném stroji podle měření** (doctor/benchmark), ne podle předpokladu. Platí pro dekódování, škálování, HDR tone-mapping i kódování.
 
 ## 5. Cílový stroj: notebook – nejdřív ověřit
 
@@ -114,7 +116,7 @@ Planner spojí kroky jednoho souboru do **jediného** ffmpeg příkazu. ffmpeg s
 
 Prototyp `mm_video_prep.py` (otestovaný na VFR, 60 fps, HLG HEVC 10-bit, 44,1 kHz) je referenční implementace prvních pravidel.
 
-**Referenční recept:** nastavení, kterým Shutter Encoder pády opravoval, doplní Roman. Výchozí profil ho má reprodukovat.
+**Bez referenčního receptu (rozhodnutí vlastníka 2. 11. 2026):** nastavení Shutter Encoderu se záměrně nedodává. Hlavní use case aplikace je sama zjistit, co je u souboru potřeba, a opravit to. Výchozí profil proto vychází z pravidel a prototypu. Shutter Encoder slouží jen jako ruční záloha a srovnávací měřítko stability v Resolve.
 
 ## 7. Profily
 
@@ -249,7 +251,7 @@ docs/          screenshoty, poznámky k vydání
 
 ## 15. Co potřebuji od Romana před startem
 
-- [ ] Nastavení Shutter Encoderu, které pády opravovalo (funkce, kodek, fps, rozlišení).
+- [x] ~~Nastavení Shutter Encoderu~~ – nebude, aplikace má potřebné opravy zjistit sama (rozhodnutí 2. 11. 2026, kap. 6).
 - [ ] 5–10 skutečných vzorků z každého zařízení, ideálně i soubory, na kterých Resolve padal.
 - [ ] Verze DaVinci Resolve (Studio nebo free).
 - [ ] Souhlas se stažením ffmpeg buildu, Node.js a uv; pod jakým GitHub účtem/organizací založit veřejný repozitář.
