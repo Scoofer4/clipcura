@@ -17,8 +17,8 @@ and resolutions, HDR, 10-bit HEVC and non-48 kHz audio.
 | Milestone | Scope | Status |
 |---|---|---|
 | M0 | Environment, `clipsana doctor` | ✅ |
-| M1 | Core, rules, CLI, tests | 🚧 |
-| M2 | Local API, worker, events | ⏳ |
+| M1 | Core, rules, CLI, tests | ✅ |
+| M2 | Local API, worker, events | ✅ |
 | M3 | Design system and GUI | ⏳ |
 | M4 | MCP server and approvals | ⏳ |
 | M5 | Windows installer | ⏳ |
@@ -47,6 +47,20 @@ uv run clipsana apply <plan-id>
 
 Originals are never modified. Files that are already fine are left alone, and a rerun skips finished files.
 Every check is a plugin in `clipsana/rules/` (one file per rule).
+
+`clipsana doctor` also measures which decoder and scaler are fastest on your machine (whole-job timing), and
+`plan` uses the result. Tone-mapping picks the higher-quality path whenever it works.
+
+## Local API
+
+```powershell
+uv run clipsana config allow D:\Footage   # the API and MCP only touch allowed folders
+uv run clipsana serve                     # API + job worker on 127.0.0.1 (port written to server.json)
+```
+
+All routes except `/api/health` need `Authorization: Bearer <token>` (token in `config.json` in the app data
+folder). Progress and events stream over the WebSocket `/api/events?token=...`. Requests sent with
+`X-Clipsana-Actor: ai` or `n8n` wait for human approval while the approval mode is on (default).
 
 ## Project layout
 

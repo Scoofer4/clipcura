@@ -14,9 +14,10 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from clipsana import rules
-from clipsana.core import backends, executor, planner, probe, profiles
+from clipsana.core import backends, events, executor, planner, probe, profiles
 from clipsana.core.db import Database
 from clipsana.core.models import Backend, DecodePath, FileStatus, Issue, MediaInfo, Paths, PlanItem, Profile
+from clipsana.core.worker import Slot, Worker
 
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".mts", ".m2ts", ".mkv", ".avi", ".mxf", ".insv", ".insp"}
 _NOT_PROBED = {".insv", ".insp"}  # reported by the insv rule only; reading 360° originals adds nothing
@@ -117,11 +118,14 @@ def scan(path: Path | str, profile: str = "social-30", recursive: bool = False, 
             file_id = db.add_file(scan_id, str(f), status, media.model_dump(), [asdict(i) for i in issues])
             report = FileReport(id=file_id, path=str(f), status=status, media=media, issues=issues)
             reports.append(report)
+            events.publish("scan.file", scan_id=scan_id, file_id=file_id, path=str(f), status=status,
+                           issues=[i.rule_id for i in issues], actor=actor)
             if on_file:
                 on_file(report)
         summary = {s: sum(r.status == s for r in reports) for s in ("ok", "fixable", "needs_human", "error")}
         db.finish_scan(scan_id, summary)
-        db.audit(actor, "scan", str(root), f"{len(reports)} files")
+        _audit(db, actor, "scan", str(root), f"{len(reports)} files")
+        events.publish("scan.done", scan_id=scan_id, root=str(root), summary=summary, actor=actor)
     return ScanResult(scan_id=scan_id, root=str(root), profile=prof.name, files=reports, summary=summary)
 
 
@@ -172,15 +176,27 @@ def plan(scan_id: str, file_ids: list[int] | None = None, backend: Backend | Non
                 status = "pending"
             entry_id = db.add_plan_item(plan_id, f.id, status, item.plan_hash, item.output, item.model_dump())
             entries.append(PlanEntry(id=entry_id, file_id=f.id, status=status, item=item))
-        db.audit(actor, "plan", scan_id, f"{len(entries)} items")
+        _audit(db, actor, "plan", scan_id, f"{len(entries)} items")
+        events.publish("plan.created", plan_id=plan_id, scan_id=scan_id, items=len(entries), actor=actor)
     return PlanResult(plan_id=plan_id, scan_id=scan_id, backend=backend, paths=paths, items=entries,
                       est_bytes=sum(e.item.est_bytes for e in entries if e.status == "pending" and e.item))
 
 
-def apply(plan_id: str, actor: str = "human", force: bool = False,
-          on_progress: Callable[[str, executor.Progress], None] | None = None) -> list[executor.JobResult]:
-    """Run the plan's pending items (and, with force, overwrite outputs we did not create)."""
-    results: list[executor.JobResult] = []
+def _audit(db: Database, actor: str, action: str, target: str, result: str) -> None:
+    db.audit(actor, action, target, result)
+    events.publish("audit", actor=actor, action=action, target=target, result=result)
+
+
+def _job_event(db: Database, job_id: str) -> None:
+    job = db.get_job(job_id)
+    item = db.get_plan_item(job["plan_item_id"])
+    source = json.loads(item["item"])["source"] if item and item["item"] != "null" else ""
+    events.publish("job.status", job_id=job_id, status=job["status"], actor=job["actor"], source=source,
+                   output=job["output"], error=job["error"] or "", backend=job["backend"] or "")
+
+
+def _create_jobs(plan_id: str, actor: str, force: bool, awaiting: bool) -> list[tuple[str, PlanItem]]:
+    created: list[tuple[str, PlanItem]] = []
     with Database() as db:
         if db.get_plan(plan_id) is None:
             raise KeyError(f"Unknown plan {plan_id}")
@@ -188,39 +204,126 @@ def apply(plan_id: str, actor: str = "human", force: bool = False,
             if row["status"] not in ("pending", "exists") or (row["status"] == "exists" and not force):
                 continue
             item = PlanItem.model_validate_json(row["item"])
-            job_id = db.create_job(row["id"], item.plan_hash, item.output, actor)
-            cancel = _running[job_id] = threading.Event()
-            last = [-1.0]
+            job_id = db.create_job(row["id"], item.plan_hash, item.output, actor,
+                                   status="awaiting_approval" if awaiting else "queued")
+            _audit(db, actor, "request_apply" if awaiting else "apply", item.source,
+                   "awaiting_approval" if awaiting else "queued")
+            _job_event(db, job_id)
+            created.append((job_id, item))
+    return created
 
-            def progress(p: executor.Progress, job_id=job_id, last=last) -> None:
-                if p.percent - last[0] >= 1 or p.percent == 100:   # throttle DB writes
-                    last[0] = p.percent
-                    db.update_job(job_id, progress=p.percent)
-                if on_progress:
-                    on_progress(job_id, p)
 
-            try:
-                result = executor.run_item(item, on_progress=progress, cancel=cancel)
-            finally:
-                _running.pop(job_id, None)
-            result.job_id = job_id
-            db.update_job(job_id, status=result.status, backend=result.backend_used, error=result.error,
-                          **({"progress": 100.0} if result.status == "done" else {}))
-            db.audit(actor, "apply", item.source, result.status)
+def run_job(job_id: str, on_progress: Callable[[str, executor.Progress], None] | None = None,
+            ) -> executor.JobResult | None:
+    """Run one queued job to the end. Returns None if the job is no longer queued (cancelled, rejected)."""
+    with Database() as db:
+        if not db.set_job_status_if(job_id, "queued", "running"):
+            return None
+        cancel_event = _running[job_id] = threading.Event()
+        job = db.get_job(job_id)
+        item = PlanItem.model_validate_json(db.get_plan_item(job["plan_item_id"])["item"])
+        _job_event(db, job_id)
+        last = [-1.0]
+
+        def progress(p: executor.Progress) -> None:
+            if p.percent - last[0] >= 1 or p.percent == 100:   # throttle DB writes and events
+                last[0] = p.percent
+                db.update_job(job_id, progress=p.percent)
+                events.publish("job.progress", job_id=job_id, percent=p.percent, fps=p.fps, speed=p.speed,
+                               eta_s=p.eta_s)
+            if on_progress:
+                on_progress(job_id, p)
+
+        try:
+            result = executor.run_item(item, on_progress=progress, cancel=cancel_event)
+        except Exception as e:  # noqa: BLE001 - whatever happens, a job must not stay "running" forever
+            result = executor.JobResult(status="failed", source=item.source, output=item.output,
+                                        backend_used=item.backend, error=f"internal error: {e}")
+        finally:
+            _running.pop(job_id, None)
+        result.job_id = job_id
+        db.update_job(job_id, status=result.status, backend=result.backend_used, error=result.error,
+                      **({"progress": 100.0} if result.status == "done" else {}))
+        _audit(db, job["actor"], "job_finished", item.source, result.status)
+        _job_event(db, job_id)
+    return result
+
+
+def apply(plan_id: str, actor: str = "human", force: bool = False,
+          on_progress: Callable[[str, executor.Progress], None] | None = None) -> list[executor.JobResult]:
+    """Run the plan's pending items now, one after another (CLI). The API queues them via enqueue()."""
+    results = []
+    for job_id, _ in _create_jobs(plan_id, actor, force, awaiting=False):
+        if (result := run_job(job_id, on_progress)) is not None:
             results.append(result)
     return results
 
 
+def enqueue(plan_id: str, worker: Worker, actor: str = "human", force: bool = False,
+            approval_mode: bool = True) -> list[dict]:
+    """Queue the plan's items on the worker. Requests from anyone but a human wait for approval when the
+    approval mode is on (default), so an AI can prepare work but never start it on its own."""
+    awaiting = approval_mode and actor != "human"
+    created = _create_jobs(plan_id, actor, force, awaiting)
+    if not awaiting:
+        for job_id, item in created:
+            worker.submit(job_id, _slot(item))
+    return status([job_id for job_id, _ in created])
+
+
+def plan_outputs(plan_id: str, force: bool = False) -> list[str]:
+    """Output paths that applying the plan would write (for the API's folder whitelist check)."""
+    with Database() as db:
+        return [r["output"] for r in db.get_plan_items(plan_id)
+                if r["status"] == "pending" or (r["status"] == "exists" and force)]
+
+
+def _slot(item: PlanItem) -> Slot:
+    return "gpu" if item.args != item.fallback_args else "cpu"
+
+
+def approve(job_id: str, worker: Worker, actor: str = "human") -> dict:
+    with Database() as db:
+        if not db.set_job_status_if(job_id, "awaiting_approval", "queued"):
+            raise ValueError(f"Job {job_id} is not awaiting approval")
+        item = PlanItem.model_validate_json(db.get_plan_item(db.get_job(job_id)["plan_item_id"])["item"])
+        _audit(db, actor, "approve", item.source, "queued")
+        _job_event(db, job_id)
+    worker.submit(job_id, _slot(item))
+    return status([job_id])[0]
+
+
+def reject(job_id: str, actor: str = "human") -> dict:
+    with Database() as db:
+        if not db.set_job_status_if(job_id, "awaiting_approval", "rejected"):
+            raise ValueError(f"Job {job_id} is not awaiting approval")
+        db.update_job(job_id, status="rejected")
+        _audit(db, actor, "reject", job_id, "rejected")
+        _job_event(db, job_id)
+    return status([job_id])[0]
+
+
 def status(job_ids: list[str]) -> list[dict]:
     with Database() as db:
-        return [dict(r) for r in db.get_jobs(job_ids)]
+        rows = {r["id"]: dict(r) for r in db.get_jobs(job_ids)}
+    return [rows[j] for j in job_ids if j in rows]
 
 
 def cancel(job_id: str, actor: str = "human") -> bool:
-    event = _running.get(job_id)
-    if event is None:
-        return False
-    event.set()
+    """Stop a running job (its partial output is removed) or withdraw a queued/awaiting one."""
     with Database() as db:
-        db.audit(actor, "cancel", job_id, "requested")
+        event = _running.get(job_id)
+        if event is not None:
+            event.set()
+        elif not (db.set_job_status_if(job_id, "queued", "cancelled")
+                  or db.set_job_status_if(job_id, "awaiting_approval", "cancelled")):
+            return False
+        else:
+            _job_event(db, job_id)
+        _audit(db, actor, "cancel", job_id, "requested")
     return True
+
+
+def cancel_all_running() -> None:
+    for event in list(_running.values()):
+        event.set()

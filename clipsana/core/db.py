@@ -118,10 +118,11 @@ class Database:
                                 (path,)).fetchone()
         return row is not None
 
-    def create_job(self, plan_item_id: int, plan_hash: str, output: str, actor: str) -> str:
+    def create_job(self, plan_item_id: int, plan_hash: str, output: str, actor: str,
+                   status: str = "queued") -> str:
         job_id = new_id()
         self._write("INSERT INTO jobs (id, plan_item_id, status, actor, output, plan_hash, created_at) "
-                    "VALUES (?,?,?,?,?,?,?)", (job_id, plan_item_id, "running", actor, output, plan_hash, now()))
+                    "VALUES (?,?,?,?,?,?,?)", (job_id, plan_item_id, status, actor, output, plan_hash, now()))
         return job_id
 
     def update_job(self, job_id: str, **fields) -> None:
@@ -130,6 +131,18 @@ class Database:
         # Column names come from our own call sites, never from user input; values are bound parameters.
         cols = ", ".join(f"{k}=?" for k in fields)
         self._write(f"UPDATE jobs SET {cols} WHERE id=?", (*fields.values(), job_id))
+
+    def get_job(self, job_id: str) -> sqlite3.Row | None:
+        return self.conn.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone()
+
+    def get_plan_item(self, plan_item_id: int) -> sqlite3.Row | None:
+        return self.conn.execute("SELECT * FROM plan_items WHERE id=?", (plan_item_id,)).fetchone()
+
+    def set_job_status_if(self, job_id: str, expected: str, new: str) -> bool:
+        """Atomic state transition, so a cancel and a worker pick-up can never both win."""
+        with self.conn:
+            cur = self.conn.execute("UPDATE jobs SET status=? WHERE id=? AND status=?", (new, job_id, expected))
+        return cur.rowcount == 1
 
     def get_jobs(self, job_ids: list[str]) -> list[sqlite3.Row]:
         marks = ",".join("?" * len(job_ids))

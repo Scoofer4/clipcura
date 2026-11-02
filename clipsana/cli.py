@@ -1,4 +1,5 @@
-"""Clipsana command line. Commands grow with milestones (doctor in M0, scan/plan/apply in M1)."""
+"""Clipsana command line. Commands grow with milestones (doctor in M0, scan/plan/apply in M1, serve in M2)."""
+import json
 from pathlib import Path
 from typing import Annotated
 
@@ -32,6 +33,50 @@ def version() -> None:
     """Print the application version."""
     from clipsana import __version__
     typer.echo(f"Clipsana {__version__}")
+
+
+config_app = typer.Typer(help="Settings in the app data folder (token, allowed folders, approvals).",
+                         no_args_is_help=True)
+app.add_typer(config_app, name="config")
+
+
+@config_app.command("show")
+def config_show() -> None:
+    """Show settings. The API token is masked: clients read it from the config file directly."""
+    from clipsana.core.config import load_config
+    from clipsana.core.paths import app_data_dir
+    cfg = load_config()
+    data = cfg.model_dump() | {"token": f"{cfg.token[:4]}…({len(cfg.token)} chars)"}
+    typer.echo(f"File: {app_data_dir() / 'config.json'}")
+    typer.echo(json.dumps(data, indent=2, ensure_ascii=False))
+
+
+@config_app.command("allow")
+def config_allow(folder: Annotated[Path, typer.Argument(help="Folder the API and MCP may read and write.")]) -> None:
+    """Allow a folder (and everything below it) for the API, GUI and MCP."""
+    from clipsana.core.config import allow_root
+    cfg = allow_root(folder)
+    typer.echo("Allowed folders:\n" + "\n".join(f"  {r}" for r in cfg.allowed_roots))
+
+
+@config_app.command("approval")
+def config_approval(state: Annotated[str, typer.Argument(help="on | off")]) -> None:
+    """Whether jobs requested by AI or n8n wait for human approval (default on)."""
+    from clipsana.core.config import load_config, save_config
+    if state not in ("on", "off"):
+        raise typer.BadParameter("use 'on' or 'off'")
+    cfg = load_config()
+    cfg.approval_mode = state == "on"
+    save_config(cfg)
+    typer.echo(f"Approval mode: {state}")
+
+
+@app.command()
+def serve(port: Annotated[int | None, typer.Option(help="Port (default: from config, else a free one).")] = None,
+          ) -> None:
+    """Run the local API and job worker without a window (used by MCP, n8n and for development)."""
+    from clipsana.api.server import serve as run_server
+    run_server(port)
 
 
 @app.command()

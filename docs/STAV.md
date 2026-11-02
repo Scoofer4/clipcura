@@ -2,7 +2,31 @@
 
 Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 
-## 2. 11. 2026 – M1 (jádro, pravidla, profily, SQLite, CLI) – jádro hotové, čeká na commit
+## 2. 11. 2026 – M2 (lokální API, worker, WebSocket události) – hotovo
+
+### Hotovo
+
+- `core/config.py`: `config.json` v app data – token (vygeneruje se), port, povolené složky (výchozí žádná),
+  schvalovací režim (výchozí zapnuto), souběžnost 1 GPU + 1 CPU. CLI `clipsana config show|allow|approval`
+  (token se nikdy nevypisuje, jen maskovaný).
+- `core/security.py`: whitelist složek po úplném rozlišení cesty (`..`, symlink i junction nevyskočí ven).
+- `core/events.py` + `core/worker.py`: sběrnice událostí a worker se sloty GPU/CPU. `service.run_job` sdílí CLI
+  i worker; nové `enqueue/approve/reject`, `cancel` umí i čekající úlohy. Stavy: awaiting_approval, queued,
+  running, done, failed, cancelled, rejected.
+- `api/app.py`: FastAPI jen na 127.0.0.1, bearer token, kontrola hlavičky Host (DNS rebinding), bez CORS.
+  Endpointy kopírují nástroje MCP (system, profiles, rules, scans, plans, apply, jobs, cancel, approve,
+  reject) + WebSocket `/api/events`. AI/n8n nesmí schvalovat. Výstupy plánu musí ležet v povolených složkách.
+- `clipsana serve` (`api/server.py`) zapíše `server.json` (url, port, pid) pro GUI a MCP.
+- Ukázka na skutečném serveru: AI naskenovala, naplánovala a požádala o převod → `awaiting_approval`,
+  sama si schválit nemohla (403), člověk schválil, worker převedl, WebSocket přenesl všech 31 událostí.
+- Testy: 158 prošlo. #5 a #6 uzavřené, commity `950f674`, `67b778e`, CI zelené.
+
+### Další krok
+
+- M3a: design system + `/_kitchen-sink` (React + Vite + Tailwind), schválení vzhledu Romanem screenshotem.
+  Před instalací Node balíčků přesměrovat cache na D: (npm už je na `D:\WorkspacePrg\_npm`).
+
+## 2. 11. 2026 – M1 (jádro, pravidla, profily, SQLite, CLI) – hotovo
 
 ### Hotovo
 
@@ -24,12 +48,9 @@ Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
   příkazu, zavádějící varování o trhání u VFR z telefonu, nekonzistentní barevné značky (BT.601 snímky
   v kontejneru označeném BT.709).
 
-### Další krok
-
-- Commit a push M1 (čeká na pokyn vlastníka).
-- #5: měření cest (scale_cuda / libplacebo / CPU, dekódování) v doctoru a výběr nejrychlejší.
-- #6: srozumitelná hláška pro videa menší než 256×120 (limit DNxHR).
-- Pak M2 (lokální API, worker, WebSocket události).
+- Doplněno po M1: #6 (minimum DNxHR v plánu), #5 (měření celých úloh v doctoru, výběr dekodéru
+  cpu/cuda/d3d11va a scaleru, libplacebo tone-mapping kvůli kvalitě), oprava dekódování na Intelu (D3D11VA
+  místo QSV) a barevných značek u zdrojů bez značek (`setparams`).
 
 ## 2. 11. 2026 – M0 (prostředí + `clipsana doctor`)
 
