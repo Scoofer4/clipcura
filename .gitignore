@@ -16,6 +16,8 @@ ui/dist/
 # Externí binárky a data (velké nebo citlivé)
 vendor/
 data/
+# Default output folder ("../02_edit") of sample folders kept at the repository root during development
+/02_edit/
 tests/fixtures/real/*
 !tests/fixtures/real/.gitkeep
 tests/fixtures/generated/

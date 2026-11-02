@@ -16,8 +16,8 @@ and resolutions, HDR, 10-bit HEVC and non-48 kHz audio.
 
 | Milestone | Scope | Status |
 |---|---|---|
-| M0 | Environment, `clipsana doctor` | ⏳ |
-| M1 | Core, rules, CLI, tests | ⏳ |
+| M0 | Environment, `clipsana doctor` | ✅ |
+| M1 | Core, rules, CLI, tests | 🚧 |
 | M2 | Local API, worker, events | ⏳ |
 | M3 | Design system and GUI | ⏳ |
 | M4 | MCP server and approvals | ⏳ |
@@ -29,10 +29,24 @@ and resolutions, HDR, 10-bit HEVC and non-48 kHz audio.
 uv sync --group dev                     # Python environment
 uv run python tools/fetch_ffmpeg.py     # pinned, SHA-256 verified FFmpeg 8.1 build into vendor/ffmpeg
 uv run clipsana doctor                  # hardware and FFmpeg capabilities (add --json for machines)
-uv run pytest                # tests
+uv run pytest                           # tests (integration tests need vendor/ffmpeg)
 ```
 
-FFmpeg lives in `vendor/ffmpeg/` (not committed). Real sample footage goes to `tests/fixtures/real/` (not committed).
+FFmpeg lives in `vendor/ffmpeg/` (not committed). Real sample footage goes to `tests/fixtures/real/` (not committed),
+or point `CLIPSANA_REAL_DIR` at a folder to run the real-footage checks.
+
+## Usage (CLI)
+
+```powershell
+uv run clipsana fix D:\Footage\01_raw              # scan, plan and convert what needs it into ..\02_edit
+uv run clipsana fix D:\Footage\01_raw --dry-run    # show findings and the exact ffmpeg commands only
+uv run clipsana scan D:\Footage\01_raw --deep      # findings only (+ frame-timestamp VFR check)
+uv run clipsana plan <scan-id>                     # step by step: scan -> plan -> apply
+uv run clipsana apply <plan-id>
+```
+
+Originals are never modified. Files that are already fine are left alone, and a rerun skips finished files.
+Every check is a plugin in `clipsana/rules/` (one file per rule).
 
 ## Project layout
 

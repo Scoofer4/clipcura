@@ -1,4 +1,4 @@
-# CI: lint a testy na Windows (cílová platforma) při každém push a PR
+# CI: lint and tests on Windows (the target platform) for every push and PR
 name: CI
 on: [push, pull_request]
 jobs:
@@ -10,4 +10,12 @@ jobs:
       - run: uv python install 3.12
       - run: uv sync --group dev
       - run: uv run ruff check .
+      # The pinned FFmpeg build (~185 MB) is cached by the fetch script's content, which holds the pin.
+      - uses: actions/cache@v4
+        with:
+          path: vendor/ffmpeg
+          key: ffmpeg-${{ hashFiles('tools/fetch_ffmpeg.py') }}
+      - run: uv run python tools/fetch_ffmpeg.py
+      # Runners have no GPU: this exercises the CPU path, which must always work on its own.
+      - run: uv run clipsana doctor --quick
       - run: uv run pytest -q

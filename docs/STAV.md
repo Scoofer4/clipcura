@@ -2,6 +2,35 @@
 
 Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 
+## 2. 11. 2026 – M1 (jádro, pravidla, profily, SQLite, CLI) – jádro hotové, čeká na commit
+
+### Hotovo
+
+- `clipsana/core`: `probe` (barvy čte ze snímků, ne z kontejneru; hloubkový test VFR z PTS; kontrolní
+  dekódování přes ffprobe), `profiles` (YAML + pydantic, uživatelské profily v app data mají přednost),
+  `planner` (všechny opravy v **jednom** ffmpeg příkazu, slučování filtrů, CPU záloha), `executor` (průběh,
+  dočasný soubor a atomické přejmenování, úklid při chybě nebo zrušení, kontrola místa), `db` (SQLite WAL,
+  audit log), `service` = veřejné API `scan/plan/apply/status/cancel`.
+- 11 pravidel jako pluginy (jeden soubor = jedno pravidlo, hlášky EN/CS): vfr, fps_mismatch, hdr,
+  hevc_10bit, resolution, audio_rate, rotation, no_audio, insv, corrupt a **color_space** (BT.601 → Rec.709,
+  jen když se soubor převádí kvůli jinému problému). Kritérium „nové pravidlo jedním souborem“ je ověřené.
+- CLI: `scan`, `plan`, `apply`, `fix` (`--dry-run`, `--deep`, `--force`, `--json`). Návratové kódy 0/1/2.
+- Orientace se zachovává (na výšku zůstává na výšku), limit rozlišení platí pro delší stranu.
+- Testy: 112 prošlo (jednotkové + integrační na klipech z lavfi + reálné vzorky přes `CLIPSANA_REAL_DIR`).
+  CI si stahuje ffmpeg s cache.
+- Reálné vzorky z `data/` převedené přes CUDA za 3 min 17 s: CFR 30/1, DNxHR HQ, PCM 48 kHz, rotace
+  fyzicky provedená, opakovaný běh nic nepřevádí. Synchronizace zvuku odpovídá originálu.
+- Opravené chyby nalezené na reálných vzorcích: falešné „poškozeno“ u záznamu obrazovky, emoji ve výpisu
+  příkazu, zavádějící varování o trhání u VFR z telefonu, nekonzistentní barevné značky (BT.601 snímky
+  v kontejneru označeném BT.709).
+
+### Další krok
+
+- Commit a push M1 (čeká na pokyn vlastníka).
+- #5: měření cest (scale_cuda / libplacebo / CPU, dekódování) v doctoru a výběr nejrychlejší.
+- #6: srozumitelná hláška pro videa menší než 256×120 (limit DNxHR).
+- Pak M2 (lokální API, worker, WebSocket události).
+
 ## 2. 11. 2026 – M0 (prostředí + `clipsana doctor`)
 
 ### Hotovo
@@ -36,8 +65,4 @@ Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 - #3 CI selhává na ruffu – **uzavřeno** (opraveno v `960d2fe`, CI zelené)
 - #4 ffmpeg 8.1 a `scale_cuda` – **uzavřeno** rozhodnutím
 - #5 výběr nejrychlejší cesty stejné kvality podle měření (M1, medium)
-
-### Další krok
-
-Plán M1 (jádro, pravidla, profily, SQLite, CLI scan/plan/apply, issue #5).
-Otevřená otázka do plánu M1: orientace na výšku (9:16) u záznamů obrazovky a telefonu vs. profil `social-30`.
+- #6 DNxHR odmítá snímky menší než 256×120 – srozumitelná hláška v plánu (M1, low)
