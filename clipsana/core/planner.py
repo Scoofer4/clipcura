@@ -47,6 +47,10 @@ _ENCODERS: dict[str, tuple] = {
 }
 _AUTO = {"auto_h264": {"cuda": "h264_nvenc", "qsv": "h264_qsv", "cpu": "libx264"},
          "auto_hevc": {"cuda": "hevc_nvenc", "qsv": "hevc_qsv", "cpu": "libx265"}}
+# What a profile may name as output.codec, and which of them are intra-frame editing codecs (PCM audio, so
+# they need a container that carries PCM: MOV or Matroska, not MP4).
+CODECS = frozenset(_ENCODERS) | frozenset(_AUTO)
+INTRA_CODECS = frozenset(c for c, (_, _, intra) in _ENCODERS.items() if intra)
 _CPU_EQUIVALENT = {"h264_nvenc": "libx264", "h264_qsv": "libx264", "hevc_nvenc": "libx265", "hevc_qsv": "libx265"}
 # Rough output bits per pixel, only for the free-space check and the size estimate shown before a run.
 _BITS_PER_PIXEL = {"dnxhr_hq": 2.33, "dnxhr_hqx": 3.5, "prores_422": 2.4, "libx264": 0.12, "libx265": 0.08,

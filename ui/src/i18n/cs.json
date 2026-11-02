@@ -153,10 +153,26 @@
     "cpuJobs": "Současných úloh na CPU",
     "appearance": "Vzhled",
     "profiles": "Profily",
-    "profilesIntro": "Cíle převodu. Profily jsou soubory YAML; editor přijde později.",
+    "profilesIntro": "Cíle převodu. Vestavěné profily jde upravit a upravenou kopii kdykoli vrátit na výchozí.",
     "system": "Systém",
     "systemIntro": "Změřeno příkazem clipsana doctor. Po aktualizaci ovladačů ho spusť znovu.",
-    "backend": "Akcelerace"
+    "backend": "Akcelerace",
+    "source": {
+      "user": "vlastní",
+      "edited": "upravený"
+    },
+    "edit": "Upravit",
+    "duplicate": "Duplikovat",
+    "reset": "Obnovit",
+    "delete": "Smazat",
+    "editProfile": "Upravit {{name}}",
+    "duplicateProfile": "Duplikovat {{name}}",
+    "resetProfile": "Vrátit {{name}} na výchozí",
+    "deleteProfile": "Smazat {{name}}",
+    "newProfile": "Nový profil",
+    "profileSaved": "Profil uložen",
+    "profileReset": "Profil vrácen na výchozí",
+    "profileDeleted": "Profil smazán"
   },
   "ks": {
     "title": "Design system",
@@ -386,6 +402,49 @@
       "job_finished": "Dokončeno",
       "cancel": "Zrušil(a)",
       "job_recovered": "Obnoveno po restartu"
+    }
+  },
+  "profileEditor": {
+    "title": "Upravit {{name}}",
+    "titleNew": "Nový profil",
+    "intro": "Jak budou převedené klipy vypadat. Klipy, které už odpovídají, zůstanou beze změny.",
+    "name": "Název",
+    "nameHint": "Malá písmena, číslice a pomlčky; používá se v příkazové řádce.",
+    "label": "Popisek",
+    "fps": "Snímková frekvence",
+    "fpsHint": "Každý klip se převede na tuto stálou frekvenci, např. 25, 29,97 nebo 30.",
+    "longSide": "Delší strana nejvýš",
+    "noLimit": "Bez omezení",
+    "audioRate": "Vzorkování zvuku",
+    "codec": "Kodek",
+    "container": "Kontejner",
+    "containerClash": "Tento střihový kodek potřebuje MOV nebo MKV: MP4 neunese jeho nekomprimovaný zvuk.",
+    "folder": "Výstupní složka",
+    "folderHint": "Relativně ke složce se záznamem (../02_edit), nebo složka, kterou Clipsana smí používat.",
+    "suffix": "Přípona názvu",
+    "suffixHint": "Přidá se k názvu každého převedeného klipu, např. _edit.",
+    "rules": "Kontroly",
+    "rulesHint": "Vypnuté kontroly se nehlásí ani neopravují.",
+    "deep": "Důkladná kontrola frekvence",
+    "deepHint": "Čte čas každého snímku; najde skrytou proměnnou frekvenci, trvá déle.",
+    "cancel": "Zrušit",
+    "save": "Uložit profil",
+    "codecName": {
+      "dnxhr_hq": "DNxHR HQ (střih, 8 bitů)",
+      "dnxhr_hqx": "DNxHR HQX (střih, 10 bitů)",
+      "prores_422": "ProRes 422 (střih, 10 bitů)",
+      "auto_h264": "H.264, GPU když je k dispozici",
+      "auto_hevc": "H.265, GPU když je k dispozici",
+      "libx264": "H.264 (CPU)",
+      "libx265": "H.265 (CPU)",
+      "h264_nvenc": "H.264 (NVIDIA)",
+      "hevc_nvenc": "H.265 (NVIDIA)",
+      "h264_qsv": "H.264 (Intel)",
+      "hevc_qsv": "H.265 (Intel)"
+    },
+    "codecHint": {
+      "dnxhr_hq": "Plynulý střih, velké soubory. Nemá GPU enkodér; GPU přesto dekóduje a mapuje HDR.",
+      "auto_h264": "Malé soubory; použije se enkodér, který na tomto počítači naměřil nejvyšší rychlost."
     }
   }
 }

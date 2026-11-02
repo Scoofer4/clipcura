@@ -55,7 +55,9 @@ test.afterAll(() => {
     if (process.platform === "win32") spawnSync("taskkill", ["/PID", String(server.pid), "/T", "/F"]);
     else server.kill();
   }
-  if (home) rmSync(home, { recursive: true, force: true });
+  // Approved conversions may still be running when the server is killed; Windows frees ffmpeg's file lock a
+  // moment after the process ends, so retry instead of failing on EBUSY.
+  if (home) rmSync(home, { recursive: true, force: true, maxRetries: 20, retryDelay: 250 });
 });
 
 async function shoot(page: Page, name: string) {
@@ -141,4 +143,32 @@ test("command palette, settings and light theme", async ({ page }) => {
     await page.goto(`${base}/${route}?theme=light&accent=brand&lang=en`);
     await shoot(page, `${route}-light`);
   }
+});
+
+test("profile editor: duplicate, validate, save and delete", async ({ page }) => {
+  await page.goto(`${base}/settings?theme=dark&accent=brand&lang=en#token=${token}`);
+  await page.getByRole("button", { name: "Duplicate social-30" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("heading", { name: "New profile" })).toBeVisible();
+  await dialog.getByLabel("Name", { exact: true }).fill("reels-25");
+  await dialog.getByLabel("Label", { exact: true }).fill("Reels 25 fps");
+  await dialog.getByLabel("Frame rate", { exact: true }).fill("25");
+  // An editing codec in MP4 cannot work: the editor says so and will not save.
+  await dialog.getByRole("radio", { name: "MP4" }).click();
+  await expect(dialog.getByText(/needs MOV or MKV/)).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Save profile" })).toBeDisabled();
+  await dialog.getByRole("radio", { name: "MOV" }).click();
+  await shoot(page, "profile-editor-dark");
+  // The API has the last word: a folder outside the allowed ones is refused with its reason.
+  await dialog.getByLabel("Output folder", { exact: true }).fill("C:\Windows\Temp");
+  await dialog.getByRole("button", { name: "Save profile" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("allowed folder");
+  await dialog.getByLabel("Output folder", { exact: true }).fill("../02_edit");
+  await dialog.getByRole("button", { name: "Save profile" }).press("Enter");
+  await expect(dialog).toBeHidden();
+  const card = page.locator("li").filter({ has: page.getByRole("button", { name: "Edit reels-25" }) });
+  await expect(card).toContainText("25 fps");
+  await expect(card).toContainText("yours");
+  await page.getByRole("button", { name: "Delete reels-25" }).click();
+  await expect(page.getByRole("button", { name: "Edit reels-25" })).toHaveCount(0);
 });

@@ -1,4 +1,4 @@
-import { FolderPlus, Trash2 } from "lucide-react";
+import { Copy, FolderPlus, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { api, type AppConfig, type Profile, type SystemReport } from "../api/client";
@@ -8,6 +8,7 @@ import { Segmented, Switch } from "../design-system/Controls";
 import { Panel } from "../design-system/Panel";
 import { useAppearance } from "../design-system/theme";
 import { setLanguage, type Language } from "../i18n";
+import { ProfileEditor } from "./ProfileEditor";
 
 function Section({ title, intro, children }: { title: string; intro?: string; children: React.ReactNode }) {
   return (
@@ -41,10 +42,19 @@ export function SettingsScreen() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [system, setSystem] = useState<SystemReport | null>(null);
   const [newRoot, setNewRoot] = useState("");
+  const [editing, setEditing] = useState<{ profile: Profile; isNew: boolean } | null>(null);
+  const reloadProfiles = () => api.profiles().then(setProfiles).catch(() => {});
+  const removeProfile = async (p: Profile) => {
+    try {
+      await api.deleteProfile(p.name);
+      reloadProfiles();
+      toast(t(p.source === "edited" ? "settings.profileReset" : "settings.profileDeleted"), p.name);
+    } catch (e) { toast(t("settings.saveFailed"), e instanceof Error ? e.message : String(e)); }
+  };
 
   useEffect(() => {
     api.config().then(setCfg).catch(() => {});
-    api.profiles().then(setProfiles).catch(() => {});
+    reloadProfiles();
     api.system().then(setSystem).catch(() => {});
   }, []);
 
@@ -115,13 +125,46 @@ export function SettingsScreen() {
       <Section title={t("settings.profiles")} intro={t("settings.profilesIntro")}>
         <ul className="grid gap-3 md:grid-cols-3">
           {profiles.map((p) => (
-            <li key={p.name} className="rounded-[var(--radius-control)] border border-line bg-surface p-3">
-              <div className="mono text-sm text-ink">{p.name}</div>
+            <li key={p.name} className="flex flex-col rounded-[var(--radius-control)] border border-line bg-surface p-3">
+              <div className="flex items-center gap-2">
+                <span className="mono text-sm text-ink">{p.name}</span>
+                {p.source !== "builtin" && (
+                  <span className="rounded-full border border-line px-1.5 text-[11px] text-muted">{t(`settings.source.${p.source}`)}</span>
+                )}
+              </div>
               <div className="mt-0.5 text-xs text-muted">{p.label}</div>
               <div className="mono tabular mt-2 text-xs text-faint">{p.fps} fps, ≤{p.max_long_side} px, {p.output.codec}, {p.audio_rate / 1000} kHz</div>
+              <div className="mt-3 flex flex-wrap gap-1.5 pt-1">
+                <Button size="sm" variant="secondary" icon={<Pencil className="size-3.5" aria-hidden />}
+                        aria-label={t("settings.editProfile", { name: p.name })} onClick={() => setEditing({ profile: p, isNew: false })}>
+                  {t("settings.edit")}
+                </Button>
+                <Button size="sm" variant="ghost" icon={<Copy className="size-3.5" aria-hidden />}
+                        aria-label={t("settings.duplicateProfile", { name: p.name })}
+                        onClick={() => setEditing({ profile: { ...p, name: `${p.name}-copy`.slice(0, 40), label: `${p.label} (2)`, source: "user" }, isNew: true })}>
+                  {t("settings.duplicate")}
+                </Button>
+                {p.source !== "builtin" && (
+                  <Button size="sm" variant="ghost" icon={<RotateCcw className="size-3.5" aria-hidden />}
+                          aria-label={t(p.source === "edited" ? "settings.resetProfile" : "settings.deleteProfile", { name: p.name })}
+                          onClick={() => removeProfile(p)}>
+                    {t(p.source === "edited" ? "settings.reset" : "settings.delete")}
+                  </Button>
+                )}
+              </div>
             </li>
           ))}
         </ul>
+        <div className="mt-3">
+          <Button variant="secondary" icon={<Plus className="size-4" aria-hidden />}
+                  onClick={() => profiles[0] && setEditing({ profile: { ...profiles[0], name: "", label: "", source: "user" }, isNew: true })}>
+            {t("settings.newProfile")}
+          </Button>
+        </div>
+        {editing && (
+          <ProfileEditor initial={editing.profile} isNew={editing.isNew} onClose={() => setEditing(null)}
+                         onSaved={(p) => { setEditing(null); reloadProfiles(); toast(t("settings.profileSaved"), p.name); }} />
+        )}
       </Section>
 
       <Section title={t("settings.system")} intro={t("settings.systemIntro")}>

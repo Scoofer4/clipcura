@@ -65,7 +65,8 @@ export function Switch({ checked, onChange, label, description }: {
   );
 }
 
-export function Modal({ open, onOpenChange, title, description, children, footer }: {
+export function Modal({ open, onOpenChange, title, description, children, footer, wide = false }: {
+  wide?: boolean;
   open: boolean;
   onOpenChange: (v: boolean) => void;
   title: string;
@@ -84,7 +85,7 @@ export function Modal({ open, onOpenChange, title, description, children, footer
             </Dialog.Overlay>
             <Dialog.Content asChild>
               <motion.div
-                className="glass fixed left-1/2 top-1/2 z-50 w-[min(92vw,520px)] -translate-x-1/2 -translate-y-1/2 bg-solid p-6"
+                className={`glass fixed left-1/2 top-1/2 z-50 max-h-[90vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto bg-solid p-6 ${wide ? "w-[min(94vw,760px)]" : "w-[min(92vw,520px)]"}`}
                 initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }}
                 transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
               >

@@ -129,7 +129,28 @@ def create_app() -> FastAPI:
 
     @api.get("/profiles")
     def list_profiles() -> list[dict]:
-        return [p.model_dump() for p in profiles.list_profiles()]
+        return [p.model_dump() | {"source": profiles.source_of(p.name)} for p in profiles.list_profiles()]
+
+    @api.put("/profiles/{name}")
+    def save_profile(name: str, body: dict, who: Annotated[Actor, Depends(actor)]) -> dict:
+        human_only(who)  # a profile decides where output is written and what gets converted
+        if body.get("name") != name:
+            raise HTTPException(422, "The profile name in the body must match the URL")
+        try:
+            profile = profiles.validate(body, config.load_config().allowed_roots)
+        except profiles.ProfileError as e:
+            raise HTTPException(422, str(e)) from e
+        profiles.save_user_profile(profile)
+        return profile.model_dump() | {"source": profiles.source_of(name)}
+
+    @api.delete("/profiles/{name}")
+    def delete_profile(name: str, who: Annotated[Actor, Depends(actor)]) -> dict:
+        human_only(who)
+        try:
+            profiles.delete_user_profile(name)
+        except profiles.ProfileError as e:
+            raise HTTPException(400, str(e)) from e
+        return {"name": name, "deleted": True}
 
     @api.get("/rules")
     def list_rules() -> list[dict]:

@@ -30,7 +30,14 @@ export interface Job {
   error: string | null; created_at: string; finished_at: string | null; source?: string; duration?: number; rule_ids?: string[];
 }
 export interface AuditEntry { id: number; ts: string; actor: string; action: string; target: string; result: string }
-export interface Profile { name: string; label: string; fps: number; max_long_side: number; audio_rate: number; output: { codec: string; container: string; folder: string; suffix: string } }
+export type ProfileSource = "builtin" | "user" | "edited";
+export interface Profile {
+  name: string; label: string; fps: number; max_long_side: number; audio_rate: number; color?: string;
+  output: { codec: string; container: "mov" | "mp4" | "mkv"; folder: string; suffix: string };
+  rules: { disabled: string[]; vfr_deep_check: boolean };
+  source?: ProfileSource;
+}
+export interface RuleInfo { id: string; title: string; standalone: boolean }
 export interface AppConfig { port: number; allowed_roots: string[]; approval_mode: boolean; concurrency: { gpu: number; cpu: number } }
 export interface SystemReport {
   backend: string; paths: Paths;
@@ -75,6 +82,12 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 export const api = {
   system: () => request<SystemReport>("GET", "/api/system"),
   profiles: () => request<Profile[]>("GET", "/api/profiles"),
+  rules: () => request<RuleInfo[]>("GET", "/api/rules"),
+  saveProfile: (p: Profile) => {
+    const { source: _source, ...body } = p;
+    return request<Profile>("PUT", `/api/profiles/${encodeURIComponent(p.name)}`, body);
+  },
+  deleteProfile: (name: string) => request<unknown>("DELETE", `/api/profiles/${encodeURIComponent(name)}`),
   scan: (path: string, profile: string, recursive = false) =>
     request<ScanResult>("POST", "/api/scans", { path, profile, recursive }),
   getScan: (id: string) => request<ScanResult>("GET", `/api/scans/${id}`),

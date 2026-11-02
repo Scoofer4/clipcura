@@ -148,10 +148,26 @@
     "cpuJobs": "Jobs at once on the CPU",
     "appearance": "Appearance",
     "profiles": "Profiles",
-    "profilesIntro": "Targets for conversion. Profiles live as YAML files; an editor arrives later.",
+    "profilesIntro": "Targets for conversion. Built-in profiles can be edited; an edited copy can be reset to the default at any time.",
     "system": "System",
     "systemIntro": "Measured by clipsana doctor. Run it again after a driver update.",
-    "backend": "Acceleration"
+    "backend": "Acceleration",
+    "source": {
+      "user": "yours",
+      "edited": "edited"
+    },
+    "edit": "Edit",
+    "duplicate": "Duplicate",
+    "reset": "Reset",
+    "delete": "Delete",
+    "editProfile": "Edit {{name}}",
+    "duplicateProfile": "Duplicate {{name}}",
+    "resetProfile": "Reset {{name}} to the default",
+    "deleteProfile": "Delete {{name}}",
+    "newProfile": "New profile",
+    "profileSaved": "Profile saved",
+    "profileReset": "Profile reset to the default",
+    "profileDeleted": "Profile deleted"
   },
   "ks": {
     "title": "Design system",
@@ -377,6 +393,49 @@
       "job_finished": "Finished",
       "cancel": "Cancelled",
       "job_recovered": "Resumed after a restart"
+    }
+  },
+  "profileEditor": {
+    "title": "Edit {{name}}",
+    "titleNew": "New profile",
+    "intro": "What converted clips look like. Clips that already match are left alone.",
+    "name": "Name",
+    "nameHint": "Lowercase letters, digits and dashes; used on the command line.",
+    "label": "Label",
+    "fps": "Frame rate",
+    "fpsHint": "Every clip is converted to this constant rate, e.g. 25, 29.97 or 30.",
+    "longSide": "Longest side at most",
+    "noLimit": "No limit",
+    "audioRate": "Audio sample rate",
+    "codec": "Codec",
+    "container": "Container",
+    "containerClash": "This editing codec needs MOV or MKV: MP4 cannot carry its uncompressed audio.",
+    "folder": "Output folder",
+    "folderHint": "Relative to the footage folder (../02_edit), or a folder Clipsana may use.",
+    "suffix": "File name suffix",
+    "suffixHint": "Added to the name of each converted clip, e.g. _edit.",
+    "rules": "Checks",
+    "rulesHint": "Turned-off checks are neither reported nor fixed.",
+    "deep": "Thorough frame-rate check",
+    "deepHint": "Reads every frame time; finds hidden variable frame rate, takes longer.",
+    "cancel": "Cancel",
+    "save": "Save profile",
+    "codecName": {
+      "dnxhr_hq": "DNxHR HQ (editing, 8-bit)",
+      "dnxhr_hqx": "DNxHR HQX (editing, 10-bit)",
+      "prores_422": "ProRes 422 (editing, 10-bit)",
+      "auto_h264": "H.264, GPU when available",
+      "auto_hevc": "H.265, GPU when available",
+      "libx264": "H.264 (CPU)",
+      "libx265": "H.265 (CPU)",
+      "h264_nvenc": "H.264 (NVIDIA)",
+      "hevc_nvenc": "H.265 (NVIDIA)",
+      "h264_qsv": "H.264 (Intel)",
+      "hevc_qsv": "H.265 (Intel)"
+    },
+    "codecHint": {
+      "dnxhr_hq": "Smooth to edit, large files. No GPU encoder; the GPU still decodes and tone-maps.",
+      "auto_h264": "Small files; the fastest encoder measured on this computer is used."
     }
   }
 }
