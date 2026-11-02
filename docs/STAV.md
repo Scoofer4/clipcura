@@ -24,14 +24,26 @@ Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 - CI: e2e test dostal víc času; na runneru bez GPU se nefotí (software WebGL). Cesta k temp se
   rozlišuje na dlouhý tvar (runner má 8.3 `RUNNER~1`).
 
+- #8: změna souběžnosti v Nastavení se projeví hned, bez restartu (worker mění počet slotů za běhu).
+- Měření pro akceptaci „s GPU je HEVC 10-bit měřitelně rychlejší“ je v `docs/benchmarks.md`
+  (nástroj `tools/benchmark_hevc10.py`). Klip 4K HLG HEVC 10-bit, 10 s, na notebooku i7-9750H +
+  GTX 1650 Max-Q: `social-30` CPU 17,5 s, GPU 9,6 s (1,82×); `ipad-light` CPU 20,6 s, GPU 10,7 s (1,93×).
+- CI je znovu zelené (13b2771). Na runneru bez GPU běží UI testy po jednom a s omezeným pohybem,
+  protože software WebGL zahlcovalo stránku (#11).
+
 ### Ověřeno
 
-- pytest 175 prošlo / 1 přeskočen (skutečné vzorky), ruff OK, tsc OK, Playwright 9/9 lokálně.
+- pytest 179 prošlo / 1 přeskočen (skutečné vzorky), ruff OK, tsc OK, Playwright 9/9 lokálně i v režimu CI,
+  CI na GitHubu: success (13b2771).
 
-### Otevřené
+### Otevřené (issues)
 
-- Registrace MCP v Claude Code je konfigurace mimo repozitář, a tu podle pravidel bez souhlasu neměním.
-  Příkaz je v README: `claude mcp add clipsana -- uv run --project <cesta> clipsana mcp`.
+- #10 otázka: zaregistrovat MCP v Claude Code? Je to konfigurace mimo repozitář, a tu podle pravidel
+  bez souhlasu neměním. Příkaz je v README.
+- #14 GPU enkodéry H.264: shoda kvality s libx264 není ověřená (NVENC píše profil Main).
+- #15 pravidlo `loudness` (akceptace „nové pravidlo jedním souborem“): potřebuje cílovou hlasitost
+  a rozhodnutí, zda jen hlásit, nebo i opravovat.
+- #7 editor profilů, #9 okno aplikace + tray + notifikace (M5), #1 #2 technický dluh.
 
 ## 2.–3. 11. 2026 – M3b (obrazovky 1–6) – hotovo
 
