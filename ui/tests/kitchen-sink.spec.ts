@@ -3,6 +3,8 @@ import { expect, test } from "@playwright/test";
 // Screenshots for the owner's visual review (CLAUDE.md §9): every theme x accent, plus key interactive states.
 // Committed review screenshots are only rewritten on request (npm run screenshots), not on every test run.
 const OUT = process.env.CLIPSANA_SCREENSHOTS ? "../docs/screenshots/m3a" : "test-results/screens/m3a";
+// CI runners have no GPU: with software WebGL one screenshot of the 3D scenes can take over a minute.
+const SHOOT = !process.env.CI || !!process.env.CLIPSANA_SCREENSHOTS;
 
 for (const theme of ["dark", "light"] as const) {
   for (const accent of ["brand", "aurora"] as const) {
@@ -17,8 +19,10 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.locator("canvas")).toHaveCount(3);
       await page.waitForTimeout(1800); // let springs settle and the fonts finish loading
 
-      await page.screenshot({ path: `${OUT}/kitchen-sink-${theme}-${accent}.png`, fullPage: true });
-      await page.screenshot({ path: `${OUT}/start-${theme}-${accent}.png` });
+      if (SHOOT) {
+        await page.screenshot({ path: `${OUT}/kitchen-sink-${theme}-${accent}.png`, fullPage: true });
+        await page.screenshot({ path: `${OUT}/start-${theme}-${accent}.png` });
+      }
       expect(errors).toEqual([]);
     });
   }
@@ -28,7 +32,7 @@ test("interactions: drag preview, selection and target rate", async ({ page }) =
   await page.goto("/_kitchen-sink?theme=dark&accent=brand&lang=en");
   await page.getByText("Preview drag-over").click();
   await page.waitForTimeout(1200);
-  await page.locator("[role=region]").first().screenshot({ path: `${OUT}/dropzone-drag-dark-brand.png` });
+  if (SHOOT) await page.locator("[role=region]").first().screenshot({ path: `${OUT}/dropzone-drag-dark-brand.png` });
 
   // Keyboard: focus a row, select it with Space; the fix button counts the selection.
   await page.getByRole("button", { name: "Select all fixable" }).click();
@@ -36,12 +40,12 @@ test("interactions: drag preview, selection and target rate", async ({ page }) =
 
   await page.getByRole("radio", { name: "24 fps" }).click();
   await expect(page.getByText(/Leaves out 32 frames each second/)).toBeVisible();
-  await page.locator("#cadence").screenshot({ path: `${OUT}/cadence-24fps-dark-brand.png` });
+  if (SHOOT) await page.locator("#cadence").screenshot({ path: `${OUT}/cadence-24fps-dark-brand.png` });
 });
 
 test("czech translation renders", async ({ page }) => {
   await page.goto("/_kitchen-sink?theme=dark&accent=brand&lang=cs");
   await expect(page.getByRole("heading", { name: "Přetáhni složku s videi" })).toBeVisible();
   await page.waitForTimeout(1200);
-  await page.screenshot({ path: `${OUT}/start-dark-brand-cs.png` });
+  if (SHOOT) await page.screenshot({ path: `${OUT}/start-dark-brand-cs.png` });
 });
