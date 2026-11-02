@@ -13,7 +13,8 @@ from clipsana.core.models import DoctorReport
 app = typer.Typer(help="Clipsana - check and fix footage before editing.", no_args_is_help=True)
 
 _STATUS_STYLE = {"ok": "green", "fixable": "yellow", "needs_human": "dark_orange", "error": "red",
-                 "pending": "cyan", "done": "green", "exists": "yellow", "failed": "red", "cancelled": "yellow"}
+                 "pending": "cyan", "done": "green", "exists": "yellow", "failed": "red", "cancelled": "yellow",
+                 "unsupported": "dark_orange"}
 _SEVERITY_STYLE = {"info": "dim", "warning": "yellow", "error": "red"}
 
 ProfileOpt = Annotated[str, typer.Option("--profile", "-p", help="Target profile (see profiles/).")]
@@ -131,6 +132,9 @@ def _print_plan(result, show_commands: bool) -> None:
     console.print(f"\n[bold]Plan {result.plan_id}[/] · backend {_BACKEND_LABEL[result.backend]} · "
                   f"~{result.est_bytes / 2**30:.2f} GB to write")
     for e in result.items:
+        if e.item is None:
+            console.print(f"  [{_STATUS_STYLE[e.status]}]{e.status}[/] file #{e.file_id}: {escape(e.reason)}")
+            continue
         console.print(f"  [{_STATUS_STYLE[e.status]}]{e.status:8}[/] {escape(Path(e.item.source).name)} -> "
                       f"{escape(e.item.output)}  [dim]({', '.join(e.item.rule_ids)})[/]")
         if show_commands:

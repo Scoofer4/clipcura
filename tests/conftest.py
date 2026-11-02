@@ -41,6 +41,7 @@ CLIPS: dict[str, list[str]] = {
     "odd.mp4": [*_src(), *_A, "-vf", "scale=321:181,format=yuv444p", "-c:v", "libx264", "-preset", "ultrafast"],
     "a44k.mp4": [*_src(), "-f", "lavfi", "-i", "sine=r=44100:d=2", "-c:a", "aac", "-shortest", *_V],
     "noaudio.mp4": [*_src(), *_V],
+    "tiny25.mp4": [*_src(size="240x136", rate=25), *_A, *_V],   # below the DNxHR minimum of 256x120
     # BT.601 frames in a container that claims BT.709, like Android screen recordings.
     "bt601src30.mp4": [*_src(), *_A, "-vf", _BT601, *_V],
     "bt601src25.mp4": [*_src(rate=25), *_A, "-vf", _BT601, *_V],

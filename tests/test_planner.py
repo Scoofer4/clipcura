@@ -101,6 +101,23 @@ def test_output_may_never_overwrite_the_original():
         planner.output_path(Path("D:/footage/raw/clip.mp4"), Path("D:/footage/raw"), p)
 
 
+@pytest.mark.parametrize(("w", "h", "ok"), [(256, 120, True), (254, 120, False), (256, 118, False)])
+def test_dnxhr_minimum_frame_size_is_checked_before_running(w, h, ok):
+    m = media(width=w, height=h)
+    issues = [issue("audio_rate", sample_rate=44100)]
+    if ok:
+        assert planner.build_item(m, issues, profile(), "cpu", Path("D:/footage/raw")) is not None
+    else:
+        with pytest.raises(planner.UnsupportedError, match="256x120"):
+            planner.build_item(m, issues, profile(), "cpu", Path("D:/footage/raw"))
+
+
+def test_prores_has_no_minimum_size():
+    p = profile(output={"codec": "prores_422", "container": "mov"})
+    assert planner.build_item(media(width=64, height=64), [issue("audio_rate", sample_rate=44100)], p, "cpu",
+                              Path("D:/footage/raw")) is not None
+
+
 def test_no_fixable_issue_means_no_plan_item():
     not_fixable = Issue("insv", "warning", "msg", False)
     assert planner.build_item(media(), [not_fixable], profile(), "cpu", Path("D:/footage/raw")) is None

@@ -97,7 +97,7 @@ class Database:
         return plan_id
 
     def add_plan_item(self, plan_id: str, file_id: int, status: str, plan_hash: str, output: str,
-                      item: dict) -> int:
+                      item: dict | None) -> int:
         return self._write(
             "INSERT INTO plan_items (plan_id, file_id, status, plan_hash, output, item) VALUES (?,?,?,?,?,?)",
             (plan_id, file_id, status, plan_hash, output, json.dumps(item)))

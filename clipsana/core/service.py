@@ -44,8 +44,10 @@ class ScanResult(BaseModel):
 class PlanEntry(BaseModel):
     id: int
     file_id: int
-    status: str            # pending | done (finished earlier) | exists (output not made by us)
-    item: PlanItem
+    # pending | done (finished earlier) | exists (output not made by us) | unsupported (see reason)
+    status: str
+    item: PlanItem | None
+    reason: str = ""
 
 
 class PlanResult(BaseModel):
@@ -140,7 +142,13 @@ def plan(scan_id: str, file_ids: list[int] | None = None, backend: Backend | Non
         for f in report.files:
             if f.status != "fixable" or (file_ids is not None and f.id not in file_ids):
                 continue
-            item = planner.build_item(f.media, f.issues, prof, backend, root)
+            try:
+                item = planner.build_item(f.media, f.issues, prof, backend, root)
+            except planner.UnsupportedError as e:
+                entry_id = db.add_plan_item(plan_id, f.id, "unsupported", "", "", None)
+                entries.append(PlanEntry(id=entry_id, file_id=f.id, status="unsupported", item=None,
+                                         reason=str(e)))
+                continue
             if item is None:
                 continue
             if db.is_done(item.plan_hash, item.output) and Path(item.output).exists():
@@ -153,7 +161,7 @@ def plan(scan_id: str, file_ids: list[int] | None = None, backend: Backend | Non
             entries.append(PlanEntry(id=entry_id, file_id=f.id, status=status, item=item))
         db.audit(actor, "plan", scan_id, f"{len(entries)} items")
     return PlanResult(plan_id=plan_id, scan_id=scan_id, backend=backend, items=entries,
-                      est_bytes=sum(e.item.est_bytes for e in entries if e.status == "pending"))
+                      est_bytes=sum(e.item.est_bytes for e in entries if e.status == "pending" and e.item))
 
 
 def apply(plan_id: str, actor: str = "human", force: bool = False,
@@ -164,7 +172,7 @@ def apply(plan_id: str, actor: str = "human", force: bool = False,
         if db.get_plan(plan_id) is None:
             raise KeyError(f"Unknown plan {plan_id}")
         for row in db.get_plan_items(plan_id):
-            if row["status"] == "done" or (row["status"] == "exists" and not force):
+            if row["status"] not in ("pending", "exists") or (row["status"] == "exists" and not force):
                 continue
             item = PlanItem.model_validate_json(row["item"])
             job_id = db.create_job(row["id"], item.plan_hash, item.output, actor)

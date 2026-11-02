@@ -15,6 +15,18 @@ class PlanError(ValueError):
     pass
 
 
+class UnsupportedError(PlanError):
+    """The profile cannot produce this file (reported in the plan instead of failing at encode time)."""
+
+
+# Encoders with a hard minimum frame size: dnxhd refuses anything below 256x120 with a generic error.
+_MIN_SIZE = {"dnxhr_hq": (256, 120), "dnxhr_hqx": (256, 120)}
+_TOO_SMALL = {
+    "en": "Output {w}x{h} is below the {codec} minimum of {mw}x{mh} - pick a profile with another codec",
+    "cs": "Výstup {w}x{h} je menší než minimum {codec} {mw}x{mh} - zvol profil s jiným kodekem",
+}
+
+
 # video args (fps -> list), pixel format, intra-frame editing codec (gets PCM audio)
 _ENCODERS: dict[str, tuple] = {
     "dnxhr_hq": (lambda fps: ["-c:v", "dnxhd", "-profile:v", "dnxhr_hq"], "yuv422p", True),
@@ -142,12 +154,17 @@ def _normalize(p: Path) -> str:
     return str(Path(*parts)) if parts else str(p)
 
 
-def _estimate_bytes(media: MediaInfo, vf: list[str], codec: str, profile: Profile) -> int:
+def output_size(media: MediaInfo, vf: list[str]) -> tuple[int, int]:
     v = media.video
     w, h = (v.display_width, v.display_height) if v else (1920, 1080)
     for f in vf:
         if m := re.match(r"scale=(\d+):(\d+)", f):
             w, h = int(m.group(1)), int(m.group(2))
+    return w, h
+
+
+def _estimate_bytes(media: MediaInfo, vf: list[str], codec: str, profile: Profile) -> int:
+    w, h = output_size(media, vf)
     video = _BITS_PER_PIXEL.get(codec, 0.5) * w * h * profile.fps * media.duration / 8
     audio = profile.audio_rate * 2 * 2 * media.duration  # 16-bit stereo PCM upper bound
     return int(video + audio)
@@ -161,6 +178,11 @@ def build_item(media: MediaInfo, issues: list[Issue], profile: Profile, backend:
     steps = [s for i in fixable if (s := rules.get_rule(i.rule_id).fix(i, profile)) is not None]
     if not steps:
         return None
+    vf = [f for s in steps for f in s.video_filters]
+    if profile.output.codec in _MIN_SIZE:
+        (mw, mh), (w, h) = _MIN_SIZE[profile.output.codec], output_size(media, vf)
+        if w < mw or h < mh:
+            raise UnsupportedError(rules.localize(_TOO_SMALL, w=w, h=h, codec="DNxHR", mw=mw, mh=mh))
     out = output_path(Path(media.path), scan_root, profile)
     args = build_args(media, steps, profile, backend, out)
     fallback = build_args(media, steps, profile, "cpu", out) if backend != "cpu" else args
@@ -169,6 +191,5 @@ def build_item(media: MediaInfo, issues: list[Issue], profile: Profile, backend:
         source=media.path, output=str(out), args=args, fallback_args=fallback, backend=backend,
         rule_ids=sorted({i.rule_id for i in fixable}),
         plan_hash=hashlib.sha256(recipe.encode()).hexdigest()[:16],
-        est_bytes=_estimate_bytes(media, [f for s in steps for f in s.video_filters],
-                                  resolve_codec(profile.output.codec, backend), profile),
+        est_bytes=_estimate_bytes(media, vf, resolve_codec(profile.output.codec, backend), profile),
         duration=media.duration)

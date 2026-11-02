@@ -96,6 +96,14 @@ def test_rotation_is_applied_to_pixels_and_removed_from_metadata(raw_folder):
     assert not any("rotation" in sd for sd in v.get("side_data_list", []))
 
 
+def test_clip_below_codec_minimum_is_reported_in_plan_not_failed_at_runtime(raw_folder):
+    scan = service.scan(raw_folder("tiny25.mp4"), profile="social-30")
+    plan = service.plan(scan.scan_id, backend="cpu")
+    (entry,) = plan.items
+    assert entry.status == "unsupported" and "256x120" in entry.reason
+    assert service.apply(plan.plan_id) == []
+
+
 def test_clean_clip_is_left_alone(raw_folder):
     raw = raw_folder("ok.mp4")
     scan = service.scan(raw, profile="social-30")
