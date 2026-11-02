@@ -2,6 +2,36 @@
 
 Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 
+## 2. 11. 2026 – M3a (design system + /_kitchen-sink) – návrh čeká na schválení vlastníkem
+
+### Hotovo
+
+- `ui/`: React 18 + Vite + Tailwind 4 + Radix + Framer Motion + lucide + Recharts + i18next, three.js přes
+  `@react-three/fiber` 8. Písma Inter a JetBrains Mono jsou přibalená lokálně. `npm` cache je na D:.
+- Brand Metaverse Media v Confluence není, barvy jsou změřené z loga na metaversemedia.cz: karmínová
+  `#e52c3f` / `#bf1b2c`, šedá `#d9d9d9`, doplňková korálová `#fe6c61`. (`#1863dc` z webu je barva cookie
+  lišty, ne brand.)
+- Přepínač akcentu Brand / Aurora, tmavé i světlé téma, angličtina a čeština, vypínač animací.
+- 3D vizualizace podle požadavku vlastníka jsou funkční, ne dekorace (principy v `docs/design-system.md`):
+  - vějíř políček v drop zóně se při přetažení srovná do zákrytu a kliknutím otevře výběr složky;
+  - kadence VFR → CFR s volbou cílové frekvence a výpočtem, kolik snímků se vynechá nebo zopakuje;
+  - kadenci běžící úlohy řídí počet zpracovaných snímků.
+  3D běží na úsporné GPU a během převodu stojí.
+- Funkční prototyp obrazovek 1–5 nad ukázkovými daty: karty filtrují tabulku, výběr klávesnicí, F opraví
+  výběr, simulace úlohy, schválení nebo zamítnutí požadavku AI, dialog, oznámení.
+- 4 koncepty loga (Hledáček, Puls, Krychle, Monogram), všechny vektorové a řízené akcentem.
+- Playwright přes nainstalovaný Edge (bez stahování prohlížeče): 6 testů, screenshoty v
+  `docs/screenshots/m3a/`.
+
+### Čeká na vlastníka
+
+- Schválit vizuální styl a vybrat akcent (Brand / Aurora) a logo (4 koncepty).
+
+### Bezpečnostní poznámka (mimo Clipsanu)
+
+- Některé stránky ve firemním prostoru Confluence obsahují čitelná hesla a klíče (stránky o PostgreSQL a n8n
+  na Synology, Kurzy a vzdělání). Hodnoty se nikde neuvádějí. Doporučeno přesunout je do správce hesel.
+
 ## 2. 11. 2026 – M2 (lokální API, worker, WebSocket události) – hotovo
 
 ### Hotovo

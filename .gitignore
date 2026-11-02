@@ -12,6 +12,8 @@ dist/
 # Node / UI
 node_modules/
 ui/dist/
+ui/test-results/
+ui/playwright-report/
 
 # Externí binárky a data (velké nebo citlivé)
 vendor/

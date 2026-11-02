@@ -1,0 +1,92 @@
+/*
+ * Clipsana design tokens. Every colour in the UI comes from here, so brand changes are one-file edits.
+ * Themes: data-theme="dark" (default) | "light". Accents: data-accent="brand" (Metaverse Media crimson,
+ * measured from the logo) | "aurora" (violet -> cyan from the original brief).
+ */
+
+:root,
+[data-theme="dark"] {
+  --bg: #12151a;
+  --bg-deep: #0c0e12;
+  --surface: rgb(255 255 255 / 0.035);
+  --surface-raised: rgb(255 255 255 / 0.06);
+  --surface-solid: #181c22;
+  --line: rgb(255 255 255 / 0.08);
+  --line-strong: rgb(255 255 255 / 0.16);
+  --text: #e8eaed;
+  --text-muted: #a3aab4;
+  --text-faint: #7d8590;
+
+  /* Status: each pairs a hue with an icon and a word in the UI, never colour alone. */
+  --ok: #3ddc97;
+  --fixable: #f5b841;
+  --human: #ff8a3d;
+  --error: #ff5470;   /* pinker than brand crimson, so "Fix" and "Error" never read alike */
+  --info: #7db4ff;
+
+  --shadow-panel: 0 18px 40px -24px rgb(0 0 0 / 0.75);
+  --glass-blur: 18px;
+  --noise-opacity: 0.045;
+  --glow-strength: 1;
+}
+
+[data-theme="light"] {
+  --bg: #f3f5f8;
+  --bg-deep: #e6eaf0;
+  --surface: rgb(255 255 255 / 0.72);
+  --surface-raised: rgb(255 255 255 / 0.92);
+  --surface-solid: #ffffff;
+  --line: rgb(20 23 28 / 0.1);
+  --line-strong: rgb(20 23 28 / 0.2);
+  --text: #14171c;
+  --text-muted: #4b5563;
+  --text-faint: #5f6875;
+
+  /* Darker status hues keep text AA contrast on white surfaces. */
+  --ok: #0b7f51;
+  --fixable: #8a5d00;
+  --human: #b04a07;
+  --error: #c41d47;
+  --info: #1f5fbf;
+
+  --shadow-panel: 0 18px 40px -26px rgb(20 23 28 / 0.35);
+  --noise-opacity: 0.025;
+  --glow-strength: 0.55;
+}
+
+[data-accent="brand"] {
+  --accent-1: #bf1b2c;  /* logo, shaded face */
+  --accent-2: #e52c3f;  /* logo, lit face */
+  --accent-3: #fe6c61;  /* metaversemedia.cz secondary */
+  /* Buttons stay on the two crimsons: white text on coral would fall below WCAG AA. */
+  --accent-solid: linear-gradient(120deg, #b01828, #d42a3c);
+  --accent-ink: #ffffff;
+  --accent-glow: rgb(229 44 63 / calc(0.42 * var(--glow-strength)));
+  --accent-soft: rgb(229 44 63 / 0.14);
+}
+
+[data-accent="aurora"] {
+  --accent-1: #7c4dff;
+  --accent-2: #4f7bff;
+  --accent-3: #22d3ee;
+  --accent-solid: linear-gradient(120deg, #6a3df0, #3d63e6);
+  --accent-ink: #ffffff;
+  --accent-glow: rgb(96 104 255 / calc(0.42 * var(--glow-strength)));
+  --accent-soft: rgb(96 104 255 / 0.14);
+}
+
+:root {
+  --accent-gradient: linear-gradient(120deg, var(--accent-1), var(--accent-2) 55%, var(--accent-3));
+  --radius-panel: 16px;
+  --radius-control: 10px;
+  --radius-pill: 999px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 150ms;
+  --dur-base: 220ms;
+}
+
+/* Honour the OS setting and the in-app switch (data-motion="reduced"). */
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur-base: 0ms; }
+}
+[data-motion="reduced"] { --dur-fast: 0ms; --dur-base: 0ms; }
