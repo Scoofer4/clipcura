@@ -60,6 +60,10 @@ class PlanRequest(BaseModel):
     paths: dict | None = None      # override measured paths, e.g. {"decode": "cpu"}
 
 
+class QueueState(BaseModel):
+    paused: bool
+
+
 def _host_ok(host: str | None) -> bool:
     if not host:
         return False
@@ -252,6 +256,17 @@ def create_app() -> FastAPI:
             worker.resize(req.concurrency.gpu, req.concurrency.cpu)
         config.save_config(cfg_now)
         return cfg_now.model_dump(exclude={"token"})
+
+    @api.get("/queue")
+    def get_queue() -> dict:
+        return {"paused": worker.paused}
+
+    @api.post("/queue")
+    def set_queue(req: QueueState, who: Annotated[Actor, Depends(actor)]) -> dict:
+        human_only(who)  # pausing is a person's call, like approving
+        worker.pause() if req.paused else worker.resume()
+        events.publish("queue", paused=worker.paused)
+        return {"paused": worker.paused}
 
     @api.post("/config/roots")
     def add_root(req: RootRequest, who: Annotated[Actor, Depends(actor)]) -> dict:

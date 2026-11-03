@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import queue
 import threading
+import time
 from typing import Literal
 
 log = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ class Worker:
         self._threads: list[threading.Thread] = []
         self._lock = threading.Lock()
         self._stopping = threading.Event()
+        self._paused = threading.Event()
         self._seq = 0
 
     def start(self) -> None:
@@ -34,6 +36,17 @@ class Worker:
             self._target = {"gpu": gpu, "cpu": cpu}
         for slot in SLOTS:
             self._fill(slot)
+
+    @property
+    def paused(self) -> bool:
+        return self._paused.is_set()
+
+    def pause(self) -> None:
+        """Start no new jobs; running conversions finish (tray menu, #9). Not kept across restarts."""
+        self._paused.set()
+
+    def resume(self) -> None:
+        self._paused.clear()
 
     def submit(self, job_id: str, slot: Slot) -> None:
         self._queues[slot].put(job_id)
@@ -66,6 +79,9 @@ class Worker:
         from clipsana.core import service
         q = self._queues[slot]
         while not self._retire(slot):
+            if self._paused.is_set():
+                time.sleep(_IDLE_CHECK_S)
+                continue
             try:
                 job_id = q.get(timeout=_IDLE_CHECK_S)
             except queue.Empty:
