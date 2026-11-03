@@ -1,6 +1,7 @@
 """Transparent log (#26): every process writes what it does from start to shutdown, secrets never reach the file,
 and people (GUI) and assistants (API/MCP) read the same entries."""
 import logging
+import os
 import threading
 
 import pytest
@@ -89,3 +90,36 @@ def test_api_serves_the_log_to_people_and_assistants(logged):
             assert r.status_code == 200
             assert r.json()["entries"][0]["message"] == "something broke"
         assert r.json()["folder"].endswith("logs")
+
+
+def test_a_run_that_ended_without_shutdown_is_reported_at_the_next_start():
+    # Owner, 2026-11-03: a crash must never take the log with it. The crashed run's lines stay in the file and
+    # the next start says plainly that the previous run did not end normally.
+    logs.reset()
+    logs.setup("app")
+    logging.getLogger("clipcura.test").info("last words before the crash")
+    marker = logs.session_marker()
+    logs.reset()                                   # no regular shutdown: like a crash or a forced end
+    dead = marker.with_name("app-999999.json")
+    marker.rename(dead)
+    dead.write_text(dead.read_text(encoding="utf-8").replace(str(os.getpid()), "999999"), encoding="utf-8")
+
+    logs.setup("app")
+    report = lines(level="error")[0]
+    assert "999999" in report["message"] and "did not end normally" in report["message"]
+    assert lines(text="last words before the crash")       # the crashed run's log is still there
+    assert not dead.exists()                                # reported once
+    logs.reset()
+
+
+def test_regular_shutdown_keeps_the_log_and_leaves_no_marker():
+    logs.reset()
+    path = logs.setup("app")
+    marker = logs.session_marker()
+    logs.stopped()
+    assert not marker.exists()
+    assert "Clipcura stopped" in path.read_text(encoding="utf-8")
+    logs.reset()
+    logs.setup("app")
+    assert not lines(level="error")
+    logs.reset()

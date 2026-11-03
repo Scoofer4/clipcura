@@ -10,6 +10,7 @@ Hard crashes that bypass Python (a native library going down) land in `crash.log
 from __future__ import annotations
 
 import atexit
+import contextlib
 import faulthandler
 import json
 import logging
@@ -162,8 +163,56 @@ def setup(process: str) -> Path:
 
     log.info("Clipcura %s started: %s copy, data in %s, pid %d, arguments %s", __version__, paths.install_kind(),
              paths.app_data_dir(), os.getpid(), " ".join(sys.argv[1:]) or "(none)")
-    atexit.register(_stopped)
+    _report_unfinished_runs()
+    marker = session_marker()
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text(json.dumps({"process": process, "pid": os.getpid(),
+                                  "started": datetime.now(UTC).isoformat(timespec="seconds")}), encoding="utf-8")
+    atexit.register(stopped)
     return state.path
+
+
+# --- runs that did not end normally ------------------------------------------------------------------------------
+# Each running process keeps a marker in logs/sessions/ and removes it on a regular shutdown. A marker whose process
+# is gone means a crash, a forced end or a power loss: the next start says so in the log. The log itself is never
+# deleted, so the crashed run's last lines stay where they were (owner, 2026-11-03).
+def session_marker() -> Path:
+    return folder() / "sessions" / f"{_state.process if _state else 'unknown'}-{os.getpid()}.json"
+
+
+def _report_unfinished_runs() -> None:
+    for marker in sorted((folder() / "sessions").glob("*.json")):
+        try:
+            run = json.loads(marker.read_text(encoding="utf-8"))
+            if run["pid"] == os.getpid() or _alive(run["pid"]):
+                continue
+            marker.unlink()   # whoever removes it reports it, so two starting processes do not both
+        except (OSError, ValueError, KeyError):
+            continue
+        started = datetime.fromisoformat(run["started"]).astimezone().strftime("%Y-%m-%d %H:%M:%S")
+        log.error("The previous run of %s (pid %s, started %s) did not end normally: a crash, a forced end or a "
+                  "power loss. Its last entries are in this log; crashes outside Python are in %s.",
+                  run.get("process", "?"), run["pid"], started, CRASH_FILE)
+
+
+def _alive(pid: int) -> bool:
+    if sys.platform != "win32":
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
+    import ctypes
+
+    kernel32 = ctypes.windll.kernel32
+    handle = kernel32.OpenProcess(0x1000, False, pid)   # PROCESS_QUERY_LIMITED_INFORMATION
+    if not handle:
+        return False
+    try:
+        code = ctypes.c_ulong()
+        return bool(kernel32.GetExitCodeProcess(handle, ctypes.byref(code))) and code.value == 259   # STILL_ACTIVE
+    finally:
+        kernel32.CloseHandle(handle)
 
 
 def _thread_hook(args: threading.ExceptHookArgs) -> None:
@@ -177,9 +226,13 @@ def _thread_hook(args: threading.ExceptHookArgs) -> None:
     logging.getLogger("clipcura").handle(record)
 
 
-def _stopped() -> None:
-    if _state is not None:
-        log.info("Clipcura stopped")
+def stopped() -> None:
+    """A regular shutdown: say so, and remove this run's marker."""
+    if _state is None:
+        return
+    log.info("Clipcura stopped")
+    with contextlib.suppress(OSError):
+        session_marker().unlink(missing_ok=True)
 
 
 def reset() -> None:

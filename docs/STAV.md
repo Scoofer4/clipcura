@@ -2,6 +2,46 @@
 
 Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 
+## 3. 11. 2026 (odpoledne) – přenosný ZIP, režim prohlížeče, aktualizace se souhlasem, log
+
+### Hotovo
+
+- **#21 balíčky:** každé vydání má instalátor i přenosný ZIP (+ `SHA256SUMS.txt`). Přenosná kopie má
+  `portable.txt` a data drží ve složce `data` vedle sebe (na médiu jen pro čtení spadne do `%APPDATA%`).
+  Workflow `release.yml`: tag verze → sestavení na GitHub Actions → **koncept** vydání (zveřejňuje vlastník).
+  O aplikaci a `clipcura version` ukazují druh kopie a složku dat.
+- **#23 režim prohlížeče:** `Clipcura.exe --browser`, volba v Nastavení, automaticky bez WebView2. Prohlížeč
+  dostane jednorázový kód (2 min, jednou), nikdy klíč. Instalátor bez WebView2 už neblokuje.
+  macOS/Linux se neřeší (rozhodnutí vlastníka), nápad na iPad v #24.
+- **#22 aktualizace a chybějící části:** při prvním spuštění se aplikace zeptá na denní kontrolu GitHubu;
+  stažení jen tlačítkem, ověření SHA-256, instalátor / rozbalení vedle a přepnutí i s daty. Obnova FFmpeg
+  (jen zafixovaný build) a instalace WebView2 (podpis Microsoftu ověřen). Nastavení → Aktualizace,
+  `clipcura update`. AI jen čte.
+- **#25:** zafixovaný denní build FFmpeg by BtbN za 14 dní smazal → pin na měsíční build 2026-10-31 (8.1.3)
+  + pevný SHA-256. Kalibrace GPU na notebooku vyšla stejně.
+- **#26 log:** každý proces (aplikace, služba, MCP, CLI) loguje od spuštění do ukončení do `<data>/logs/`
+  (JSON řádky, rotace 5 × 5 MB), neošetřené chyby, `crash.log` pro pády mimo Python. Klíč a kódy maskované.
+  Obrazovka **Log** (živě, filtr, hledání, kopírování), MCP `get_logs`, `clipcura logs`.
+  **Log se nikdy nemaže** (ani po pádu, ani po řádném konci); další start zapíše, že předchozí běh neskončil
+  normálně.
+- Opraveno při ověřování: spouštěná kopie GUI bez konzole se zasekla, když zdědila standardní proudy
+  (restart do nové verze) → spouští se se zahozenými proudy.
+
+### Ověřeno
+
+- pytest 275 prošlo / 2 přeskočeny, ruff, tsc, Playwright 14/14 v Edge a e2e v Chrome, CI zelené.
+- Workflow vydání (ruční běh) sestavil ZIP + instalátor + součty na Actions.
+- Zabalená přenosná kopie (cesta s mezerou): data vedle sebe, API hlásí `portable`, ukončení z ikony,
+  restart (`/api/restart`) → nový proces, tvrdé zabití → log zůstal a další start nahlásil pád.
+- **Neověřeno:** Firefox (Playwright ho bez vlastního buildu neovládá; headless snímek nic neprokázal),
+  skutečné stažení nové verze z GitHubu (žádné vydání zatím neexistuje; ověřeno s falešným zdrojem),
+  instalace WebView2 na stroji bez něj, instalace na čistých Windows.
+
+### Otevřené
+
+- První skutečné vydání (tag `v0.1.0` nebo vyšší) – rozhodne vlastník; vznikne koncept k revizi.
+- #10 registrace MCP, test na čistých Windows, ochranná známka, ukázka M4 + M5 + dnešních změn.
+
 ## 3. 11. 2026 – přejmenování na Clipcura, M5 (aplikace, tray, instalátor), nápověda a O aplikaci
 
 ### Hotovo
