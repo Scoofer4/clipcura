@@ -21,6 +21,7 @@ export function findingValue(issue: Issue): string | undefined {
     case "audio_rate": return `${num(d.sample_rate) / 1000} → ${num(d.target) / 1000} kHz`;
     case "rotation": return `${num(d.rotation)}°`;
     case "color_space": return String(d.color_space || d.color_primaries || "").toUpperCase().replace("BT470BG", "BT.601");
+    case "loudness": return `${num(d.input_i).toFixed(1)} LUFS`;
     case "corrupt": return String(d.probe_error || d.decode_error || "").split("\n").pop()?.slice(0, 48);
     default: return undefined;
   }

@@ -256,6 +256,10 @@
     "color_space": {
       "label": "Colours",
       "why": "The pixels are coded in BT.601. On a Rec.709 timeline colours shift slightly unless they are converted."
+    },
+    "loudness": {
+      "label": "Loudness",
+      "why": "Clips cut together at different loudness jump in volume, and peaks above the ceiling distort on phones. Only reported unless the profile turns on the fix, because normalising changes the sound."
     }
   },
   "present": {

@@ -261,6 +261,10 @@
     "color_space": {
       "label": "Barvy",
       "why": "Pixely jsou kódované v BT.601. Na ose Rec.709 se barvy mírně posunou, pokud se nepřevedou."
+    },
+    "loudness": {
+      "label": "Hlasitost",
+      "why": "Klipy s různou hlasitostí po sestříhání skáčou a špičky nad stropem na telefonech zkreslují. Jen se hlásí, dokud profil nezapne opravu, protože normalizace mění zvuk."
     }
   },
   "present": {
