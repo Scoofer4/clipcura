@@ -22,8 +22,9 @@ Both contain the same app, including FFmpeg. Windows 10 22H2 or newer, 64-bit. C
 
 The packages are not code-signed yet, so Windows SmartScreen may warn on the first start: **More info → Run anyway**.
 
-The window uses Microsoft Edge WebView2 Runtime, which comes with Windows 11 and current Windows 10. Your default
-browser does not matter.
+The window uses Microsoft Edge WebView2 Runtime, which comes with Windows 11 and current Windows 10; your default
+browser does not matter. Without WebView2, Clipcura opens in your default browser and offers to install it
+(Settings → Updates). `Clipcura.exe --browser` uses the browser on purpose.
 
 ## FFmpeg
 
