@@ -18,7 +18,7 @@ Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
   (jen zafixovaný build) a instalace WebView2 (podpis Microsoftu ověřen). Nastavení → Aktualizace,
   `clipcura update`. AI jen čte.
 - **#25:** zafixovaný denní build FFmpeg by BtbN za 14 dní smazal → pin na měsíční build 2026-10-31 (8.1.3)
-  + pevný SHA-256. Kalibrace GPU na notebooku vyšla stejně.
+  a pevný SHA-256. Kalibrace GPU na notebooku vyšla stejně.
 - **#26 log:** každý proces (aplikace, služba, MCP, CLI) loguje od spuštění do ukončení do `<data>/logs/`
   (JSON řádky, rotace 5 × 5 MB), neošetřené chyby, `crash.log` pro pády mimo Python. Klíč a kódy maskované.
   Obrazovka **Log** (živě, filtr, hledání, kopírování), MCP `get_logs`, `clipcura logs`.
