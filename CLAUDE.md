@@ -164,7 +164,7 @@ Kopírují akce v GUI. Odpovědi = strukturovaný JSON + krátké shrnutí v jaz
 | `cancel_job` | job_id | stav | ano |
 | `get_logs` | level, text, limit | záznamy logu všech procesů (stejné jako obrazovka Log, #26) | ne |
 
-**Log (rozhodnutí vlastníka 3. 11. 2026, #26):** každý proces (aplikace, služba, MCP, CLI) loguje vždy od spuštění do ukončení do `<app data>/logs/`, včetně neošetřených chyb a pádů. Člověk ho vidí na obrazovce Log, AI přes `get_logs`, příkazová řádka přes `clipcura logs`. Přístupový klíč a jednorázové kódy se do logu nikdy nedostanou.
+**Log (rozhodnutí vlastníka 3. 11. 2026, #26):** každý proces (aplikace, služba, MCP, CLI) loguje vždy od spuštění do ukončení do `<app data>/logs/`, včetně neošetřených chyb a pádů. Člověk ho vidí na obrazovce Log, AI přes `get_logs`, příkazová řádka přes `clipcura logs`. Přístupový klíč a jednorázové kódy se do logu nikdy nedostanou. Log se nemaže ani po pádu, ani po řádném ukončení, jen se rotuje (5 × 5 MB na proces). Další start zapíše, že předchozí běh neskončil normálně.
 
 ## 9. UX a UI – high-tech, ale srozumitelné
 
