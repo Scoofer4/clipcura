@@ -178,7 +178,9 @@
     "profileReset": "Profil vrácen na výchozí",
     "profileDeleted": "Profil smazán",
     "updates": "Aktualizace",
-    "updatesIntro": "Nové verze Clipcury a části, které potřebuje. Nic se nestáhne, dokud nestiskneš tlačítko."
+    "updatesIntro": "Nové verze Clipcury a části, které potřebuje. Nic se nestáhne, dokud nestiskneš tlačítko.",
+    "assistant": "Asistent (Ollama)",
+    "assistantIntro": "Zadávej Clipcuře úkoly obyčejnou řečí. Plní je model na tvém Ollama serveru se stejnými nástroji a hranicemi jako asistent připojený přes MCP: převody dál čekají na tvoje schválení a nastavení ani povolené složky měnit nemůže."
   },
   "ks": {
     "title": "Design system",
@@ -287,7 +289,8 @@
     "offline": "Připojuji…",
     "about": "O aplikaci",
     "help": "Nápověda",
-    "log": "Log"
+    "log": "Log",
+    "assistant": "Asistent"
   },
   "palette": {
     "title": "Příkazy",
@@ -595,6 +598,21 @@
           "Přístupový klíč se do logu nikdy nezapisuje, záznamy je proto možné sdílet.",
           "Asistent připojený přes MCP čte stejné záznamy nástrojem get_logs."
         ]
+      },
+      "assistant": {
+        "name": "Asistent",
+        "purpose": "Zadávej Clipcuře úkoly obyčejnou řečí. Plní je model na tvém Ollama serveru vlastními nástroji Clipcury.",
+        "steps": [
+          "Napiš úkol, třeba kterou složku zkontrolovat a pro jaký profil, a stiskni Enter.",
+          "Každý nástroj, který model použije, se ukáže jako krok; po rozbalení vidíš přesné volání.",
+          "Převody, které spustí, čekají v Aktivitě AI, dokud je neschválíš.",
+          "Doptávej se ve stejné konverzaci, nebo začni novou."
+        ],
+        "tips": [
+          "Vysvětlit u neúspěšné úlohy nebo chyby v logu otevře konverzaci s už vyplněnými podrobnostmi.",
+          "Model nemůže schvalovat, měnit nastavení ani používat složky, které jsi nepovolil.",
+          "Konverzace zůstávají, dokud Clipcuru nezavřeš."
+        ]
       }
     }
   },
@@ -698,6 +716,69 @@
       "service": "služba",
       "mcp": "asistent (MCP)",
       "cli": "příkazová řádka"
+    }
+  },
+  "assistantSettings": {
+    "enable": "Používat asistenta",
+    "enableHint": "Na server níže jdou názvy souborů, cesty a naměřené hodnoty. Videa nikdy.",
+    "url": "Ollama server",
+    "key": "Přístupový klíč",
+    "keyStored": "Uložený (přepiš pro změnu)",
+    "keyNone": "Žádný",
+    "keyHint": "Posílá se jako bearer token proxy před Ollamou. Už se nezobrazí a do logu se nikdy nezapíše.",
+    "test": "Vyzkoušet spojení",
+    "connected": "Spojeno, Ollama {{version}}",
+    "modelsFound_one": "{{count}} model umí nástroje",
+    "modelsFound_few": "{{count}} modely umí nástroje",
+    "modelsFound_many": "{{count}} modelů umí nástroje",
+    "modelsFound_other": "{{count}} modelů umí nástroje",
+    "testFailed": "Spojení selhalo",
+    "model": "Model",
+    "modelHint": "Nabízejí se jen modely, které umí volat nástroje. Větší modely plní úkoly spolehlivěji; v testu se osvědčil qwen3.6:27b.",
+    "vision": "vidí obraz",
+    "cloud": "cloud",
+    "cloudWarning": "Cloudové modely neběží na tvém serveru: Ollama posílá konverzaci na ollama.com.",
+    "save": "Uložit",
+    "removeKey": "Odebrat klíč"
+  },
+  "assistant": {
+    "intro": "Napiš Clipcuře, co má udělat, třeba kterou složku zkontrolovat. Každý krok modelu uvidíš níže a převody čekají na tvoje schválení v Aktivitě AI.",
+    "offTitle": "Asistent je vypnutý",
+    "offBody": "Připoj Clipcuru k Ollama serveru v Nastavení: adresa, přístupový klíč a model.",
+    "openSettings": "Otevřít Nastavení",
+    "new": "Nová konverzace",
+    "history": "Konverzace",
+    "examplesTitle": "Zkus třeba:",
+    "examples": [
+      "Zkontroluj složku D:\\Natáčení\\Dnes a řekni mi, které klipy by dělaly problémy.",
+      "Proč selhal poslední převod?",
+      "Jsou v dnešním logu nějaké chyby?",
+      "Jaké mám profily a čím se liší?"
+    ],
+    "thinking": "Pracuji…",
+    "inputLabel": "Úkol pro asistenta",
+    "placeholder": "Popiš úkol. Enter odešle, Shift+Enter nový řádek.",
+    "where": "Odesílá se na {{host}}, model {{model}}. Převody vždy čekají na tvoje schválení.",
+    "stop": "Zastavit",
+    "send": "Odeslat",
+    "sendFailed": "Asistent se nespustil",
+    "running": "Běží",
+    "toolOk": "Hotovo",
+    "toolFailed": "Selhalo",
+    "sentDetails": "Co se odeslalo",
+    "explain": "Vysvětlit",
+    "explainJob": "Vysvětlit, proč selhal {{name}}",
+    "tools": {
+      "system_info": "Informace o systému",
+      "list_profiles": "Profily",
+      "list_rules": "Kontroly",
+      "scan_folder": "Kontrola složky",
+      "get_report": "Přehled",
+      "plan_fixes": "Příprava oprav",
+      "apply_fixes": "Spuštění oprav",
+      "job_status": "Stav úloh",
+      "cancel_job": "Zrušení úlohy",
+      "get_logs": "Čtení logu"
     }
   }
 }

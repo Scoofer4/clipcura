@@ -1,4 +1,4 @@
-import { CircleCheck, CircleX, Clock, Ban } from "lucide-react";
+import { CircleCheck, CircleX, Clock, Ban, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +12,7 @@ import { Panel } from "../design-system/Panel";
 import { JobCard } from "../design-system/Progress";
 import { Cadence } from "../visuals/Cadence";
 import { Scene } from "../visuals/Scene";
+import { useExplain } from "./AssistantScreen";
 
 const ACTIVE = new Set(["running", "queued"]);
 const finishedIcon = { done: CircleCheck, failed: CircleX, cancelled: Ban, rejected: Ban } as const;
@@ -24,6 +25,7 @@ export function JobsScreen() {
   const { jobs: live } = useEvents();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const explain = useExplain();
 
   const refresh = () => api.jobs(60).then((j) => { setJobs(j); setLoaded(true); }).catch(() => setLoaded(true));
   useEffect(() => { void refresh(); }, []);
@@ -108,6 +110,11 @@ export function JobsScreen() {
                     </div>
                   </div>
                   {j.actor === "ai" && <AiBadge />}
+                  {explain && j.status === "failed" && (
+                    <Button size="sm" variant="ghost" icon={<Sparkles className="size-3.5" aria-hidden />}
+                            aria-label={t("assistant.explainJob", { name: fileName(j.source ?? "") })}
+                            onClick={() => explain({ job_id: j.id })}>{t("assistant.explain")}</Button>
+                  )}
                   <span className="text-xs text-faint">{t(`jobs.state.${j.status}`)}</span>
                 </li>
               );

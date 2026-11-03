@@ -4,7 +4,7 @@ import { Lightbulb, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-export type HelpScreen = "start" | "results" | "jobs" | "activity" | "log" | "settings" | "about";
+export type HelpScreen = "start" | "results" | "jobs" | "activity" | "assistant" | "log" | "settings" | "about";
 
 interface Key { key: string; does: string }
 
@@ -12,7 +12,7 @@ interface Key { key: string; does: string }
 export function helpScreenFor(pathname: string): HelpScreen {
   if (pathname.startsWith("/scans/")) return "results";
   const first = pathname.split("/")[1] as HelpScreen;
-  return (["jobs", "activity", "log", "settings", "about"] as const).includes(first as never) ? first : "start";
+  return (["jobs", "activity", "assistant", "log", "settings", "about"] as const).includes(first as never) ? first : "start";
 }
 
 function Keys({ items }: { items: Key[] }) {

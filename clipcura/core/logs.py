@@ -42,6 +42,19 @@ def folder() -> Path:
     return paths.app_data_dir() / "logs"
 
 
+_extra_secrets: set[str] = set()
+
+
+def add_secret(secret: str) -> None:
+    """Mask a value that became known after start, e.g. a newly entered assistant key (#27)."""
+    if secret:
+        _extra_secrets.add(secret)
+
+
+def secrets() -> tuple[str, ...]:
+    return (*(_state.secrets if _state else ()), *_extra_secrets)
+
+
 def mask(text: str, secrets: tuple[str, ...] = ()) -> str:
     for secret in secrets:
         if secret:
@@ -66,7 +79,7 @@ class _JsonLines(logging.Formatter):
         self.state = state
 
     def format(self, record: logging.LogRecord) -> str:
-        return json.dumps(_entry(record, self.state.process, self.state.secrets), ensure_ascii=False)
+        return json.dumps(_entry(record, self.state.process, secrets()), ensure_ascii=False)
 
 
 class _Live(logging.Handler):
@@ -82,7 +95,7 @@ class _Live(logging.Handler):
             return
         self._busy.on = True
         try:
-            events.publish("log", entry=_entry(record, self.state.process, self.state.secrets))
+            events.publish("log", entry=_entry(record, self.state.process, secrets()))
         finally:
             self._busy.on = False
 
@@ -111,7 +124,8 @@ def setup(process: str) -> Path:
         state = _State(process, logs / f"{process}.log")
         try:
             from clipcura.core.config import load_config
-            state.secrets = (load_config().token,)
+            cfg = load_config()
+            state.secrets = (cfg.token, *((cfg.assistant.key,) if cfg.assistant.key else ()))
         except (OSError, ValueError):
             pass
 
@@ -239,6 +253,7 @@ def reset() -> None:
     """Undo setup (tests, or a process that hands over to another)."""
     global _state
     with _lock:
+        _extra_secrets.clear()
         if _state is None:
             return
         for undo in _state.undo:

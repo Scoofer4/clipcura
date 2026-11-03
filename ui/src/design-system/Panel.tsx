@@ -4,12 +4,13 @@ import { motion } from "framer-motion";
 import type { FileStatus } from "./Chip";
 import { AnimatedNumber } from "./Motion";
 
-export function Panel({ children, className = "", as: Tag = "section" }: {
+export function Panel({ children, className = "", as: Tag = "section", id }: {
   children: ReactNode;
   className?: string;
   as?: "section" | "div" | "article";
+  id?: string;
 }) {
-  return <Tag className={`glass ${className}`}>{children}</Tag>;
+  return <Tag id={id} className={`glass ${className}`}>{children}</Tag>;
 }
 
 const tone: Record<FileStatus, { color: string; Icon: typeof CircleCheck }> = {

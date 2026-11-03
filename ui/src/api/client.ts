@@ -39,6 +39,17 @@ export interface Profile {
 }
 export interface RuleInfo { id: string; title: string; standalone: boolean }
 export interface AppConfig { port: number; allowed_roots: string[]; approval_mode: boolean; concurrency: { gpu: number; cpu: number }; interface: "window" | "browser" }
+
+/** Built-in assistant on an Ollama server (#27). The key never comes back, only whether one is stored. */
+export interface AssistantSummary { id: string; title: string; busy: boolean; updated: number }
+export interface AssistantStatus { enabled: boolean; url: string; model: string; has_key: boolean; conversations: AssistantSummary[] }
+export interface OllamaModel { name: string; size: number; parameters: string; vision: boolean; cloud: boolean }
+export type TranscriptItem =
+  | { role: "user"; text: string; details?: string }
+  | { role: "assistant"; text: string }
+  | { role: "tool"; name: string; arguments: Record<string, unknown>; ok: boolean | null; summary: string }
+  | { role: "error"; text: string };
+export interface AssistantConversation extends AssistantSummary { transcript: TranscriptItem[] }
 export interface SystemReport {
   backend: string; paths: Paths;
   system: { cpu: string; ram_total_mb: number; gpus: { name: string; vendor: string; driver: string; memory_total_mb: number | null; memory_used_mb: number | null; utilization_pct: number | null }[]; disks: { path: string; free_gb: number; total_gb: number }[] };
@@ -168,6 +179,18 @@ export const api = {
   patchConfig: (patch: Partial<Pick<AppConfig, "approval_mode" | "concurrency" | "interface">>) => request<AppConfig>("PATCH", "/api/config", patch),
   addRoot: (path: string) => request<AppConfig>("POST", "/api/config/roots", { path }),
   removeRoot: (path: string) => request<AppConfig>("DELETE", "/api/config/roots", { path }),
+  assistant: () => request<AssistantStatus>("GET", "/api/assistant"),
+  /** `key`: undefined keeps the stored key, "" removes it. */
+  saveAssistant: (s: { enabled: boolean; url: string; model: string; key?: string }) =>
+    request<AssistantStatus>("PUT", "/api/assistant/settings", s),
+  testAssistant: (url?: string, key?: string) =>
+    request<{ version: string; models: OllamaModel[] }>("POST", "/api/assistant/test", { url, key }),
+  ask: (text: string, lang: string, conversation?: string) =>
+    request<{ conversation: string }>("POST", "/api/assistant/conversations", { text, lang, conversation }),
+  conversation: (id: string) => request<AssistantConversation>("GET", `/api/assistant/conversations/${id}`),
+  stopAssistant: (id: string) => request<{ stopping: boolean }>("POST", `/api/assistant/conversations/${id}/stop`),
+  explain: (what: { job_id: string } | { log: LogEntry }, lang: string) =>
+    request<{ conversation: string }>("POST", "/api/assistant/explain", { ...what, lang }),
 };
 
 /** Fetch an authenticated image (img tags cannot send the bearer header) and return an object URL. */

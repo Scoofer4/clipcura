@@ -1,4 +1,4 @@
-import { Copy } from "lucide-react";
+import { Copy, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, type LogEntry, type LogLevel } from "../api/client";
@@ -7,6 +7,7 @@ import { useToast } from "../app/toast";
 import { Button } from "../design-system/Button";
 import { Segmented } from "../design-system/Controls";
 import { Panel } from "../design-system/Panel";
+import { useExplain } from "./AssistantScreen";
 
 const RANK: Record<LogEntry["level"], number> = { DEBUG: 0, INFO: 1, WARNING: 2, ERROR: 3, CRITICAL: 3 };
 const MIN: Record<LogLevel, number> = { info: 1, warning: 2, error: 3 };
@@ -29,6 +30,7 @@ export function LogScreen() {
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [folder, setFolder] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const explain = useExplain();
 
   useEffect(() => { const id = window.setTimeout(() => setText(query.trim()), 250); return () => window.clearTimeout(id); }, [query]);
   useEffect(() => {
@@ -82,7 +84,15 @@ export function LogScreen() {
               <span className="mono text-[11px] font-medium" style={{ color: TONE[e.level] }}>{t(`log.levels.${e.level}`)}</span>
               <div className="min-w-0">
                 <p className="break-words text-ink">{e.message}</p>
-                <p className="mono mt-0.5 text-[11px] text-faint">{t(`log.process.${e.process}`, { defaultValue: e.process })} · {e.source}</p>
+                <p className="mono mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-faint">
+                  {t(`log.process.${e.process}`, { defaultValue: e.process })} · {e.source}
+                  {explain && RANK[e.level] >= 2 && (
+                    <button type="button" onClick={() => explain({ log: e })}
+                            className="inline-flex items-center gap-1 rounded px-1 font-sans text-xs text-muted hover:text-ink">
+                      <Sparkles className="size-3" aria-hidden />{t("assistant.explain")}
+                    </button>
+                  )}
+                </p>
                 {e.exc && (
                   <details className="mt-1">
                     <summary className="cursor-pointer text-xs text-muted hover:text-ink">{t("log.details")}</summary>

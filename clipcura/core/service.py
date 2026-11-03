@@ -425,3 +425,25 @@ def cancel(job_id: str, actor: str = "human") -> bool:
 def cancel_all_running() -> None:
     for event in list(_running.values()):
         event.set()
+
+
+def job_context(job_id: str) -> dict:
+    """Everything known about one job, for explaining a failure (#27): the job, its recipe and the source's
+    measured values and findings."""
+    with Database() as db:
+        rows = db.get_jobs([job_id])
+        if not rows:
+            raise KeyError(f"Unknown job {job_id}")
+        job = dict(rows[0])
+        plan_item = db.get_plan_item(job["plan_item_id"])
+        file = db.get_file(plan_item["file_id"]) if plan_item is not None else None
+    item = json.loads(plan_item["item"]) if plan_item is not None and plan_item["item"] != "null" else {}
+    out = {"job": {k: job[k] for k in ("id", "status", "actor", "backend", "output", "error", "created_at",
+                                        "finished_at")},
+           "file": Path(item.get("source", "")).name, "source": item.get("source"), "rules": item.get("rule_ids"),
+           "ffmpeg": ["ffmpeg", *item["args"]] if item.get("args") else None}
+    if file is not None:
+        out["media"] = json.loads(file["media"])
+        out["findings"] = [{k: i.get(k) for k in ("rule_id", "severity", "message")}
+                           for i in json.loads(file["issues"])]
+    return out

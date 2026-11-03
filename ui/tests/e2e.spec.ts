@@ -270,3 +270,63 @@ test("the Log screen shows what went wrong, live, and never the access key (#26)
   await page.keyboard.press("F1");
   await expect(page.getByRole("dialog").getByRole("heading", { name: "Help: Log" })).toBeVisible();
 });
+
+test("the assistant runs a task on an Ollama server with Clipcura's tools; the key never shows (#27)", async ({ page }) => {
+  // A stand-in for the Ollama server: the first reply asks for a tool, the second answers with its result.
+  const { createServer } = await import("node:http");
+  const KEY = "e2e-ollama-key-7731";
+  const seen: { path: string; auth?: string; body?: { messages: { role: string; content: string }[] } }[] = [];
+  let chats = 0;
+  const fake = createServer((req, res) => {
+    let raw = "";
+    req.on("data", (c) => { raw += c; });
+    req.on("end", () => {
+      seen.push({ path: req.url ?? "", auth: req.headers.authorization, body: raw ? JSON.parse(raw) : undefined });
+      if (req.headers.authorization !== `Bearer ${KEY}`) { res.writeHead(401).end("{}"); return; }
+      if (req.url === "/api/version") { res.end(JSON.stringify({ version: "0.40.5" })); return; }
+      if (req.url === "/api/tags") {
+        res.end(JSON.stringify({ models: [{ name: "qwen3.6:27b", size: 17e9, details: { parameter_size: "27.8B" }, capabilities: ["completion", "tools"] }] }));
+        return;
+      }
+      const lines = chats++ === 0
+        ? [{ message: { role: "assistant", content: "", tool_calls: [{ function: { name: "list_profiles", arguments: {} } }] }, done: false }]
+        : [{ message: { role: "assistant", content: "You have **three** profiles:\n- social-30\n- ipad-light\n- hero-10bit" }, done: false }];
+      res.end([...lines, { message: { role: "assistant", content: "" }, done: true }].map((l) => JSON.stringify(l)).join("\n") + "\n");
+    });
+  });
+  await new Promise<void>((r) => fake.listen(0, "127.0.0.1", r));
+  const ollama = `http://127.0.0.1:${(fake.address() as { port: number }).port}`;
+  try {
+    await page.goto(`${base}/assistant?theme=dark&accent=brand&lang=en#token=${token}`);
+    await expect(page.getByRole("heading", { name: "The assistant is off" })).toBeVisible();
+    await page.getByRole("button", { name: "Open Settings" }).click();
+
+    await page.getByLabel("Ollama server").fill(ollama);
+    await page.getByLabel("Access key").fill(KEY);
+    await page.getByRole("button", { name: "Test connection" }).click();
+    await expect(page.getByText("Connected, Ollama 0.40.5").first()).toBeVisible();
+    await expect(page.getByLabel("Model")).toHaveValue("qwen3.6:27b");
+    await page.getByRole("switch", { name: /Use the assistant/ }).click();
+    await expect(page.getByRole("switch", { name: /Use the assistant/ })).toBeChecked();
+    await expect(page.getByLabel("Access key")).toHaveAttribute("placeholder", /Stored/);
+    await shoot(page, "settings-assistant-dark");
+
+    await page.getByRole("link", { name: "Assistant" }).first().click();
+    const box = page.getByLabel("Task for the assistant");
+    await box.fill("Which profiles do I have?");
+    await box.press("Enter");
+    await expect(page.getByText("Profiles", { exact: true })).toBeVisible();
+    await expect(page.getByText("three", { exact: true })).toBeVisible();
+    await expect(page.getByRole("listitem").filter({ hasText: "hero-10bit" }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Send" })).toBeVisible();   // the turn has finished
+    expect(await page.content()).not.toContain(KEY);
+    // The model got Clipcura's tools' answer, and Clipcura asked as the assistant (the audit says "ai").
+    const second = seen.filter((s) => s.path === "/api/chat")[1];
+    expect(second.body?.messages.some((m) => m.role === "tool" && m.content.includes("social-30"))).toBe(true);
+    await shoot(page, "assistant-dark");
+    await page.goto(`${base}/assistant?theme=light&accent=brand&lang=cs`);
+    await shoot(page, "assistant-empty-light-cs");
+  } finally {
+    fake.close();
+  }
+});

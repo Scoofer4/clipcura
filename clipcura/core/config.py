@@ -1,4 +1,5 @@
-"""Per-user settings in <app data>/config.json: API token, port, allowed folders, approvals, concurrency."""
+"""Per-user settings in <app data>/config.json: API token, port, allowed folders, approvals, concurrency,
+assistant."""
 from __future__ import annotations
 
 import secrets
@@ -17,6 +18,15 @@ class Concurrency(BaseModel):
     cpu: PositiveInt = 1
 
 
+class AssistantConfig(BaseModel):
+    """Built-in assistant on an Ollama server (#27). Off until a person turns it on: it sends file names and
+    paths to that server."""
+    enabled: bool = False
+    url: str = ""                          # e.g. https://ollama.example.com; deliberately no default server
+    model: str = ""
+    key: str = ""                          # sent as a bearer token; never returned by the API, masked in the log
+
+
 class Config(BaseModel):
     token: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
     port: int = 0                          # 0 = pick a free port at start
@@ -25,6 +35,7 @@ class Config(BaseModel):
     concurrency: Concurrency = Field(default_factory=Concurrency)
     interface: Literal["window", "browser"] = "window"   # where the desktop app shows the GUI (#23)
     update_check: bool | None = None       # daily check for new versions; None = not asked yet (#22)
+    assistant: AssistantConfig = Field(default_factory=AssistantConfig)
 
 
 def _path() -> Path:

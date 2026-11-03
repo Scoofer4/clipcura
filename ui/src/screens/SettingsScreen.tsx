@@ -9,11 +9,12 @@ import { Panel } from "../design-system/Panel";
 import { useAppearance } from "../design-system/theme";
 import { setLanguage, type Language } from "../i18n";
 import { UpdatesSection } from "../app/updates";
+import { AssistantSettings } from "../app/AssistantSettings";
 import { ProfileEditor } from "./ProfileEditor";
 
-function Section({ title, intro, children }: { title: string; intro?: string; children: React.ReactNode }) {
+function Section({ id, title, intro, children }: { id?: string; title: string; intro?: string; children: React.ReactNode }) {
   return (
-    <Panel className="p-6">
+    <Panel className="scroll-mt-6 p-6" id={id}>
       <h2 className="text-base font-semibold text-ink">{title}</h2>
       {intro && <p className="mt-1 max-w-[70ch] text-sm text-muted">{intro}</p>}
       <div className="mt-4">{children}</div>
@@ -54,6 +55,7 @@ export function SettingsScreen() {
   };
 
   useEffect(() => {
+    if (window.location.hash === "#assistant") window.setTimeout(() => document.getElementById("assistant")?.scrollIntoView(), 50);
     api.config().then(setCfg).catch(() => {});
     reloadProfiles();
     api.system().then(setSystem).catch(() => {});
@@ -106,6 +108,10 @@ export function SettingsScreen() {
             </div>
           </div>
         )}
+      </Section>
+
+      <Section id="assistant" title={t("settings.assistant")} intro={t("settings.assistantIntro")}>
+        <AssistantSettings />
       </Section>
 
       <Section title={t("settings.appearance")}>

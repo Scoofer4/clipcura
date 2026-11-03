@@ -3,7 +3,7 @@ import { eventsUrl, hasToken, type JobStatus } from "./client";
 
 /** One message from /api/events (see clipcura/core/events.py). */
 export interface ApiEvent {
-  type: "scan.file" | "scan.done" | "plan.created" | "job.status" | "job.progress" | "audit" | "updates" | "log";
+  type: "scan.file" | "scan.done" | "plan.created" | "job.status" | "job.progress" | "audit" | "updates" | "log" | "assistant";
   ts: string;
   [key: string]: unknown;
 }

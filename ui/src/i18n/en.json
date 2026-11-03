@@ -173,7 +173,9 @@
     "profileReset": "Profile reset to the default",
     "profileDeleted": "Profile deleted",
     "updates": "Updates",
-    "updatesIntro": "New versions of Clipcura and the parts it needs. Nothing is downloaded until you press a button."
+    "updatesIntro": "New versions of Clipcura and the parts it needs. Nothing is downloaded until you press a button.",
+    "assistant": "Assistant (Ollama)",
+    "assistantIntro": "Give Clipcura tasks in plain words. A model on your Ollama server does them with the same tools and limits as an assistant connected over MCP: conversions still wait for your approval, and it cannot change settings or allowed folders."
   },
   "ks": {
     "title": "Design system",
@@ -282,7 +284,8 @@
     "offline": "Reconnecting…",
     "about": "About",
     "help": "Help",
-    "log": "Log"
+    "log": "Log",
+    "assistant": "Assistant"
   },
   "palette": {
     "title": "Commands",
@@ -586,6 +589,21 @@
           "The access key is never written to the log, so the entries can be shared.",
           "An assistant connected over MCP reads the same entries with get_logs."
         ]
+      },
+      "assistant": {
+        "name": "Assistant",
+        "purpose": "Give Clipcura tasks in plain words. A model on your Ollama server does them with Clipcura's own tools.",
+        "steps": [
+          "Type a task, e.g. which folder to check and for which profile, and press Enter.",
+          "Each tool the model uses appears as a step; open it to see the exact call.",
+          "Conversions it starts wait in AI activity until you approve them.",
+          "Ask follow-up questions in the same conversation, or start a new one."
+        ],
+        "tips": [
+          "Explain next to a failed job or a log error opens a conversation with the details already filled in.",
+          "The model cannot approve, change settings or use folders you have not allowed.",
+          "Conversations are kept until Clipcura closes."
+        ]
       }
     }
   },
@@ -687,6 +705,67 @@
       "service": "service",
       "mcp": "assistant (MCP)",
       "cli": "command line"
+    }
+  },
+  "assistantSettings": {
+    "enable": "Use the assistant",
+    "enableHint": "File names, paths and measured values go to the server below. The videos never do.",
+    "url": "Ollama server",
+    "key": "Access key",
+    "keyStored": "Stored (type to replace)",
+    "keyNone": "None",
+    "keyHint": "Sent as a bearer token to the proxy in front of Ollama. Never shown again and never written to the log.",
+    "test": "Test connection",
+    "connected": "Connected, Ollama {{version}}",
+    "modelsFound_one": "{{count}} model can use tools",
+    "modelsFound_other": "{{count}} models can use tools",
+    "testFailed": "Connection failed",
+    "model": "Model",
+    "modelHint": "Only models that can call tools are listed. Larger models follow tasks more reliably; qwen3.6:27b worked well in testing.",
+    "vision": "sees images",
+    "cloud": "cloud",
+    "cloudWarning": "Cloud models run outside your server: Ollama forwards the conversation to ollama.com.",
+    "save": "Save",
+    "removeKey": "Remove key"
+  },
+  "assistant": {
+    "intro": "Tell Clipcura what to do, for example which folder to check. Every step the model takes is shown below, and conversions wait for your approval in AI activity.",
+    "offTitle": "The assistant is off",
+    "offBody": "Connect Clipcura to your Ollama server in Settings: its address, the access key and a model.",
+    "openSettings": "Open Settings",
+    "new": "New conversation",
+    "history": "Conversations",
+    "examplesTitle": "Try for example:",
+    "examples": [
+      "Check the folder D:\\Footage\\Today and tell me which clips would cause trouble.",
+      "Why did the last conversion fail?",
+      "Are there any errors in the log from today?",
+      "Which profiles do I have and how do they differ?"
+    ],
+    "thinking": "Working…",
+    "inputLabel": "Task for the assistant",
+    "placeholder": "Describe the task. Enter sends, Shift+Enter starts a new line.",
+    "where": "Sent to {{host}}, model {{model}}. Conversions always wait for your approval.",
+    "stop": "Stop",
+    "send": "Send",
+    "sendFailed": "The assistant could not start",
+    "running": "Running",
+    "toolOk": "Done",
+    "toolFailed": "Failed",
+    "sentDetails": "What was sent",
+    "explain": "Explain",
+    "explainJob": "Explain why {{name}} failed",
+    "tools": {
+      "system_info": "System info",
+      "list_profiles": "Profiles",
+      "list_rules": "Checks",
+      "scan_folder": "Check folder",
+      "get_report": "Report",
+      "plan_fixes": "Prepare fixes",
+      "apply_fixes": "Start fixes",
+      "job_status": "Job status",
+      "cancel_job": "Cancel job",
+      "get_logs": "Read log"
     }
   }
 }

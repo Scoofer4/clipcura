@@ -27,9 +27,10 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from clipcura import __version__, rules
+from clipcura.assistant import Assistant, AssistantBusy, OllamaError, explain_prompt
 from clipcura.core import (
     config,
     events,
@@ -90,6 +91,40 @@ class QueueState(BaseModel):
     paused: bool
 
 
+Lang = Literal["en", "cs"]
+
+
+class AssistantSettings(BaseModel):
+    enabled: bool
+    url: str = ""
+    model: str = ""
+    key: str | None = None      # None keeps the stored key, "" removes it
+
+
+class AssistantTest(BaseModel):
+    url: str | None = None      # the values typed in Settings, before they are saved
+    key: str | None = None
+
+
+class AssistantMessage(BaseModel):
+    text: str = Field(min_length=1, max_length=8000)
+    lang: Lang = "en"
+    conversation: str | None = None
+
+
+class ExplainRequest(BaseModel):
+    job_id: str | None = None
+    log: dict | None = None
+    lang: Lang = "en"
+
+
+def public_config(cfg: config.Config) -> dict:
+    """Settings as the GUI may see them: never the API token or the assistant's key."""
+    data = cfg.model_dump(exclude={"token": True, "assistant": {"key"}})
+    data["assistant"]["has_key"] = bool(cfg.assistant.key)
+    return data
+
+
 def _host_ok(host: str | None) -> bool:
     if not host:
         return False
@@ -97,7 +132,8 @@ def _host_ok(host: str | None) -> bool:
     return name.lower() in _LOOPBACK
 
 
-def create_app(updater: updates.Updater | None = None, on_restart: Callable[[Path], None] | None = None) -> FastAPI:
+def create_app(updater: updates.Updater | None = None, on_restart: Callable[[Path], None] | None = None,
+               assistant: Assistant | None = None) -> FastAPI:
     """`on_restart` is given by the desktop app hosting this service: it quits and starts the given Clipcura.exe."""
     cfg = config.load_config()
     worker = Worker(cfg.concurrency.gpu, cfg.concurrency.cpu)
@@ -110,6 +146,7 @@ def create_app(updater: updates.Updater | None = None, on_restart: Callable[[Pat
         worker.stop()
 
     app = FastAPI(title="Clipcura", version=__version__, lifespan=lifespan, docs_url=None, redoc_url=None)
+    app.state.assistant = assistant or Assistant()
 
     @app.middleware("http")
     async def loopback_only(request: Request, call_next):
@@ -325,7 +362,7 @@ def create_app(updater: updates.Updater | None = None, on_restart: Callable[[Pat
     @api.get("/config")
     def get_config() -> dict:
         # The token is never sent back: clients already have it, and the page must not be able to leak it.
-        return config.load_config().model_dump(exclude={"token"})
+        return public_config(config.load_config())
 
     @api.patch("/config")
     def patch_config(req: ConfigPatch, who: Annotated[Actor, Depends(actor)]) -> dict:
@@ -339,7 +376,7 @@ def create_app(updater: updates.Updater | None = None, on_restart: Callable[[Pat
         if req.interface is not None:
             cfg_now.interface = req.interface
         config.save_config(cfg_now)
-        return cfg_now.model_dump(exclude={"token"})
+        return public_config(cfg_now)
 
     @api.get("/queue")
     def get_queue() -> dict:
@@ -357,12 +394,12 @@ def create_app(updater: updates.Updater | None = None, on_restart: Callable[[Pat
         human_only(who)  # an assistant widening its own sandbox would defeat the whitelist
         if not Path(req.path).is_dir():
             raise HTTPException(400, f"Not a folder: {req.path}")
-        return config.allow_root(req.path).model_dump(exclude={"token"})
+        return public_config(config.allow_root(req.path))
 
     @api.delete("/config/roots")
     def remove_root(req: RootRequest, who: Annotated[Actor, Depends(actor)]) -> dict:
         human_only(who)
-        return config.disallow_root(req.path).model_dump(exclude={"token"})
+        return public_config(config.disallow_root(req.path))
 
     @api.get("/jobs/{job_id}")
     def get_job(job_id: str) -> dict:
@@ -397,6 +434,92 @@ def create_app(updater: updates.Updater | None = None, on_restart: Callable[[Pat
             return service.reject(job_id, actor=who)
         except ValueError as e:
             raise HTTPException(409, str(e)) from e
+
+    # --- built-in assistant on an Ollama server (#27): only a person sets it up and gives it tasks ----------
+    def assistant_status() -> dict:
+        a = config.load_config().assistant
+        return {"enabled": a.enabled, "url": a.url, "model": a.model, "has_key": bool(a.key),
+                "conversations": [{k: v for k, v in c.public().items() if k != "transcript"}
+                                  for c in sorted(app.state.assistant.conversations.values(),
+                                                  key=lambda c: c.updated, reverse=True)]}
+
+    @api.get("/assistant")
+    def get_assistant() -> dict:
+        return assistant_status()
+
+    @api.put("/assistant/settings")
+    def assistant_settings(req: AssistantSettings, who: Annotated[Actor, Depends(actor)]) -> dict:
+        human_only(who)
+        cfg_now = config.load_config()
+        url = req.url.strip()
+        if req.enabled and not url.lower().startswith(("http://", "https://")):
+            raise HTTPException(400, "The Ollama address must start with http:// or https://")
+        cfg_now.assistant.enabled, cfg_now.assistant.url, cfg_now.assistant.model = req.enabled, url, req.model
+        if req.key is not None:
+            cfg_now.assistant.key = req.key.strip()
+            logs.add_secret(cfg_now.assistant.key)
+        config.save_config(cfg_now)
+        request_log.info("Assistant %s (%s, model %s, %s)", "on" if req.enabled else "off", url or "no server",
+                         req.model or "none", "with key" if cfg_now.assistant.key else "no key")
+        return assistant_status()
+
+    @api.post("/assistant/test")
+    def assistant_test(req: AssistantTest, who: Annotated[Actor, Depends(actor)]) -> dict:
+        human_only(who)
+        stored = config.load_config().assistant
+        try:
+            server = app.state.assistant.server(req.url if req.url is not None else stored.url,
+                                                req.key if req.key is not None else stored.key)
+            return {"version": server.version(), "models": server.models()}
+        except OllamaError as e:
+            raise HTTPException(502, str(e)) from e
+
+    def start_task(text: str, lang: Lang, conversation: str | None = None, shown: str | None = None) -> dict:
+        settings = config.load_config().assistant
+        if not (settings.enabled and settings.url and settings.model):
+            raise HTTPException(409, "Turn on the assistant and choose a model in Settings first.")
+        try:
+            conv = app.state.assistant.ask(text, lang, settings, conversation_id=conversation, shown=shown)
+        except KeyError as e:
+            raise HTTPException(404, f"Unknown conversation {conversation}") from e
+        except AssistantBusy as e:
+            raise HTTPException(409, "The assistant is still working on the previous message.") from e
+        except OllamaError as e:
+            raise HTTPException(400, str(e)) from e
+        return {"conversation": conv.id}
+
+    @api.post("/assistant/conversations", status_code=202)
+    def assistant_message(req: AssistantMessage, who: Annotated[Actor, Depends(actor)]) -> dict:
+        human_only(who)   # an assistant handing tasks to another assistant would escape the person's view
+        return start_task(req.text, req.lang, req.conversation)
+
+    @api.get("/assistant/conversations/{conversation_id}")
+    def assistant_conversation(conversation_id: str) -> dict:
+        conv = app.state.assistant.get(conversation_id)
+        if conv is None:
+            raise HTTPException(404, f"Unknown conversation {conversation_id}")
+        return conv.public()
+
+    @api.post("/assistant/conversations/{conversation_id}/stop")
+    def assistant_stop(conversation_id: str, who: Annotated[Actor, Depends(actor)]) -> dict:
+        human_only(who)
+        return {"stopping": app.state.assistant.stop(conversation_id)}
+
+    @api.post("/assistant/explain", status_code=202)
+    def assistant_explain(req: ExplainRequest, who: Annotated[Actor, Depends(actor)]) -> dict:
+        human_only(who)
+        if req.job_id:
+            try:
+                prompt, shown = explain_prompt("job", service.job_context(req.job_id), req.lang)
+            except KeyError as e:
+                raise HTTPException(404, str(e)) from e
+        elif req.log:
+            entry = {k: req.log.get(k) for k in ("ts", "level", "process", "source", "message", "exc")
+                     if req.log.get(k)}
+            prompt, shown = explain_prompt("log", entry, req.lang)
+        else:
+            raise HTTPException(400, "Give a job_id or a log entry.")
+        return start_task(prompt, req.lang, shown=shown)
 
     # --- updates and missing parts (#22): anyone may look, only a person decides --------------------------
     updater = updater or updates.Updater()

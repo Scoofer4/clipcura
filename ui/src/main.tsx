@@ -11,6 +11,7 @@ import { Shell } from "./app/Shell";
 import { ToastHost } from "./app/toast";
 import { AppearanceProvider } from "./design-system/theme";
 import { AboutScreen } from "./screens/AboutScreen";
+import { AssistantScreen } from "./screens/AssistantScreen";
 import { LogScreen } from "./screens/LogScreen";
 import { ActivityScreen } from "./screens/ActivityScreen";
 import { JobsScreen } from "./screens/JobsScreen";
@@ -37,6 +38,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="scans/:scanId" element={<ResultsScreen />} />
             <Route path="jobs" element={<JobsScreen />} />
             <Route path="activity" element={<ActivityScreen />} />
+            <Route path="assistant" element={<AssistantScreen />} />
             <Route path="settings" element={<SettingsScreen />} />
             <Route path="about" element={<AboutScreen />} />
             <Route path="log" element={<LogScreen />} />
