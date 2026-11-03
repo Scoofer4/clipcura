@@ -58,3 +58,22 @@ def test_quality_calibration_compares_each_working_gpu_encoder_with_its_cpu_equi
     for result in quality.values():
         assert result.cpu_encoder in {"libx264", "libx265"}
         assert result.quality is None or result.delta >= -backends.QUALITY_MARGIN[result.metric]
+
+
+def test_doctor_output_survives_a_legacy_windows_code_page(tmp_path, monkeypatch):
+    # Issue #16: Czech Windows consoles and pipes use cp1250, which has no check mark; printing must not crash.
+    import io
+    import sys
+
+    from clipsana import cli
+    from clipsana.core.doctor import run_doctor
+    from clipsana.core.models import FfmpegInfo, Probe
+
+    stream = io.TextIOWrapper(io.BytesIO(), encoding="cp1250")
+    monkeypatch.setattr(sys, "stdout", stream)
+    cli.tolerant_streams()
+    report = run_doctor(run_probes=False)
+    report.ffmpeg = FfmpegInfo(ffmpeg="f", ffprobe="p", version="8.1", probes=[Probe(name="libx264", ok=True)])
+    cli._print_doctor(report, tmp_path / "doctor.json")
+    sys.stdout.flush()
+    assert "works" in sys.stdout.buffer.getvalue().decode("cp1250")

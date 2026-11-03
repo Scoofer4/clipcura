@@ -1,5 +1,6 @@
 """Clipsana command line. Commands grow with milestones (doctor in M0, scan/plan/apply in M1, serve in M2)."""
 import json
+import sys
 from pathlib import Path
 from typing import Annotated
 
@@ -26,6 +27,19 @@ JsonOpt = Annotated[bool, typer.Option("--json", help="Machine-readable output."
 _BACKEND_LABEL = {"cuda": "NVIDIA CUDA / NVENC", "qsv": "Intel Quick Sync", "cpu": "CPU only"}
 _PROBE_KIND_LABEL = {"device": "GPU devices", "decoder": "HEVC 10-bit decode", "encoder": "Encoders",
                      "filter": "Filters"}
+
+
+def tolerant_streams() -> None:
+    """Czech Windows consoles and pipes use cp1250, which cannot show marks like the check in doctor's table
+    (issue #16). Show a placeholder for such characters rather than crash after the work is done."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="replace")
+
+
+@app.callback()
+def _main() -> None:
+    tolerant_streams()
 
 
 @app.command()
