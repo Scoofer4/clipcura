@@ -134,6 +134,10 @@
     "language": "Language",
     "motion": "Animations",
     "motionHint": "Off also stops 3D previews. Your Windows setting is respected either way.",
+    "interface": "Open Clipcura in",
+    "interfaceWindow": "Its own window",
+    "interfaceBrowser": "Default browser",
+    "interfaceHint": "Takes effect the next time Clipcura starts. In the browser it keeps running from its icon in the notification area when you close the tab.",
     "saved": "Saved",
     "saveFailed": "Could not save",
     "folders": "Allowed folders",
@@ -292,7 +296,9 @@
     "title": "Open Clipcura from the app",
     "body": "This page talks to the Clipcura service on this computer and needs its key. Start Clipcura, or run this in a terminal to open it with the key filled in:",
     "token": "Or paste the key",
-    "connect": "Connect"
+    "connect": "Connect",
+    "expiredTitle": "This link has expired",
+    "expiredBody": "The link Clipcura opened works once and only briefly. Open Clipcura again from its icon in the notification area, or run this in a terminal:"
   },
   "start": {
     "title": "Check a folder",
@@ -547,7 +553,7 @@
           "Allowed folders: add the folders with your footage. Clipcura reads and writes only inside them.",
           "Assistants and jobs: keep approval on so assistants ask before converting, and set how many jobs run at once.",
           "Profiles: edit a built-in profile or duplicate it to make your own. An edited built-in profile can be reset to the default.",
-          "Appearance: theme, accent colour, language and animations."
+          "Appearance: theme, accent colour, language and animations, and whether Clipcura opens in its own window or in your default browser."
         ],
         "tips": [
           "System shows what clipcura doctor measured on this computer. Run it again after a graphics driver update."
@@ -573,6 +579,13 @@
     "ownerBody": "Clipcura is made and owned by {{owner}}, and released as free software under the {{licence}} licence.",
     "licence": "Licence",
     "source": "Source code",
+    "package": "This copy",
+    "kind": {
+      "installed": "Installed",
+      "portable": "Portable (ZIP)",
+      "source": "Run from source code"
+    },
+    "dataIn": "Settings and history are in",
     "authors": "Authors",
     "authorsBody": "Product, design and development: {{owner}}",
     "contributors": "All contributors on GitHub",

@@ -50,8 +50,8 @@ english.DesktopIcon=Create a desktop shortcut
 czech.DesktopIcon=Vytvořit zástupce na ploše
 english.LaunchApp=Start Clipcura
 czech.LaunchApp=Spustit Clipcuru
-english.NoWebView2=Clipcura shows its window with Microsoft Edge WebView2 Runtime, which is not installed on this computer.%n%nInstall it from https://developer.microsoft.com/microsoft-edge/webview2/ (the "Evergreen" runtime), then start Clipcura. Continue with the installation?
-czech.NoWebView2=Clipcura zobrazuje okno přes Microsoft Edge WebView2 Runtime, který na tomto počítači není.%n%nNainstalujte ho z https://developer.microsoft.com/microsoft-edge/webview2/ (runtime „Evergreen“) a pak Clipcuru spusťte. Pokračovat v instalaci?
+english.NoWebView2=Clipcura shows its own window with Microsoft Edge WebView2 Runtime, which is not installed on this computer.%n%nUntil it is, Clipcura opens in your default browser. Clipcura offers to install WebView2 when it starts (Settings, Updates), or get it from https://developer.microsoft.com/microsoft-edge/webview2/.
+czech.NoWebView2=Clipcura zobrazuje vlastní okno přes Microsoft Edge WebView2 Runtime, který na tomto počítači není.%n%nDo té doby se Clipcura otevírá ve výchozím prohlížeči. WebView2 vám Clipcura nabídne nainstalovat po spuštění (Nastavení, Aktualizace), nebo ho stáhněte z https://developer.microsoft.com/microsoft-edge/webview2/.
 english.Licences=Licences of included software
 czech.Licences=Licence přibaleného softwaru
 
@@ -139,6 +139,7 @@ end;
 function InitializeSetup(): Boolean;
 begin
   Result := True;
+  // Not a blocker any more: without WebView2 the app opens in the default browser (#23).
   if not WebView2Installed() then
-    Result := SuppressibleMsgBox(CustomMessage('NoWebView2'), mbConfirmation, MB_YESNO, IDYES) = IDYES;
+    SuppressibleMsgBox(CustomMessage('NoWebView2'), mbInformation, MB_OK, IDOK);
 end;

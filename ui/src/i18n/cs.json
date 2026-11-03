@@ -139,6 +139,10 @@
     "language": "Jazyk",
     "motion": "Animace",
     "motionHint": "Vypnutí zastaví i 3D náhledy. Nastavení Windows se respektuje vždy.",
+    "interface": "Otevírat Clipcuru",
+    "interfaceWindow": "Ve vlastním okně",
+    "interfaceBrowser": "Ve výchozím prohlížeči",
+    "interfaceHint": "Projeví se při dalším spuštění. V prohlížeči běží Clipcura po zavření karty dál z ikony v oznamovací oblasti.",
     "saved": "Uloženo",
     "saveFailed": "Nepodařilo se uložit",
     "folders": "Povolené složky",
@@ -297,7 +301,9 @@
     "title": "Otevři Clipcuru z aplikace",
     "body": "Tahle stránka mluví se službou Clipcura na tomto počítači a potřebuje její klíč. Spusť Clipcuru, nebo v terminálu spusť příkaz, který ji otevře i s klíčem:",
     "token": "Nebo vlož klíč",
-    "connect": "Připojit"
+    "connect": "Připojit",
+    "expiredTitle": "Odkaz už neplatí",
+    "expiredBody": "Odkaz, kterým se Clipcura otevřela, platí jen jednou a krátce. Otevři ji znovu z ikony v oznamovací oblasti, nebo v terminálu spusť:"
   },
   "start": {
     "title": "Zkontrolovat složku",
@@ -556,7 +562,7 @@
           "Povolené složky: přidej složky se záběry. Clipcura čte a zapisuje jen v nich.",
           "Asistenti a úlohy: nech zapnuté schvalování, ať se asistenti před převodem ptají, a nastav, kolik úloh běží najednou.",
           "Profily: uprav vestavěný profil nebo ho zduplikuj a vytvoř si vlastní. Upravený vestavěný profil jde vrátit na výchozí.",
-          "Vzhled: téma, barva akcentu, jazyk a animace."
+          "Vzhled: téma, barva akcentu, jazyk a animace a jestli se Clipcura otevírá ve vlastním okně, nebo ve výchozím prohlížeči."
         ],
         "tips": [
           "Systém ukazuje, co na tomto počítači změřil clipcura doctor. Po aktualizaci grafického ovladače ho spusť znovu."
@@ -582,6 +588,13 @@
     "ownerBody": "Clipcuru vytváří a vlastní {{owner}} a šíří ji jako svobodný software pod licencí {{licence}}.",
     "licence": "Licence",
     "source": "Zdrojový kód",
+    "package": "Tato kopie",
+    "kind": {
+      "installed": "Nainstalovaná",
+      "portable": "Přenosná (ZIP)",
+      "source": "Spuštěná ze zdrojového kódu"
+    },
+    "dataIn": "Nastavení a historie jsou ve složce",
     "authors": "Autoři",
     "authorsBody": "Produkt, design a vývoj: {{owner}}",
     "contributors": "Všichni přispěvatelé na GitHubu",

@@ -48,6 +48,7 @@ class ScanRequest(BaseModel):
 class ConfigPatch(BaseModel):
     approval_mode: bool | None = None
     concurrency: Concurrency | None = None
+    interface: Literal["window", "browser"] | None = None
 
 
 class RootRequest(BaseModel):
@@ -58,6 +59,13 @@ class PlanRequest(BaseModel):
     scan_id: str
     file_ids: list[int] | None = None
     paths: dict | None = None      # override measured paths, e.g. {"decode": "cpu"}
+
+
+LOGIN_CODE_TTL_S = 120  # long enough for a cold browser start
+
+
+class LoginRequest(BaseModel):
+    code: str
 
 
 class QueueState(BaseModel):
@@ -107,14 +115,36 @@ def create_app() -> FastAPI:
     def health() -> dict:
         return {"status": "ok", "version": __version__}
 
+    # One-time codes for opening the GUI in a browser (#23): the URL a browser is started with ends up in its
+    # history and in the process list, so it carries a short-lived code instead of the access key.
+    login_codes: dict[str, float] = {}
+
+    @app.post("/api/login")
+    def login(req: LoginRequest) -> dict:
+        expires = login_codes.pop(req.code, None)
+        if expires is None or time.monotonic() > expires:
+            raise HTTPException(401, "Unknown or expired code")
+        return {"token": cfg.token}
+
     api = APIRouter(prefix="/api", dependencies=[Depends(require_token)])
 
     system_cache: dict[str, tuple[float, dict]] = {}
 
+    @api.post("/login-codes")
+    def new_login_code() -> dict:
+        now = time.monotonic()
+        for stale in [c for c, expires in login_codes.items() if expires < now]:
+            login_codes.pop(stale, None)
+        code = secrets.token_urlsafe(24)
+        login_codes[code] = now + LOGIN_CODE_TTL_S
+        return {"code": code, "expires_in": LOGIN_CODE_TTL_S}
+
     @api.get("/about")
     def about() -> dict:
         from clipcura import LICENCE, OWNER, SOURCE
+        from clipcura.core.paths import app_data_dir, install_kind
         return {"name": "Clipcura", "version": __version__, "owner": OWNER, "licence": LICENCE, "source": SOURCE,
+                "install": {"kind": install_kind(), "data_dir": str(app_data_dir())},
                 "components": licenses.components()}
 
     @api.get("/about/notices", response_class=PlainTextResponse)
@@ -264,6 +294,8 @@ def create_app() -> FastAPI:
         if req.concurrency is not None:
             cfg_now.concurrency = req.concurrency
             worker.resize(req.concurrency.gpu, req.concurrency.cpu)
+        if req.interface is not None:
+            cfg_now.interface = req.interface
         config.save_config(cfg_now)
         return cfg_now.model_dump(exclude={"token"})
 

@@ -50,6 +50,19 @@ def gui_url(base: str, token: str) -> str:
     return f"{base}/#token={urllib.parse.quote(token)}"
 
 
+def login_url(base: str, code: str) -> str:
+    """The GUI address for a browser: a one-time code instead of the key (#23)."""
+    return f"{base}/#code={urllib.parse.quote(code)}"
+
+
+def browser_url(info: dict, token: str) -> str:
+    """Ask the running service for a one-time code and build the address to open in the default browser."""
+    req = urllib.request.Request(f"{info['url']}/api/login-codes", method="POST",
+                                 headers={"Authorization": f"Bearer {token}"})
+    with urllib.request.urlopen(req, timeout=5) as r:
+        return login_url(info["url"], json.loads(r.read())["code"])
+
+
 CLI_EXE = "clipcura-cli.exe"  # console executable next to Clipcura.exe in the installed app
 
 

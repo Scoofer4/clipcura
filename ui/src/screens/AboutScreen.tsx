@@ -107,6 +107,14 @@ export function AboutScreen() {
 
           <dt className="text-sm text-faint">{t("about.source")}</dt>
           <dd className="text-sm">{about && <Outbound href={about.source}>{about.source.replace(/^https:\/\//, "")}</Outbound>}</dd>
+
+          <dt className="text-sm text-faint">{t("about.package")}</dt>
+          <dd className="text-sm text-muted">
+            {about && <>
+              <p className="text-ink">{t(`about.kind.${about.install.kind}`)}</p>
+              <p className="mt-1">{t("about.dataIn")} <span className="mono break-all text-xs">{about.install.data_dir}</span></p>
+            </>}
+          </dd>
         </dl>
       </Panel>
 

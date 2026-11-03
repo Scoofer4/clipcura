@@ -24,6 +24,12 @@ def test_about_names_the_owner_licence_and_source(api):
     assert about["source"] == "https://github.com/Scoofer4/clipcura"
 
 
+def test_about_says_how_clipcura_was_installed_and_where_its_data_lives(api):
+    install = api.get("/api/about").json()["install"]
+    assert install["kind"] == "source"   # tests run from a checkout; packaged builds say installed/portable (#21)
+    assert install["data_dir"]
+
+
 def test_about_lists_ffmpeg_first_and_every_python_package_with_its_licence(api):
     components = api.get("/api/about").json()["components"]
     names = [c["name"].lower() for c in components]

@@ -23,6 +23,20 @@ and resolutions, HDR, 10-bit HEVC and non-48 kHz audio.
 | M4 | MCP server and approvals | ✅ |
 | M5 | Desktop app, notification-area icon, Windows installer | ✅ built and tested on one machine; clean-Windows install pending |
 
+## Download
+
+Every [release](https://github.com/Scoofer4/clipcura/releases) has two packages with the same app, FFmpeg included:
+
+- **Installer** `Clipcura-Setup-<version>.exe`: per-user install without administrator rights, Start menu entry,
+  uninstaller. Settings and history go to `%APPDATA%\Clipcura`.
+- **Portable** `Clipcura-<version>-win64-portable.zip`: no installation. Unzip anywhere (also a USB drive) and run
+  `Clipcura\Clipcura.exe`. Settings and history stay in the `data` folder next to it; delete `portable.txt` to keep
+  them in your user profile instead.
+
+`SHA256SUMS.txt` lists the checksums. The packages are not code-signed yet, so SmartScreen may ask on first start.
+The window uses Microsoft Edge WebView2 Runtime, a part of Windows 11 and current Windows 10; your default browser
+does not matter.
+
 ## Development (Windows)
 
 ```powershell
@@ -45,14 +59,16 @@ Closing the window keeps Clipcura in the notification area, so conversions conti
 Every screen has help (the Help button or F1), and **About** lists the owner, the licence and every component
 Clipcura is built from with its licence.
 
-## Building the installer
+## Building the packages
 
 ```powershell
-uv run python tools/build_installer.py   # needs Node.js and Inno Setup 6 (ISCC on PATH, or set ISCC)
+uv run python tools/build_installer.py                  # needs Node.js and Inno Setup 6 (ISCC on PATH, or set ISCC)
+uv run python tools/build_installer.py --no-installer   # portable ZIP only
 ```
 
-The result is `packaging\dist\Clipcura-Setup-<version>.exe`: a per-user install without administrator rights,
-with FFmpeg, its licence and the licence texts of every bundled component.
+The results in `packaging\dist\` are the installer, the portable ZIP and `SHA256SUMS.txt`. Both packages carry
+FFmpeg, its licence and the licence texts of every bundled component. Pushing a version tag (`v0.2.0`, matching
+`clipcura.__version__` and `pyproject.toml`) builds them on GitHub Actions and attaches them to a draft release.
 
 ## Usage (CLI)
 

@@ -212,3 +212,25 @@ test("help for each screen, and the About screen with owner and licences", async
   await page.keyboard.press("Escape");
   await shoot(page, "about-light-cs");
 });
+
+test("browser mode: a one-time code opens the GUI once and never shows the key (#23)", async ({ browser }) => {
+  const issue = async () => (await (await fetch(`${base}/api/login-codes`, {
+    method: "POST", headers: { Authorization: `Bearer ${token}` },
+  })).json()).code as string;
+  const code = await issue();
+  const first = await browser.newContext();
+  const page = await first.newPage();
+  await page.goto(`${base}/?theme=dark&lang=en#code=${code}`);
+  await expect(page.getByRole("heading", { name: "Check a folder" })).toBeVisible();
+  expect(page.url()).not.toContain("code=");
+  await page.goto(`${base}/about?lang=en`);   // the key stays with the tab, so reloads and links keep working
+  await expect(page.getByText("Run from source code")).toBeVisible();
+  await first.close();
+
+  // The same link a second time, e.g. from the browser's history: refused.
+  const again = await browser.newContext();
+  const stale = await again.newPage();
+  await stale.goto(`${base}/?lang=en#code=${code}`);
+  await expect(stale.getByRole("heading", { name: "This link has expired" })).toBeVisible();
+  await again.close();
+});

@@ -1,8 +1,8 @@
-"""Build the Windows installer (M5): UI -> icon, version and licence files -> PyInstaller (onedir) -> smoke test
--> Inno Setup.
+"""Build the Windows packages (M5, #21): UI -> icon, version and licence files -> PyInstaller (onedir) -> smoke test
+-> portable ZIP -> Inno Setup installer -> SHA256SUMS.txt.
 
-    uv run python tools/build_installer.py              # everything, installer in packaging/dist/
-    uv run python tools/build_installer.py --no-installer   # stop after the app folder (no Inno Setup needed)
+    uv run python tools/build_installer.py              # everything, packages in packaging/dist/
+    uv run python tools/build_installer.py --no-installer   # app folder and portable ZIP (no Inno Setup needed)
 
 Inno Setup's compiler is taken from --iscc, the ISCC environment variable, PATH, or its default install folders.
 PyInstaller keeps a cache in PYINSTALLER_CONFIG_DIR (set it to keep the cache off the system drive).
@@ -10,11 +10,13 @@ PyInstaller keeps a cache in PYINSTALLER_CONFIG_DIR (set it to keep the cache of
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,6 +27,15 @@ APP_DIR = DIST / "Clipcura"
 
 sys.path.insert(0, str(ROOT))
 from clipcura import __version__
+from clipcura.core.paths import PORTABLE_MARKER
+
+PORTABLE_ZIP = DIST / f"Clipcura-{__version__}-win64-portable.zip"
+INSTALLER = DIST / f"Clipcura-Setup-{__version__}.exe"
+CHECKSUMS = DIST / "SHA256SUMS.txt"
+PORTABLE_NOTE = """This file makes this copy of Clipcura portable: its settings, history and previews are kept in the
+"data" folder next to Clipcura.exe, so the whole folder can move (to another disk or a USB drive).
+Delete this file to keep them in your user profile instead (%APPDATA%\\Clipcura), like the installed app.
+"""
 
 VERSION_TEMPLATE = """VSVersionInfo(
   ffi=FixedFileInfo(filevers={t}, prodvers={t}, mask=0x3f, flags=0x0, OS=0x40004, fileType=0x1, subtype=0x0,
@@ -88,6 +99,33 @@ def smoke_test() -> None:
     print("smoke test ok:", cli)
 
 
+def portable_zip() -> Path:
+    """The same app folder the installer ships, plus the marker that keeps its data next to it. Everything sits in
+    one top folder, so unpacking never scatters files."""
+    PORTABLE_ZIP.unlink(missing_ok=True)
+    with zipfile.ZipFile(PORTABLE_ZIP, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+        for f in sorted(APP_DIR.rglob("*")):
+            if f.is_file():
+                z.write(f, Path("Clipcura") / f.relative_to(APP_DIR))
+        z.writestr(f"Clipcura/{PORTABLE_MARKER}", PORTABLE_NOTE.replace("\n", "\r\n"))
+    print("portable package:", PORTABLE_ZIP)
+    return PORTABLE_ZIP
+
+
+def sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for block in iter(lambda: f.read(1 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def write_checksums(files: list[Path]) -> None:
+    """sha256sum format; the update check verifies downloads against this file (#22)."""
+    CHECKSUMS.write_text("".join(f"{sha256(f)}  {f.name}\n" for f in files), encoding="utf-8", newline="\n")
+    print("checksums:", CHECKSUMS)
+
+
 def find_iscc(explicit: str | None) -> str:
     candidates = [explicit, os.environ.get("ISCC"), shutil.which("iscc"),
                   r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
@@ -113,8 +151,12 @@ def main() -> None:
     prepare()
     pyinstaller()
     smoke_test()
+    packages = [portable_zip()]
+    INSTALLER.unlink(missing_ok=True)
     if not args.no_installer:
         installer(find_iscc(args.iscc))
+        packages.append(INSTALLER)
+    write_checksums(packages)
 
 
 if __name__ == "__main__":

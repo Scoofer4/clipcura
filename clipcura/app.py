@@ -2,6 +2,9 @@
 process, and an icon in the notification area that shows batch progress and announces finished batches and
 assistant requests waiting for approval.
 
+Browser mode (#23) shows the same GUI in the default browser instead of the window: on request (--browser), as a
+setting, or when WebView2 is missing. The service and the icon work the same way.
+
 If a service already runs (started earlier by the MCP server), the window attaches to it instead of starting a
 second worker, so people and assistants always see the same queue.
 """
@@ -23,10 +26,20 @@ POLL_S = 1.0
 
 MENU = {
     "en": {"open": "Open Clipcura", "pause": "Pause queue", "quit": "Quit",
-           "background": "Clipcura keeps running here. Conversions continue; quit from this icon."},
+           "background": "Clipcura keeps running here. Conversions continue; quit from this icon.",
+           "browser": "Clipcura is open in your browser. It keeps running here even when you close the tab; "
+                      "reopen or quit it from this icon."},
     "cs": {"open": "Otevřít Clipcuru", "pause": "Pozastavit frontu", "quit": "Ukončit",
-           "background": "Clipcura běží dál tady. Převody pokračují; ukončíte ji z této ikony."},
+           "background": "Clipcura běží dál tady. Převody pokračují; ukončíte ji z této ikony.",
+           "browser": "Clipcura je otevřená v prohlížeči. Běží dál tady, i když kartu zavřete; "
+                      "znovu ji otevřete nebo ukončíte z této ikony."},
 }
+
+
+def choose_interface(requested_browser: bool, configured: str, webview2: bool) -> str:
+    """"window" (WebView2) or "browser" (the default browser): the browser when asked for, or when the window
+    cannot work because WebView2 is missing."""
+    return "browser" if requested_browser or configured == "browser" or not webview2 else "window"
 
 
 def ui_language() -> str:
@@ -40,9 +53,10 @@ def ui_language() -> str:
 
 
 class DesktopApp:
-    def __init__(self) -> None:
+    def __init__(self, interface: str = "window") -> None:
         from clipcura.desktop.monitor import BatchMonitor
 
+        self.interface = interface
         self.lang = ui_language()
         self.text = MENU[self.lang]
         self.monitor = BatchMonitor(lang=self.lang)
@@ -55,18 +69,29 @@ class DesktopApp:
 
     # --- lifecycle -----------------------------------------------------------------------------------------
     def run(self) -> None:
-        import webview
-
-        from clipcura.api.server import ServiceThread, gui_url, running_server
+        from clipcura.api.server import ServiceThread, running_server
 
         cfg = load_config()
         info = running_server()
         if info is None:
             self.service = ServiceThread()
             info = self.service.start()
+        self._info, self._token = info, cfg.token
         self._client = httpx.Client(base_url=info["url"], timeout=5,
                                     headers={"Authorization": f"Bearer {cfg.token}"})
-        self.window = webview.create_window("Clipcura", gui_url(info["url"], cfg.token), width=1360, height=860,
+        if self.interface == "browser":
+            self._run_in_browser()
+        else:
+            self._run_in_window()
+        self._shutdown()
+
+    def _run_in_window(self) -> None:
+        import webview
+
+        from clipcura.api.server import gui_url
+
+        info, cfg_token = self._info, self._token
+        self.window = webview.create_window("Clipcura", gui_url(info["url"], cfg_token), width=1360, height=860,
                                             min_size=(1024, 680), background_color="#12151A")
         self.window.events.closing += self._on_closing
         self._start_tray()
@@ -74,7 +99,25 @@ class DesktopApp:
         # WebView2 keeps its profile (theme, language, cache) with the rest of Clipcura's data.
         storage = app_data_dir() / "webview"
         webview.start(private_mode=False, storage_path=str(storage))
-        self._shutdown()
+
+    def _run_in_browser(self) -> None:
+        self._start_tray()
+        threading.Thread(target=self._watch, name="clipcura-monitor", daemon=True).start()
+        self._open_browser()
+        if self.tray:
+            self.tray.notify("Clipcura", self.text["browser"])
+        # Without a notification area the process lives on like `clipcura serve` until Windows ends it.
+        self.quitting.wait()
+
+    def _open_browser(self) -> None:
+        import webbrowser
+
+        from clipcura.api.server import browser_url
+
+        try:
+            webbrowser.open(browser_url(self._info, self._token))
+        except (OSError, ValueError, KeyError):
+            log.warning("could not open the browser", exc_info=True)
 
     def _start_tray(self) -> None:
         if sys.platform != "win32":
@@ -97,7 +140,9 @@ class DesktopApp:
 
     # --- window --------------------------------------------------------------------------------------------
     def show(self) -> None:
-        if self.window:
+        if self.interface == "browser":
+            self._open_browser()   # a fresh tab with a new one-time code
+        elif self.window:
             self.window.show()
             self.window.restore()
 
@@ -162,8 +207,9 @@ def _session_ending() -> bool:
     return sys.platform == "win32" and bool(ctypes.windll.user32.GetSystemMetrics(SM_SHUTTINGDOWN))
 
 
-def run_app() -> None:
+def run_app(browser: bool = False) -> None:
     from clipcura.core.paths import migrate_legacy_app_data
+    from clipcura.desktop import webview2
 
     migrate_legacy_app_data()  # the app was called Clipsana until 2026-11-03 (#19)
     if sys.platform == "win32":
@@ -171,4 +217,4 @@ def run_app() -> None:
 
         if show_running_instance():
             return
-    DesktopApp().run()
+    DesktopApp(choose_interface(browser, load_config().interface, webview2.installed())).run()

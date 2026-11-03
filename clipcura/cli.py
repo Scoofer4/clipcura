@@ -48,7 +48,8 @@ def _main() -> None:
 def version() -> None:
     """Print the application version."""
     from clipcura import __version__
-    typer.echo(f"Clipcura {__version__}")
+    from clipcura.core.paths import app_data_dir, install_kind
+    typer.echo(f"Clipcura {__version__} ({install_kind()}, data in {app_data_dir()})")
 
 
 config_app = typer.Typer(help="Settings in the app data folder (token, allowed folders, approvals).",
@@ -103,23 +104,25 @@ def mcp_server() -> None:
 
 
 @app.command("app")
-def desktop_app() -> None:
+def desktop_app(
+    browser: Annotated[bool, typer.Option("--browser", help="Show the GUI in the default browser, not a window.")] = False,
+) -> None:
     """Open Clipcura in its own window with an icon in the notification area (the installed app's default)."""
     from clipcura.app import run_app
-    run_app()
+    run_app(browser=browser)
 
 
 @app.command("open")
 def open_gui(
-    print_only: Annotated[bool, typer.Option("--print", help="Only print the URL (contains the access key).")] = False,
+    print_only: Annotated[bool, typer.Option("--print", help="Only print the URL (a one-time code, valid 2 minutes).")] = False,
 ) -> None:
-    """Open the Clipcura GUI in the browser, starting the background service if needed."""
+    """Open the Clipcura GUI in the default browser, starting the background service if needed."""
     import webbrowser
 
-    from clipcura.api.server import gui_url, running_server, start_background
+    from clipcura.api.server import browser_url, running_server, start_background
     from clipcura.core.config import load_config
     info = running_server() or start_background()
-    url = gui_url(info["url"], load_config().token)
+    url = browser_url(info, load_config().token)
     if print_only:
         typer.echo(url)
     else:

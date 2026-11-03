@@ -120,6 +120,14 @@ export function SettingsScreen() {
           <Switch checked={appearance.motion === "full"} onChange={(v) => appearance.setMotion(v ? "full" : "reduced")}
                   label={t("settings.motion")} description={t("settings.motionHint")} />
         </div>
+        {cfg && (
+          <div className="mt-5 border-t border-line pt-4">
+            <Segmented label={t("settings.interface")} value={cfg.interface} onChange={(v) => save({ interface: v })}
+                       options={[{ value: "window", label: t("settings.interfaceWindow") },
+                                 { value: "browser", label: t("settings.interfaceBrowser") }]} />
+            <p className="mt-2 max-w-[70ch] text-xs text-muted">{t("settings.interfaceHint")}</p>
+          </div>
+        )}
       </Section>
 
       <Section title={t("settings.profiles")} intro={t("settings.profilesIntro")}>

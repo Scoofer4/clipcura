@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import secrets
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, Field, PositiveInt
 
@@ -22,6 +23,7 @@ class Config(BaseModel):
     allowed_roots: list[str] = Field(default_factory=list)
     approval_mode: bool = True             # jobs requested by AI wait for a human (CLAUDE.md §10)
     concurrency: Concurrency = Field(default_factory=Concurrency)
+    interface: Literal["window", "browser"] = "window"   # where the desktop app shows the GUI (#23)
 
 
 def _path() -> Path:

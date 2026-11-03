@@ -38,7 +38,7 @@ export interface Profile {
   source?: ProfileSource;
 }
 export interface RuleInfo { id: string; title: string; standalone: boolean }
-export interface AppConfig { port: number; allowed_roots: string[]; approval_mode: boolean; concurrency: { gpu: number; cpu: number } }
+export interface AppConfig { port: number; allowed_roots: string[]; approval_mode: boolean; concurrency: { gpu: number; cpu: number }; interface: "window" | "browser" }
 export interface SystemReport {
   backend: string; paths: Paths;
   system: { cpu: string; ram_total_mb: number; gpus: { name: string; vendor: string; driver: string; memory_total_mb: number | null; memory_used_mb: number | null; utilization_pct: number | null }[]; disks: { path: string; free_gb: number; total_gb: number }[] };
@@ -47,19 +47,31 @@ export interface SystemReport {
 
 const TOKEN_KEY = "clipcura.token";
 
-function readToken(): string {
-  const match = window.location.hash.match(/token=([^&]+)/);
-  if (match) {
-    try { sessionStorage.setItem(TOKEN_KEY, decodeURIComponent(match[1])); } catch { /* private mode */ }
-    history.replaceState(null, "", window.location.pathname + window.location.search);
-    return decodeURIComponent(match[1]);
-  }
-  try { return sessionStorage.getItem(TOKEN_KEY) ?? ""; } catch { return ""; }
+/** Reads one value from the URL fragment and clears the fragment from the address bar. */
+function takeFromFragment(name: string): string | null {
+  const match = window.location.hash.match(new RegExp(`${name}=([^&]+)`));
+  if (!match) return null;
+  history.replaceState(null, "", window.location.pathname + window.location.search);
+  return decodeURIComponent(match[1]);
 }
 
-let token = readToken();
+let token = "";
 export const hasToken = () => token.length > 0;
-export const setToken = (t: string) => { token = t; try { sessionStorage.setItem(TOKEN_KEY, t); } catch { /* ignore */ } };
+export const setToken = (t: string) => { token = t; try { sessionStorage.setItem(TOKEN_KEY, t); } catch { /* private mode */ } };
+
+// A browser opened by Clipcura gets a one-time code (#23): the address it was started with lands in the
+// browser's history, so it must not hold the key. The desktop window passes the key itself.
+const loginCode = takeFromFragment("code");
+const fragmentToken = loginCode ? null : takeFromFragment("token");
+if (fragmentToken) setToken(fragmentToken);
+else if (!loginCode) { try { token = sessionStorage.getItem(TOKEN_KEY) ?? ""; } catch { /* private mode */ } }
+
+/** "ok" once the page has a key; "expired" when the one-time code it was opened with no longer works. */
+export const login: Promise<"ok" | "expired" | "none"> = loginCode
+  ? fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: loginCode }) })
+      .then(async (r) => { if (!r.ok) return "expired" as const; setToken((await r.json()).token); return "ok" as const; })
+      .catch(() => "expired" as const)
+  : Promise.resolve(hasToken() ? "ok" : "none");
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
@@ -73,6 +85,7 @@ export interface Component {
 export interface About {
   name: string; version: string; licence: string; source: string;
   owner: { name: string; url: string };
+  install: { kind: "installed" | "portable" | "source"; data_dir: string };
   components: Component[];
 }
 
@@ -121,7 +134,7 @@ export const api = {
   reject: (id: string) => request<Job>("POST", `/api/jobs/${id}/reject`),
   audit: (limit = 100) => request<AuditEntry[]>("GET", `/api/audit?limit=${limit}`),
   config: () => request<AppConfig>("GET", "/api/config"),
-  patchConfig: (patch: Partial<Pick<AppConfig, "approval_mode" | "concurrency">>) => request<AppConfig>("PATCH", "/api/config", patch),
+  patchConfig: (patch: Partial<Pick<AppConfig, "approval_mode" | "concurrency" | "interface">>) => request<AppConfig>("PATCH", "/api/config", patch),
   addRoot: (path: string) => request<AppConfig>("POST", "/api/config/roots", { path }),
   removeRoot: (path: string) => request<AppConfig>("DELETE", "/api/config/roots", { path }),
 };
