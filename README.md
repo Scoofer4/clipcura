@@ -21,7 +21,7 @@ and resolutions, HDR, 10-bit HEVC and non-48 kHz audio.
 | M2 | Local API, worker, events | ✅ |
 | M3 | Design system and GUI | ✅ |
 | M4 | MCP server and approvals | ✅ |
-| M5 | Windows installer | ⏳ |
+| M5 | Desktop app, notification-area icon, Windows installer | ✅ built and tested on one machine; clean-Windows install pending |
 
 ## Development (Windows)
 
@@ -34,6 +34,25 @@ uv run pytest                           # tests (integration tests need vendor/f
 
 FFmpeg lives in `vendor/ffmpeg/` (not committed). Real sample footage goes to `tests/fixtures/real/` (not committed),
 or point `CLIPCURA_REAL_DIR` at a folder to run the real-footage checks.
+
+## Desktop app
+
+```powershell
+uv run clipcura app      # the GUI in its own window; the icon in the notification area shows batch progress
+```
+
+Closing the window keeps Clipcura in the notification area, so conversions continue; quit from the icon's menu.
+Every screen has help (the Help button or F1), and **About** lists the owner, the licence and every component
+Clipcura is built from with its licence.
+
+## Building the installer
+
+```powershell
+uv run python tools/build_installer.py   # needs Node.js and Inno Setup 6 (ISCC on PATH, or set ISCC)
+```
+
+The result is `packaging\dist\Clipcura-Setup-<version>.exe`: a per-user install without administrator rights,
+with FFmpeg, its licence and the licence texts of every bundled component.
 
 ## Usage (CLI)
 
@@ -74,17 +93,18 @@ person (`clipcura config allow` or Settings) can be used.
 Register it in Claude Code, for example:
 
 ```powershell
-claude mcp add clipcura -- uv run --project D:\path\to\clipcura clipcura mcp
+claude mcp add clipcura -s user -- uv run --project D:\path\to\clipcura clipcura mcp      # source checkout
+claude mcp add clipcura -s user -- "%LOCALAPPDATA%\Programs\Clipcura\clipcura-cli.exe" mcp   # installed app
 ```
 
 ## Project layout
 
 ```
-clipcura/    core, rules (check plugins), api (local API), mcp (MCP server)
+clipcura/    core, rules (check plugins), api (local API), mcp (MCP server), desktop (window, tray)
 profiles/    target parameters (YAML)
 ui/          React GUI (from M3)
 tests/       tests, generated and real samples
-tools/       original prototype script
+tools/       FFmpeg fetch, benchmark, installer build, original prototype script
 packaging/   PyInstaller and installer
 docs/        screenshots, benchmarks, notes
 ```

@@ -2,6 +2,44 @@
 
 Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 
+## 3. 11. 2026 – přejmenování na Clipcura, M5 (aplikace, tray, instalátor), nápověda a O aplikaci
+
+### Hotovo
+
+- **Přejmenování (rozhodnutí vlastníka, #19):** Clipsana koliduje s videoaplikací pro iPhone, nový název je
+  **Clipcura**. Balíček, příkaz, exe, proměnné `CLIPCURA_*`, UI, instalátor, dokumentace. Repozitář je
+  `Scoofer4/clipcura` (stará adresa přesměrovává). App data se jednou přesunou z `%APPDATA%\Clipsana`
+  do `%APPDATA%\Clipcura` (ověřeno na notebooku vlastníka). Lokální složka `D:\WorkspacePrg\ClipsAna` zůstala.
+- **#14 kvalita GPU kodérů:** NVENC bez `-maxrate` škrtil datový tok, takže zrnitý záznam ztrácel 1,1–1,2 VMAF
+  proti libx264. Teď `-maxrate 200M`, H.264 profil High a `clipcura doctor` kalibruje CQ proti CPU kodéru
+  (VMAF, tolerance 0,5). Tento notebook: všechny čtyři GPU kodéry drží kvalitu (`docs/benchmarks.md`).
+- **#15 pravidlo `loudness`** jedním souborem (akceptace kap. 13); jen hlásí, oprava se zapíná v profilu.
+  `social-30` a `ipad-light` měří proti −14 LUFS. Předtím obecná podpora nastavení pluginů v profilu.
+- **M5:** `clipcura app` / `Clipcura.exe` = okno WebView2 + služba v procesu + ikona v oznamovací oblasti
+  (průběh v logu, odznak pro žádosti AI, menu Otevřít/Pozastavit frontu/Ukončit, notifikace Windows).
+  Pozastavení fronty (`/api/queue`). Instalátor: PyInstaller (Clipcura.exe + clipcura-cli.exe) a Inno Setup
+  6.7.4 (nainstalován do `D:\WorkspacePrg\_innosetup`, cache PyInstalleru `D:\WorkspacePrg\_pyinstaller`).
+  Instalace pro uživatele bez admin práv, EN/CS, kontrola WebView2, licence všech součástí.
+- **Nápověda ke každé obrazovce** (tlačítko Nápověda vpravo nahoře, F1) a obrazovka **O aplikaci**
+  (vlastník a tvůrce Metaverse Media s.r.o., autoři, licence, zdroj, všechny použité nástroje s verzí
+  a licencí, plné licenční texty).
+- Opravené chyby: #16 pád `doctor` v konzoli cp1250, #17 vypnutí služby viselo 30 s, #18 odinstalace
+  nezavřela běžící aplikaci. Odstraněn `init_repo.ps1` (#2).
+
+### Ověřeno
+
+- pytest 228 prošlo / 2 přeskočeny, ruff OK, tsc OK, Playwright 11/11, CI zelené (fd10057).
+- Na notebooku: okno, služba, ikona, dávka 4 převodů, zabalený MCP server připojený ke službě aplikace,
+  instalace → upgrade přes běžící aplikaci → odinstalace přes běžící aplikaci (čisté).
+- **Neověřeno:** vzhled notifikací a průběhu v ikoně (obrazovka byla zamčená), instalace na čistých
+  Windows (Windows Sandbox není zapnutý), známková rešerše u ÚPV/EUIPO pro Clipcuru.
+
+### Otevřené
+
+- #10 registrace MCP v Claude Code: bezpečnostní kontrola Claude Code agentovi zápis do své konfigurace
+  nepovolí, vlastník spustí příkaz z issue sám.
+- Další krok: ukázka M4 + M5 vlastníkovi, test na čistých Windows, ochranná známka před vydáním.
+
 ## 3. 11. 2026 – M4 (MCP server + schvalování) – hotovo, čeká na ukázku vlastníkovi
 
 ### Hotovo
