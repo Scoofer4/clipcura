@@ -99,6 +99,13 @@ Every check is a plugin in `clipcura/rules/` (one file per rule).
 `clipcura doctor` also measures which decoder and scaler are fastest on your machine (whole-job timing), and
 `plan` uses the result. Tone-mapping picks the higher-quality path whenever it works.
 
+## Log
+
+Every part of Clipcura (the app, the background service, the MCP server, CLI commands) logs what it does from start
+to shutdown, including unhandled errors, to `logs\` in the app data folder (one file per part, rotated at 5 MB).
+The **Log** screen shows it live with level filters and search, `clipcura logs` prints it, and assistants read the
+same entries with the MCP tool `get_logs`. The access key and one-time codes are masked, so entries can be shared.
+
 ## Local API
 
 ```powershell
@@ -115,7 +122,7 @@ folder). Progress and events stream over the WebSocket `/api/events?token=...`. 
 `clipcura mcp` is an MCP server on stdio. It starts the background service when no Clipcura window is open and
 calls the local API as actor `ai`, so an assistant has the same actions as the GUI and nothing more:
 `system_info`, `list_profiles`, `list_rules`, `scan_folder`, `get_report`, `plan_fixes`, `apply_fixes`,
-`job_status`, `cancel_job`. There is no approve tool. While the approval mode is on (default), every
+`job_status`, `cancel_job`, `get_logs`. There is no approve tool. While the approval mode is on (default), every
 conversion an assistant requests waits in **AI activity** until a person approves it. Only folders allowed by a
 person (`clipcura config allow` or Settings) can be used.
 

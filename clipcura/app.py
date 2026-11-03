@@ -127,6 +127,7 @@ class DesktopApp:
     def restart_into(self, exe: Path) -> None:
         """Quit and start `exe`: a newer portable copy (#22), or this copy again once WebView2 is installed."""
         self.restart_to = exe
+        log.info("Restarting into %s", exe)
         # Called from an API request: let it answer before the service goes down.
         threading.Timer(0.5, self.quit).start()
 
@@ -150,8 +151,11 @@ class DesktopApp:
 
         tray = Tray(lambda size: icon.png(size), "Clipcura", self._menu, self.show, on_quit=self.quit)
         self.tray = tray if tray.start() else None
+        if self.tray is None:
+            log.warning("No icon in the notification area: closing the window quits Clipcura")
 
     def _shutdown(self) -> None:
+        log.info("Shutting down")
         self.quitting.set()
         if self.service:
             self.service.stop()
@@ -231,13 +235,19 @@ def _session_ending() -> bool:
 
 
 def run_app(browser: bool = False) -> None:
+    from clipcura.core import logs
     from clipcura.core.paths import migrate_legacy_app_data
     from clipcura.desktop import webview2
 
     migrate_legacy_app_data()  # the app was called Clipsana until 2026-11-03 (#19)
+    logs.setup("app")
     if sys.platform == "win32":
         from clipcura.desktop.tray import show_running_instance
 
         if show_running_instance():
             return
-    DesktopApp(choose_interface(browser, load_config().interface, webview2.installed())).run()
+    has_webview2 = webview2.installed()
+    interface = choose_interface(browser, load_config().interface, has_webview2)
+    log.info("Showing the GUI in %s%s", "the default browser" if interface == "browser" else "its own window",
+             "" if has_webview2 else " (WebView2 is not installed)")
+    DesktopApp(interface).run()

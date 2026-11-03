@@ -281,7 +281,8 @@
     "live": "Live",
     "offline": "Reconnecting…",
     "about": "About",
-    "help": "Help"
+    "help": "Help",
+    "log": "Log"
   },
   "palette": {
     "title": "Commands",
@@ -571,6 +572,20 @@
         "tips": [
           "FFmpeg does the actual conversion. It runs as a separate program under its own GPL licence; the link leads to its source code."
         ]
+      },
+      "log": {
+        "name": "Log",
+        "purpose": "Where to look when something goes wrong: what each part of Clipcura did, newest first, updated live.",
+        "steps": [
+          "Choose what to show: errors only, warnings and errors, or everything.",
+          "Search for a file name, a job or a word from an error message.",
+          "Technical details under an entry show the full error for a bug report.",
+          "Copy shown entries puts them on the clipboard, e.g. for an issue on GitHub."
+        ],
+        "tips": [
+          "The access key is never written to the log, so the entries can be shared.",
+          "An assistant connected over MCP reads the same entries with get_logs."
+        ]
       }
     }
   },
@@ -638,5 +653,40 @@
     "bannerNew": "Clipcura {{version}} is available.",
     "bannerWebview2": "Clipcura's own window needs Microsoft Edge WebView2, which is missing, so it opens in your browser.",
     "bannerWebview2Ready": "WebView2 is installed. Restart Clipcura to open it in its own window."
+  },
+  "log": {
+    "title": "Log",
+    "intro": "Everything Clipcura does, from start to shutdown: scans, conversions, approvals, updates and every error, with the part that reported it. Assistants read the same log.",
+    "level": "Show",
+    "errors": "Errors",
+    "warnings": "Warnings and errors",
+    "everything": "Everything",
+    "search": "Search the log",
+    "copyShown": "Copy shown entries",
+    "copiedCount_one": "{{count}} entry",
+    "copiedCount_other": "{{count}} entries",
+    "copied": "Copied",
+    "copyFailed": "Could not copy",
+    "copyPath": "Copy path",
+    "folder": "Log files:",
+    "details": "Technical details",
+    "empty": {
+      "error": "No errors logged. If something still goes wrong, show warnings too.",
+      "warning": "No warnings or errors logged.",
+      "info": "Nothing logged yet."
+    },
+    "levels": {
+      "DEBUG": "debug",
+      "INFO": "info",
+      "WARNING": "warning",
+      "ERROR": "error",
+      "CRITICAL": "failure"
+    },
+    "process": {
+      "app": "app",
+      "service": "service",
+      "mcp": "assistant (MCP)",
+      "cli": "command line"
+    }
   }
 }

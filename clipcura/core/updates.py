@@ -8,6 +8,7 @@
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
@@ -35,6 +36,10 @@ STATE_FILE = "updates.json"
 CHECKSUMS = "SHA256SUMS.txt"
 # Microsoft's Evergreen bootstrapper: a small signed program that downloads and installs the runtime per user.
 WEBVIEW2_URL = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
+
+
+_TASK_NAMES = {"download": "Download of the new version", "webview2": "WebView2 installation",
+               "ffmpeg": "FFmpeg restore"}
 
 
 class UpdateError(Exception):
@@ -157,9 +162,13 @@ class Updater:
                           "assets": {a["name"]: a["browser_download_url"] for a in data.get("assets", [])}}
             self._save({**self._load(), "last_check": _now().isoformat(timespec="seconds"), "latest": latest})
             self._check_error = None
-            return self._newer()
+            newer = self._newer()
+            log.info("Update check: %s", f"Clipcura {newer['version']} is available" if newer
+                     else f"{self.current} is the latest version")
+            return newer
         except (httpx.HTTPError, ValueError, KeyError) as e:
             self._check_error = f"Could not reach GitHub: {e}"
+            log.warning("Update check failed: %s", e)
             raise UpdateError(self._check_error) from e
         finally:
             self._checking = False
@@ -236,6 +245,7 @@ class Updater:
         task = self.tasks["download"]
         if self.kind != "installed" or task["state"] != "ready":
             raise UpdateError("Download the new installer first.")
+        log.info("Starting the installer %s", task["path"])
         _detached([task["path"]])
 
     # --- missing parts ------------------------------------------------------------------------------------
@@ -292,6 +302,7 @@ class Updater:
             if task["state"] == "running":
                 raise UpdateError("Already in progress.")
             task.update(state="running", progress=0.0, error=None, path=None)
+        log.info("%s started", _TASK_NAMES[name])
         self._changed()
         last = [0.0]
 
@@ -306,8 +317,10 @@ class Updater:
                 path = work(progress)
             except Exception as e:
                 task.update(state="failed", error=str(e))
+                log.error("%s failed: %s", _TASK_NAMES[name], e, exc_info=not isinstance(e, UpdateError))
                 self._changed()
                 raise
+            log.info("%s finished: %s", _TASK_NAMES[name], path)
             task.update(state="ready", progress=1.0, path=str(path))
             self._changed()
             return path
@@ -316,10 +329,8 @@ class Updater:
             return run()
 
         def background() -> None:
-            try:
+            with contextlib.suppress(Exception):   # already logged and kept in the task state for the GUI
                 run()
-            except Exception:
-                log.warning("%s failed", name, exc_info=True)
 
         threading.Thread(target=background, name=f"clipcura-{name}", daemon=True).start()
         return None

@@ -27,6 +27,7 @@ Only folders the user allowed can be used; if a folder is refused, ask the user 
 settings. Pass lang="cs" for Czech summaries."""
 
 READ = ToolAnnotations(read_only_hint=True, destructive_hint=False, idempotent_hint=True, open_world_hint=False)
+log = logging.getLogger(__name__)
 
 
 def _connect() -> httpx.Client:
@@ -58,6 +59,7 @@ def build_server(connect: Callable[[], httpx.Client] = _connect) -> MCPServer:
         if "client" not in holder:
             holder["client"] = connect()
         r = holder["client"].request(method, path, **kwargs)
+        log.info("Assistant: %s %s -> %s", method, path, r.status_code)
         if r.status_code == 403:
             raise ToolError(f"{r.json().get('detail', 'Forbidden')}. Ask the user to allow the folder in "
                             "Clipcura's settings; an assistant cannot change the allowed folders.")
@@ -181,6 +183,19 @@ def build_server(connect: Callable[[], httpx.Client] = _connect) -> MCPServer:
         """Stop a running job (its partial output is removed) or withdraw a waiting one."""
         call("POST", f"/api/jobs/{job_id}/cancel")
         return {"summary": _say(lang, "Cancel requested.", "Zrušení vyžádáno."), "job_id": job_id}
+
+    @mcp.tool(annotations=READ)
+    def get_logs(level: Literal["info", "warning", "error"] = "warning", text: str | None = None, limit: int = 50,
+                 lang: Lang = "en") -> dict[str, Any]:
+        """Clipcura's log, newest first: what every part did and where something went wrong (the same entries
+        the person sees on the Log screen). Use it when a scan, plan or job fails or behaves unexpectedly."""
+        data = call("GET", "/api/logs", params={"level": level, "limit": min(limit, 500),
+                                                **({"text": text} if text else {})})
+        entries = data["entries"]
+        errors = sum(e["level"] in ("ERROR", "CRITICAL") for e in entries)
+        summary = _say(lang, f"{len(entries)} log entries, {errors} error(s). Log folder: {data['folder']}",
+                       f"{len(entries)} záznamů logu, chyb: {errors}. Složka logu: {data['folder']}")
+        return {"summary": summary, "folder": data["folder"], "entries": entries}
 
     return mcp
 

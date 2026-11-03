@@ -1,4 +1,4 @@
-import { Activity, Bot, CircleHelp, FolderSearch, Home, Info, Moon, Settings as SettingsIcon, Sun, Command as CommandIcon } from "lucide-react";
+import { Activity, Bot, CircleHelp, FolderSearch, Home, Info, Moon, ScrollText, Settings as SettingsIcon, Sun, Command as CommandIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -75,6 +75,7 @@ export function Shell() {
     ...(last ? [{ id: "results", label: t("nav.results"), icon: <FolderSearch className="size-4" />, run: () => navigate(`/scans/${last}`) }] : []),
     { id: "jobs", label: t("nav.jobs"), icon: <Activity className="size-4" />, run: () => navigate("/jobs") },
     { id: "activity", label: t("nav.activity"), icon: <Bot className="size-4" />, run: () => navigate("/activity") },
+    { id: "log", label: t("nav.log"), icon: <ScrollText className="size-4" />, run: () => navigate("/log") },
     { id: "settings", label: t("nav.settings"), icon: <SettingsIcon className="size-4" />, run: () => navigate("/settings") },
     { id: "help", label: t("palette.help"), hint: "F1", icon: <CircleHelp className="size-4" />, run: () => setHelpOpen(true) },
     { id: "about", label: t("palette.about"), icon: <Info className="size-4" />, run: () => navigate("/about") },
@@ -98,6 +99,7 @@ export function Shell() {
           {last && <NavItem to={`/scans/${last}`} icon={<FolderSearch className="size-4" aria-hidden />} label={t("nav.results")} />}
           <NavItem to="/jobs" icon={<Activity className="size-4" aria-hidden />} label={t("nav.jobs")} badge={running} />
           <NavItem to="/activity" icon={<Bot className="size-4" aria-hidden />} label={t("nav.activity")} badge={waiting} />
+          <NavItem to="/log" icon={<ScrollText className="size-4" aria-hidden />} label={t("nav.log")} />
           <NavItem to="/settings" icon={<SettingsIcon className="size-4" aria-hidden />} label={t("nav.settings")} />
         </nav>
         <div className="mt-auto space-y-3 px-2">
@@ -124,6 +126,7 @@ export function Shell() {
             <NavLink to="/" className="rounded p-2 text-muted" aria-label={t("nav.start")}><Home className="size-4" /></NavLink>
             <NavLink to="/jobs" className="rounded p-2 text-muted" aria-label={t("nav.jobs")}><Activity className="size-4" /></NavLink>
             <NavLink to="/activity" className="rounded p-2 text-muted" aria-label={t("nav.activity")}><Bot className="size-4" /></NavLink>
+            <NavLink to="/log" className="rounded p-2 text-muted" aria-label={t("nav.log")}><ScrollText className="size-4" /></NavLink>
             <NavLink to="/settings" className="rounded p-2 text-muted" aria-label={t("nav.settings")}><SettingsIcon className="size-4" /></NavLink>
           </nav>
         </header>

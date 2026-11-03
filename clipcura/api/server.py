@@ -121,7 +121,7 @@ def serve(port: int | None = None) -> None:
     port = port or load_config().port or free_port()
     _announce(port)
     try:
-        uvicorn.run(create_app(), host=HOST, port=port, log_level="warning")
+        uvicorn.run(create_app(), host=HOST, port=port, log_level="warning", log_config=None)
     finally:
         _withdraw()
 
@@ -135,8 +135,10 @@ class ServiceThread:
 
         self.port = port or load_config().port or free_port()
         # The graceful-shutdown limit is a backstop: a client that never lets go must not keep Quit waiting.
-        self._server = uvicorn.Server(uvicorn.Config(create_app(on_restart=on_restart), host=HOST, port=self.port, log_level="warning",
-                                                     timeout_graceful_shutdown=5))
+        # log_config=None: uvicorn's own messages go to Clipcura's log instead of a console the app may not have.
+        config = uvicorn.Config(create_app(on_restart=on_restart), host=HOST, port=self.port, log_level="warning",
+                                log_config=None, timeout_graceful_shutdown=5)
+        self._server = uvicorn.Server(config)
         self._thread = threading.Thread(target=self._server.run, name="clipcura-service", daemon=True)
         self.info: dict = {}
 

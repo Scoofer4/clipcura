@@ -1,6 +1,8 @@
 """Clipcura command line. Commands grow with milestones (doctor in M0, scan/plan/apply in M1, serve in M2)."""
 import json
+import logging
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 
@@ -12,6 +14,7 @@ from rich.table import Table
 
 from clipcura.core.models import DoctorReport
 
+cli_log = logging.getLogger("clipcura.cli")
 app = typer.Typer(help="Clipcura - check and fix footage before editing.", no_args_is_help=True)
 
 _STATUS_STYLE = {"ok": "green", "fixable": "yellow", "needs_human": "dark_orange", "error": "red",
@@ -37,11 +40,17 @@ def tolerant_streams() -> None:
             stream.reconfigure(errors="replace")
 
 
+# Which log file a command writes to (#26): long-running processes get their own, short commands share cli.log.
+_LOG_PROCESS = {"app": "app", "serve": "service", "mcp": "mcp"}
+
+
 @app.callback()
-def _main() -> None:
+def _main(ctx: typer.Context) -> None:
     tolerant_streams()
+    from clipcura.core import logs
     from clipcura.core.paths import migrate_legacy_app_data
     migrate_legacy_app_data()
+    logs.setup(_LOG_PROCESS.get(ctx.invoked_subcommand or "", "cli"))
 
 
 @app.command()
@@ -196,6 +205,7 @@ def _scan(path: Path, profile: str, recursive: bool, deep: bool | None, as_json:
             return service.scan(path, profile=profile, recursive=recursive, deep=deep,
                                 on_file=lambda f: status.update(f"Scanned {Path(f.path).name}"))
     except (NotADirectoryError, profiles.ProfileError) as e:
+        cli_log.error("Scan of %s failed: %s", path, e)
         console.print(f"[red]{e}[/]")
         raise typer.Exit(code=2) from e
 
@@ -333,8 +343,37 @@ def update(
                           "to the new Clipcura.exe to keep settings and history, then start the new copy. "
                           "(Settings > Updates in the app does this for you.)")
     except updates.UpdateError as e:
+        cli_log.error("clipcura update: %s", e)
         console.print(f"[red]{escape(str(e))}[/]")
         raise typer.Exit(code=1) from e
+
+
+_LOG_STYLE = {"DEBUG": "dim", "INFO": "", "WARNING": "yellow", "ERROR": "red", "CRITICAL": "bold red"}
+
+
+@app.command("logs")
+def show_logs(
+    level: Annotated[str, typer.Option("--level", "-l", help="Lowest level: info, warning or error.")] = "info",
+    limit: Annotated[int, typer.Option("--limit", "-n", help="How many entries.")] = 50,
+    text: Annotated[str | None, typer.Option("--text", "-t", help="Only entries containing this text.")] = None,
+    as_json: JsonOpt = False,
+) -> None:
+    """What Clipcura did and where something went wrong: the log of every process, newest last (#26)."""
+    from clipcura.core import logs
+
+    entries = logs.read(limit=limit, level=level, text=text)
+    if as_json:
+        typer.echo(json.dumps(entries, indent=2, ensure_ascii=False))
+        return
+    console = Console(highlight=False)
+    console.print(f"[dim]Log folder: {escape(str(logs.folder()))}[/]")
+    for e in reversed(entries):
+        style = _LOG_STYLE.get(e["level"], "")
+        when = datetime.fromisoformat(e["ts"]).astimezone().strftime("%Y-%m-%d %H:%M:%S")
+        line = f"{when} {e['level']:<8} {e['process']:<7} {escape(e['message'])}"
+        console.print(f"[{style}]{line}[/]" if style else line)
+        if e.get("exc"):
+            console.print(f"[dim]{escape(e['exc'])}[/]")
 
 
 def _print_doctor(report: DoctorReport, saved: Path) -> None:

@@ -162,6 +162,9 @@ Kopírují akce v GUI. Odpovědi = strukturovaný JSON + krátké shrnutí v jaz
 | `apply_fixes` | plan_id | job_ids; ve schvalovacím režimu `awaiting_approval` | ano (výstupní složka) |
 | `job_status` | job_ids | průběh, chyby, výstupy | ne |
 | `cancel_job` | job_id | stav | ano |
+| `get_logs` | level, text, limit | záznamy logu všech procesů (stejné jako obrazovka Log, #26) | ne |
+
+**Log (rozhodnutí vlastníka 3. 11. 2026, #26):** každý proces (aplikace, služba, MCP, CLI) loguje vždy od spuštění do ukončení do `<app data>/logs/`, včetně neošetřených chyb a pádů. Člověk ho vidí na obrazovce Log, AI přes `get_logs`, příkazová řádka přes `clipcura logs`. Přístupový klíč a jednorázové kódy se do logu nikdy nedostanou.
 
 ## 9. UX a UI – high-tech, ale srozumitelné
 

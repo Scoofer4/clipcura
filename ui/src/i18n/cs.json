@@ -286,7 +286,8 @@
     "live": "Živě",
     "offline": "Připojuji…",
     "about": "O aplikaci",
-    "help": "Nápověda"
+    "help": "Nápověda",
+    "log": "Log"
   },
   "palette": {
     "title": "Příkazy",
@@ -580,6 +581,20 @@
         "tips": [
           "Samotný převod dělá FFmpeg. Běží jako samostatný program pod vlastní licencí GPL; odkaz vede na jeho zdrojový kód."
         ]
+      },
+      "log": {
+        "name": "Log",
+        "purpose": "Kam se podívat, když se něco pokazí: co která část Clipcury udělala, nejnovější nahoře, průběžně.",
+        "steps": [
+          "Vyber, co zobrazit: jen chyby, varování a chyby, nebo vše.",
+          "Hledej název souboru, úlohu nebo slovo z chybové hlášky.",
+          "Technické podrobnosti u záznamu ukážou celou chybu pro hlášení problému.",
+          "Kopírovat zobrazené vloží záznamy do schránky, třeba pro issue na GitHubu."
+        ],
+        "tips": [
+          "Přístupový klíč se do logu nikdy nezapisuje, záznamy je proto možné sdílet.",
+          "Asistent připojený přes MCP čte stejné záznamy nástrojem get_logs."
+        ]
       }
     }
   },
@@ -647,5 +662,42 @@
     "bannerNew": "Je k dispozici Clipcura {{version}}.",
     "bannerWebview2": "Vlastní okno Clipcury potřebuje Microsoft Edge WebView2, který chybí, proto se otevírá v prohlížeči.",
     "bannerWebview2Ready": "WebView2 je nainstalovaný. Restartuj Clipcuru a otevře se ve vlastním okně."
+  },
+  "log": {
+    "title": "Log",
+    "intro": "Všechno, co Clipcura dělá od spuštění do ukončení: skeny, převody, schválení, aktualizace a každá chyba i s částí, která ji nahlásila. Asistenti čtou stejný log.",
+    "level": "Zobrazit",
+    "errors": "Chyby",
+    "warnings": "Varování a chyby",
+    "everything": "Vše",
+    "search": "Hledat v logu",
+    "copyShown": "Kopírovat zobrazené",
+    "copiedCount_one": "{{count}} záznam",
+    "copiedCount_few": "{{count}} záznamy",
+    "copiedCount_many": "{{count}} záznamů",
+    "copiedCount_other": "{{count}} záznamů",
+    "copied": "Zkopírováno",
+    "copyFailed": "Kopírování se nepovedlo",
+    "copyPath": "Kopírovat cestu",
+    "folder": "Soubory logu:",
+    "details": "Technické podrobnosti",
+    "empty": {
+      "error": "Žádné chyby. Pokud něco přesto nefunguje, zobraz i varování.",
+      "warning": "Žádná varování ani chyby.",
+      "info": "Zatím nic."
+    },
+    "levels": {
+      "DEBUG": "ladění",
+      "INFO": "info",
+      "WARNING": "varování",
+      "ERROR": "chyba",
+      "CRITICAL": "selhání"
+    },
+    "process": {
+      "app": "aplikace",
+      "service": "služba",
+      "mcp": "asistent (MCP)",
+      "cli": "příkazová řádka"
+    }
   }
 }

@@ -249,3 +249,24 @@ test("first start asks before checking for new versions; nothing is asked of Git
   await updates.scrollIntoViewIfNeeded();
   await shoot(page, "updates-settings-dark");
 });
+
+test("the Log screen shows what went wrong, live, and never the access key (#26)", async ({ page }) => {
+  const fail = () => fetch(`${base}/api/scans`, {
+    method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "X-Clipcura-Actor": "ai" },
+    body: JSON.stringify({ path: "C:\Windows", profile: "social-30" }),
+  });
+  await fail();
+  await page.goto(`${base}/log?theme=dark&lang=en#token=${token}`);
+  await expect(page.getByRole("heading", { name: "Log", exact: true })).toBeVisible();
+  const list = page.getByRole("list", { name: "Log" });
+  await expect(list.getByText("POST /api/scans by ai: 403").first()).toBeVisible();
+  const before = await list.getByText("POST /api/scans by ai: 403").count();
+  await fail();   // arrives over the live connection, no reload
+  await expect(list.getByText("POST /api/scans by ai: 403")).toHaveCount(before + 1);
+  await page.getByRole("radio", { name: "Everything" }).click();
+  await expect(list.getByText(/started: source copy/).first()).toBeVisible();
+  expect(await list.innerText()).not.toContain(token);
+  await shoot(page, "log-dark");
+  await page.keyboard.press("F1");
+  await expect(page.getByRole("dialog").getByRole("heading", { name: "Help: Log" })).toBeVisible();
+});

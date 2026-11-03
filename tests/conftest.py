@@ -97,3 +97,7 @@ def raw_folder(tmp_path, clips):
 def _isolated_app_data(tmp_path, monkeypatch):
     # Database, doctor report and user profiles of a test never touch the real profile.
     monkeypatch.setenv("CLIPCURA_HOME", str(tmp_path / "home"))
+    yield
+    # A command run in a test starts the log in that test's folder; the next test starts its own (#26).
+    from clipcura.core import logs
+    logs.reset()

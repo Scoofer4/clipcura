@@ -7,6 +7,7 @@ No `from __future__ import annotations` here: FastAPI must evaluate the route si
 time to resolve dependencies that are local to create_app().
 """
 import asyncio
+import logging
 import os
 import secrets
 import time
@@ -29,13 +30,25 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Res
 from pydantic import BaseModel
 
 from clipcura import __version__, rules
-from clipcura.core import config, events, licenses, paths, previews, profiles, security, service, updates
+from clipcura.core import (
+    config,
+    events,
+    licenses,
+    logs,
+    paths,
+    previews,
+    profiles,
+    security,
+    service,
+    updates,
+)
 from clipcura.core.config import Concurrency
 from clipcura.core.models import Paths
 from clipcura.core.paths import REPO_ROOT
 from clipcura.core.worker import Worker
 
 Actor = Literal["human", "ai", "n8n"]
+request_log = logging.getLogger("clipcura.api")
 _LOOPBACK = {"127.0.0.1", "localhost", "[::1]", "::1"}
 
 
@@ -104,6 +117,21 @@ def create_app(updater: updates.Updater | None = None, on_restart: Callable[[Pat
             return JSONResponse({"detail": "Invalid Host header"}, status_code=400)
         return await call_next(request)
 
+    @app.middleware("http")
+    async def log_failures(request: Request, call_next):
+        # Only what went wrong, with who asked (#26): successful requests would drown the log. The path goes in
+        # without its query, which may carry a one-time code.
+        who = request.headers.get("x-clipcura-actor", "human")
+        try:
+            response = await call_next(request)
+        except Exception:
+            request_log.exception("%s %s by %s failed", request.method, request.url.path, who)
+            raise
+        if response.status_code >= 400:
+            (request_log.error if response.status_code >= 500 else request_log.warning)(
+                "%s %s by %s: %s", request.method, request.url.path, who, response.status_code)
+        return response
+
     def require_token(authorization: Annotated[str | None, Header()] = None) -> None:
         if not authorization or not secrets.compare_digest(authorization, f"Bearer {cfg.token}"):
             raise HTTPException(401, "Missing or invalid token")
@@ -115,6 +143,7 @@ def create_app(updater: updates.Updater | None = None, on_restart: Callable[[Pat
         try:
             return str(security.ensure_allowed(path, config.load_config().allowed_roots))
         except security.PathNotAllowed as e:
+            request_log.warning("Refused: %s", e)   # the request line alone would only say 403
             raise HTTPException(403, str(e)) from e
 
     @app.get("/api/health")
@@ -144,6 +173,13 @@ def create_app(updater: updates.Updater | None = None, on_restart: Callable[[Pat
         code = secrets.token_urlsafe(24)
         login_codes[code] = now + LOGIN_CODE_TTL_S
         return {"code": code, "expires_in": LOGIN_CODE_TTL_S}
+
+    @api.get("/logs")
+    def get_logs(limit: int = 200, level: Literal["debug", "info", "warning", "error"] = "info",
+                 process: str | None = None, text: str | None = None) -> dict:
+        """The log of every Clipcura process, newest first; people and assistants read the same (#26)."""
+        return {"folder": str(logs.folder()),
+                "entries": logs.read(limit=min(limit, 2000), level=level, process=process, text=text)}
 
     @api.get("/about")
     def about() -> dict:

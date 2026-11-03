@@ -90,6 +90,13 @@ export interface About {
 }
 export type InstallKind = "installed" | "portable" | "source";
 
+/** One line of Clipcura's log (#26); `process` says which part wrote it. */
+export interface LogEntry {
+  ts: string; level: "DEBUG" | "INFO" | "WARNING" | "ERROR" | "CRITICAL"; process: string; pid: number;
+  thread: string; source: string; message: string; exc?: string;
+}
+export type LogLevel = "info" | "warning" | "error";
+
 /** One background task of the updater: a download, the WebView2 install or the FFmpeg restore. */
 export interface UpdateTask { state: "idle" | "running" | "ready" | "failed"; progress: number; error: string | null; path: string | null }
 export interface UpdateStatus {
@@ -129,6 +136,8 @@ export const api = {
   notices: async () =>
     (await Promise.all([text("/api/about/notices", true), text("/ui-licenses.txt", false)])).join("\n\n"),
   system: () => request<SystemReport>("GET", "/api/system"),
+  logs: (level: LogLevel, text = "", limit = 300) =>
+    request<{ folder: string; entries: LogEntry[] }>("GET", `/api/logs?${new URLSearchParams({ level, limit: String(limit), ...(text ? { text } : {}) })}`),
   updates: () => request<UpdateStatus>("GET", "/api/updates"),
   updateSettings: (check: boolean) => request<UpdateStatus>("POST", "/api/updates/settings", { check }),
   checkUpdates: () => request<UpdateStatus>("POST", "/api/updates/check"),

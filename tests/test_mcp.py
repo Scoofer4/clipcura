@@ -17,7 +17,7 @@ from tests.conftest import needs_ffmpeg
 
 BASE = "http://127.0.0.1"
 TOOLS = {"system_info", "list_profiles", "list_rules", "scan_folder", "get_report", "plan_fixes", "apply_fixes",
-         "job_status", "cancel_job"}
+         "job_status", "cancel_job", "get_logs"}
 
 
 @pytest.fixture
@@ -43,7 +43,7 @@ def test_tools_match_the_gui_actions_and_none_approves(mcp):
     tools = {t.name: t for t in asyncio.run(server.list_tools())}
     assert set(tools) == TOOLS
     assert not any("approve" in name for name in tools)
-    for name in ("system_info", "list_profiles", "list_rules", "get_report", "job_status"):
+    for name in ("system_info", "list_profiles", "list_rules", "get_report", "job_status", "get_logs"):
         assert tools[name].annotations.read_only_hint is True
     assert tools["apply_fixes"].annotations.read_only_hint is False
     assert tools["apply_fixes"].annotations.destructive_hint is False  # writes only new files to the output folder
@@ -131,3 +131,16 @@ def test_stdio_server_starts_the_service_on_demand(tmp_path):
         if announce.exists():
             pid = json.loads(announce.read_text(encoding="utf-8"))["pid"]
             subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True, check=False)
+
+
+def test_assistant_reads_the_same_log_as_the_person(mcp):
+    # #26: when something fails, an assistant can see where, like the person on the Log screen.
+    import logging
+
+    from clipcura.core import logs
+
+    server, _ = mcp
+    logs.setup("service")
+    logging.getLogger("clipcura.jobs").error("Job j9 failed (x.mp4): Invalid data found")
+    result = call(server, "get_logs", level="error")
+    assert "Invalid data found" in result["entries"][0]["message"] and "1 error" in result["summary"]
