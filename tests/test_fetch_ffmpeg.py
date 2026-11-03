@@ -32,3 +32,17 @@ def test_verify_sha256_rejects_tampered_file(tmp_path):
     f.write_bytes(b"tampered")
     with pytest.raises(ValueError, match="SHA-256 mismatch"):
         fetch_ffmpeg.verify_sha256(f, hashlib.sha256(b"clipcura").hexdigest())
+
+
+def test_pin_is_a_month_end_build_that_btbn_keeps():
+    # BtbN deletes daily builds after 14 days but keeps each month's last build for two years (#25).
+    import calendar
+    import re
+
+    y, m, d = map(int, re.match(r"autobuild-(\d{4})-(\d{2})-(\d{2})", fetch_ffmpeg.RELEASE_TAG).groups())
+    assert d == calendar.monthrange(y, m)[1], fetch_ffmpeg.RELEASE_TAG
+
+
+def test_pin_carries_its_own_checksum():
+    # The release's checksums.sha256 alone would not notice a replaced release.
+    assert len(fetch_ffmpeg.ASSET_SHA256) == 64 and int(fetch_ffmpeg.ASSET_SHA256, 16) >= 0

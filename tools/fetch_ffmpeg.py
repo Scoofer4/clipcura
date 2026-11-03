@@ -20,9 +20,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 # GPL build without "nonfree" parts: freely redistributable (CLAUDE.md §4).
-RELEASE_TAG = "autobuild-2026-11-02-12-51"
-ASSET = "ffmpeg-n8.1.3-32-g760d10603e-win64-gpl-8.1.zip"
-FFMPEG_COMMIT = "760d10603e"
+# Pin only a month's last build: BtbN keeps those for two years, daily builds only 14 days (#25).
+RELEASE_TAG = "autobuild-2026-10-31-12-59"
+ASSET = "ffmpeg-n8.1.3-27-g8dca1586f4-win64-gpl-8.1.zip"
+ASSET_SHA256 = "401dffcf14c301082e1fc03b0bc876b92ea676bfc521fc56e80a1537d137034f"
+FFMPEG_COMMIT = "8dca1586f4"
 BASE_URL = f"https://github.com/BtbN/FFmpeg-Builds/releases/download/{RELEASE_TAG}"
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -83,6 +85,8 @@ def main() -> int:
         expected = parse_checksums(sums_path.read_text(encoding="utf-8")).get(ASSET)
         if not expected:
             raise SystemExit(f"{ASSET} is not listed in checksums.sha256")
+        if expected.lower() != ASSET_SHA256:
+            raise SystemExit(f"checksums.sha256 lists {expected} for {ASSET}, but the pin is {ASSET_SHA256}")
         _download(f"{BASE_URL}/{ASSET}", zip_path)
         verify_sha256(zip_path, expected)
         print("SHA-256 verified.")
