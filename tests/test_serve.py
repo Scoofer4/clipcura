@@ -74,3 +74,20 @@ def test_serve_starts_api_on_loopback_and_announces_port(tmp_path):
         else:
             proc.terminate()
         proc.wait(timeout=10)
+
+
+def test_service_stops_promptly_while_the_gui_listens_for_events(tmp_path, monkeypatch):
+    # The desktop app's Quit waited 30 s: the event stream never noticed the server closing the socket.
+    from websockets.sync.client import connect
+
+    from clipsana.api.server import ServiceThread
+
+    monkeypatch.setenv("CLIPSANA_HOME", str(tmp_path))
+    service = ServiceThread()
+    info = service.start()
+    ws_url = info["url"].replace("http", "ws") + f"/api/events?token={config.load_config().token}"
+    with connect(ws_url, additional_headers={"Host": f"127.0.0.1:{info['port']}"}):
+        started = time.monotonic()
+        service.stop()
+        assert time.monotonic() - started < 5
+    assert not (tmp_path / "server.json").exists()

@@ -327,12 +327,26 @@ def create_app() -> FastAPI:
         loop = asyncio.get_running_loop()
         queue: asyncio.Queue[dict] = asyncio.Queue()
         unsubscribe = events.subscribe(lambda e: loop.call_soon_threadsafe(queue.put_nowait, e))
+        # Listen as well as send: a client leaving (or the server closing the socket on shutdown) shows up
+        # only on the receiving side. Without it the handler waits for the next event forever and the
+        # service cannot stop.
+        closed = asyncio.create_task(ws.receive())
         try:
             while True:
-                await ws.send_json(await queue.get())
+                event = asyncio.create_task(queue.get())
+                done, _ = await asyncio.wait({event, closed}, return_when=asyncio.FIRST_COMPLETED)
+                if event in done:
+                    await ws.send_json(event.result())
+                else:
+                    event.cancel()  # an unfinished Queue.get gives nothing up when cancelled
+                if closed in done:
+                    if closed.result().get("type") == "websocket.disconnect":
+                        break
+                    closed = asyncio.create_task(ws.receive())  # a message from the client: ignored
         except (WebSocketDisconnect, RuntimeError):
             pass
         finally:
+            closed.cancel()
             unsubscribe()
 
     # ---- the GUI itself, served from this origin (registered last so /api routes always win) ----
