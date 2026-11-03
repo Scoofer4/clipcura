@@ -82,17 +82,18 @@ class DesktopApp:
         from clipsana.desktop import icon
         from clipsana.desktop.tray import Tray
 
-        tray = Tray(lambda size: icon.png(size), "Clipsana", self._menu, self.show)
+        tray = Tray(lambda size: icon.png(size), "Clipsana", self._menu, self.show, on_quit=self.quit)
         self.tray = tray if tray.start() else None
 
     def _shutdown(self) -> None:
         self.quitting.set()
-        if self.tray:
-            self.tray.stop()
         if self.service:
             self.service.stop()
         if self._client:
             self._client.close()
+        # The icon goes last: the installer waits for its window to disappear before it replaces files (#18).
+        if self.tray:
+            self.tray.stop()
 
     # --- window --------------------------------------------------------------------------------------------
     def show(self) -> None:
@@ -106,8 +107,10 @@ class DesktopApp:
             self.window.destroy()   # ends webview.start(); run() then stops the tray and the service
 
     def _on_closing(self) -> bool | None:
-        if self.quitting.is_set() or self.tray is None:
-            return None  # really close (no notification area to live in otherwise)
+        if self.quitting.is_set() or self.tray is None or _session_ending():
+            # Really close: on request, without a notification area to live in, or when Windows logs off or
+            # shuts down (refusing would hold the session up, #18).
+            return None
         # Closing the window keeps the app (and running conversions) alive in the notification area.
         threading.Thread(target=self.window.hide, daemon=True).start()
         if not self._told_background:
@@ -152,6 +155,11 @@ class DesktopApp:
                 progress = None if s.progress is None else look[0] / 100
                 self.tray.update(lambda size, p=progress, a=s.attention: icon.png(size, progress=p, attention=a),
                                  look[2])
+
+
+def _session_ending() -> bool:
+    SM_SHUTTINGDOWN = 0x2000
+    return sys.platform == "win32" and bool(ctypes.windll.user32.GetSystemMetrics(SM_SHUTTINGDOWN))
 
 
 def run_app() -> None:

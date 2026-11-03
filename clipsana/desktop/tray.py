@@ -26,6 +26,8 @@ WM_DESTROY, WM_CLOSE, WM_COMMAND, WM_NULL = 0x0002, 0x0010, 0x0111, 0x0000
 WM_LBUTTONUP, WM_LBUTTONDBLCLK, WM_RBUTTONUP = 0x0202, 0x0203, 0x0205
 WM_APP = 0x8000
 WM_TRAY, WM_REFRESH, WM_SHOW = WM_APP + 1, WM_APP + 2, WM_APP + 3
+# Sent by the installer and uninstaller (packaging/installer.iss) so files are not in use: keep the number.
+WM_QUIT_APP = WM_APP + 4
 CLASS_NAME = "ClipsanaTray"
 NIN_BALLOONUSERCLICK = 0x0405
 NIM_ADD, NIM_MODIFY, NIM_DELETE = 0, 1, 2
@@ -116,11 +118,13 @@ class MenuItem:
 class Tray:
     """One notification-area icon. `icon_png(size)` returns the artwork at the size Windows asks for, so the
     icon stays sharp at every display scale. `menu()` is rebuilt on each right click (labels and checks can
-    change), and a left click or a click on a notification calls `on_open`."""
+    change), and a left click or a click on a notification calls `on_open`. `on_quit` runs when the installer
+    asks the app to exit."""
 
     def __init__(self, icon_png: Callable[[int], bytes], tooltip: str, menu: Callable[[], list[MenuItem]],
-                 on_open: Callable[[], None]) -> None:
+                 on_open: Callable[[], None], on_quit: Callable[[], None] | None = None) -> None:
         self._icon_png, self._tooltip, self._menu, self._on_open = icon_png, tooltip, menu, on_open
+        self._on_quit = on_quit
         self._lock = threading.Lock()
         self._pending_info: tuple[str, str] | None = None
         self._hwnd: int | None = None
@@ -263,6 +267,10 @@ class Tray:
                 return 0
             if msg == WM_SHOW:  # a second start of the app asks this one to come forward
                 self._call(self._on_open)
+                return 0
+            if msg == WM_QUIT_APP:
+                if self._on_quit:
+                    self._call(self._on_quit)
                 return 0
             if msg == WM_REFRESH:
                 self._refresh()
