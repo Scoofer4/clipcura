@@ -144,6 +144,14 @@ export function AssistantScreen() {
   const loadStatus = () => api.assistant().then(setStatus).catch(() => {});
   const loadConv = (id: string) => api.conversation(id).then(setConv).catch(() => setConv(null));
   useEffect(() => { void loadStatus(); }, []);
+  // Ask the server once on opening, so an unreachable Ollama shows before a task is typed, not after.
+  const [reach, setReach] = useState<{ ok: boolean; error?: string } | null>(null);
+  const checkReach = () => {
+    setReach(null);
+    api.testAssistant().then(() => setReach({ ok: true })).catch((e) => setReach({ ok: false, error: e instanceof Error ? e.message : String(e) }));
+  };
+  const ready = !!(status?.enabled && status.url && status.model);
+  useEffect(() => { if (ready) checkReach(); }, [ready]);
   useEffect(() => { if (current) void loadConv(current); else setConv(null); }, [current]);
   useEffect(() => { end.current?.scrollIntoView({ block: "end" }); }, [conv?.transcript.length, conv?.busy]);
 
@@ -175,7 +183,6 @@ export function AssistantScreen() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(draft); }
   };
 
-  const ready = status?.enabled && status.url && status.model;
   const host = (() => { try { return status?.url ? new URL(status.url).host : ""; } catch { return status?.url ?? ""; } })();
   const examples = t("assistant.examples", { returnObjects: true }) as string[];
 
@@ -222,6 +229,16 @@ export function AssistantScreen() {
         <p className="mt-1 max-w-[75ch] text-sm text-muted">{t("assistant.intro")}</p>
 
         <Panel className="mt-6 flex flex-1 flex-col p-5">
+          {reach && !reach.ok && (
+            <div role="alert" className="mb-4 flex flex-wrap items-start gap-3 rounded-[var(--radius-control)] border border-[color-mix(in_srgb,var(--human)_50%,transparent)] px-3 py-2 text-sm">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" style={{ color: "var(--human)" }} aria-hidden />
+              <div className="min-w-0 flex-1">
+                <p className="text-ink">{t("assistant.unreachable")}</p>
+                <p className="mono mt-0.5 break-words text-xs text-muted">{reach.error}</p>
+              </div>
+              <Button size="sm" variant="secondary" onClick={checkReach}>{t("assistant.retry")}</Button>
+            </div>
+          )}
           <div className="flex-1 space-y-4" aria-live="polite">
             {!conv && (
               <div className="py-6">

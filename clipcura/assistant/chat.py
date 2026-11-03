@@ -159,11 +159,11 @@ class Assistant:
                     text_item["text"] += delta
                     emit("text", delta=delta)
 
-                reply = server.chat(model, conv.messages, self.tools(), on_text, conv.cancel)
-                conv.messages.append(reply)
-                if conv.cancel.is_set():
+                reply = self._reply(server, model, conv, on_text)
+                if reply is None or conv.cancel.is_set():
                     self._error(conv, emit, "Stopped.")
                     return
+                conv.messages.append(reply)
                 calls = reply.get("tool_calls") or []
                 if not calls:
                     return
@@ -179,6 +179,38 @@ class Assistant:
         finally:
             conv.busy = False
             emit("done")
+
+    def _reply(self, server: Ollama, model: str, conv: Conversation,
+               on_text: Callable[[str], None]) -> dict | None:
+        """The model's next reply, or None once the person pressed Stop.
+
+        The request runs in a thread of its own: a server that stops answering mid-reply leaves a socket read
+        blocked for up to the read timeout, and no flag can interrupt that. Stop abandons the request instead;
+        whatever it still delivers is dropped, also when the same conversation has moved on to a new task.
+        """
+        result: dict[str, Any] = {}
+        abandoned = threading.Event()
+
+        def deliver(delta: str) -> None:
+            if not abandoned.is_set():
+                on_text(delta)
+
+        def run() -> None:
+            try:
+                result["reply"] = server.chat(model, list(conv.messages), self.tools(), deliver, abandoned)
+            except Exception as e:  # noqa: BLE001 - handed to the waiting thread, which reports it
+                result["error"] = e
+
+        request = threading.Thread(target=run, name=f"assistant-{conv.id}-request", daemon=True)
+        request.start()
+        while request.is_alive():
+            request.join(0.1)
+            if conv.cancel.is_set() and request.is_alive():
+                abandoned.set()
+                return None
+        if "error" in result:
+            raise result["error"]
+        return result["reply"]
 
     def _run_tool(self, conv: Conversation, emit: Callable[..., None], call: dict) -> None:
         fn = call.get("function") or {}

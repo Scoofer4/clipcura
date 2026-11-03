@@ -348,3 +348,44 @@ def test_a_folder_that_does_not_exist_is_reported_as_missing_not_as_forbidden(ap
     conv = assistant.ask("Check it", lang="en", settings=settings(), wait=True)
     step = conv.transcript[1]
     assert step["ok"] is False and "no folder" in step["summary"] and "allow" not in step["summary"]
+
+
+def test_an_unreachable_server_ends_the_task_with_a_message_and_the_app_keeps_working(api):
+    human, assistant, _ = api
+    def refuse(request):
+        raise httpx.ConnectError("connection refused", request=request)
+    assistant._transport = httpx.MockTransport(refuse)
+    human.put("/api/assistant/settings", json={"enabled": True, "url": OLLAMA, "model": "qwen3.6:27b"})
+    r = human.post("/api/assistant/conversations", json={"text": "hi"})
+    data = wait_idle(human, r.json()["conversation"])
+    assert data["transcript"][-1]["role"] == "error" and "Cannot reach" in data["transcript"][-1]["text"]
+    assert human.get("/api/profiles").status_code == 200    # nothing else depends on the assistant
+
+
+def test_stop_ends_a_task_even_while_the_server_hangs(api):
+    import threading
+    _, assistant, _ = api
+    release = threading.Event()
+
+    def hang(request):
+        def body():
+            yield b'{"message": {"role": "assistant", "content": "Thinking"}, "done": false}\n'
+            release.wait(10)   # a server that stops answering mid-reply
+            yield b'{"message": {"role": "assistant", "content": " late"}, "done": true}\n'
+        return httpx.Response(200, content=body())
+    assistant._transport = httpx.MockTransport(hang)
+    conv = assistant.ask("hi", lang="en", settings=settings())
+    deadline = time.monotonic() + 5
+    while not conv.transcript[-1].get("text", "").startswith("Thinking") and time.monotonic() < deadline:
+        time.sleep(0.02)
+    started = time.monotonic()
+    assert assistant.stop(conv.id)
+    while conv.busy and time.monotonic() - started < 5:
+        time.sleep(0.02)
+    try:
+        assert not conv.busy and time.monotonic() - started < 2
+        assert conv.transcript[-1] == {"role": "error", "text": "Stopped."}
+    finally:
+        release.set()
+    time.sleep(0.2)
+    assert "late" not in json.dumps(conv.transcript)   # nothing arrives after the stop

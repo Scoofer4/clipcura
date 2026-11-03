@@ -779,6 +779,8 @@
       "job_status": "Stav úloh",
       "cancel_job": "Zrušení úlohy",
       "get_logs": "Čtení logu"
-    }
+    },
+    "unreachable": "Ollama server neodpovídá. Dokud se nevrátí, úkoly selžou; zbytek Clipcury funguje normálně.",
+    "retry": "Zkusit znovu"
   }
 }

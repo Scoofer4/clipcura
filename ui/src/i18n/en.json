@@ -766,6 +766,8 @@
       "job_status": "Job status",
       "cancel_job": "Cancel job",
       "get_logs": "Read log"
-    }
+    },
+    "unreachable": "The Ollama server does not answer. Tasks will fail until it is back; the rest of Clipcura works as usual.",
+    "retry": "Try again"
   }
 }

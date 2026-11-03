@@ -329,4 +329,8 @@ test("the assistant runs a task on an Ollama server with Clipcura's tools; the k
   } finally {
     fake.close();
   }
+  // The server goes away: the screen says so on opening, before a task is typed.
+  await page.goto(`${base}/assistant?theme=dark&accent=brand&lang=en`);
+  await expect(page.getByRole("alert").filter({ hasText: "The Ollama server does not answer" })).toBeVisible();
+  await shoot(page, "assistant-unreachable-dark");
 });
