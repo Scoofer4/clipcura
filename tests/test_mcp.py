@@ -73,7 +73,8 @@ def test_scan_plan_apply_waits_for_human_approval(mcp, raw_folder):
     report = call(server, "get_report", scan_id=scan["scan_id"], status="fixable")
     (clip,) = report["files"]
     assert clip["name"] == "a44k.mp4" and clip["audio_rate"] == 44100
-    assert [f["rule"] for f in clip["findings"]] == ["audio_rate"]
+    # social-30 also reports loudness (info only); the fix that matters here is the sample rate
+    assert [f["rule"] for f in clip["findings"] if f["severity"] != "info"] == ["audio_rate"]
 
     plan = call(server, "plan_fixes", scan_id=scan["scan_id"])
     (item,) = [i for i in plan["items"] if i["status"] == "pending"]

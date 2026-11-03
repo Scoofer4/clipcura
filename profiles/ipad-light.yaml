@@ -13,3 +13,8 @@ output:
 rules:
   disabled: []
   vfr_deep_check: false
+  loudness:              # EBU R128 measurement; report only (normalising changes the sound)
+    measure: true
+    target_lufs: -14       # social platforms; -23 for broadcast
+    true_peak: -1
+    fix: false

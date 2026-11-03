@@ -64,7 +64,7 @@ def test_bt601_frames_end_with_consistent_rec709_tags_when_file_is_converted(raw
 def test_bt601_alone_does_not_trigger_conversion(raw_folder):
     scan = service.scan(raw_folder("bt601_30.mp4"), profile="social-30")
     assert scan.files[0].status == "ok"
-    assert [i.rule_id for i in scan.files[0].issues] == ["color_space"]
+    assert [i.rule_id for i in scan.files[0].issues if i.rule_id != "loudness"] == ["color_space"]
     assert service.plan(scan.scan_id).items == []
 
 
