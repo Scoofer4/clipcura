@@ -38,9 +38,10 @@ Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
   - převody čekaly na schválení.
 - **Neověřeno:**
   - přístup s klíčem přes proxy (zatím nenastavená);
-  - Vysvětlit u skutečně selhané úlohy naostro (testy pokrývají záznam v logu i úlohu s falešným
-    serverem);
-  - další modely.
+- **Doplněno (vlastník povolil používat Ollama server pro testy):**
+  - Vysvětlit u skutečně selhané úlohy naostro: diagnóza správná, po úpravě pokynů i rada;
+  - porovnání šesti modelů: spolehlivé jsou qwen3.8:27b, qwen3.6:27b a gemma4:26b, menší modely vynechávají
+    kroky. Tabulka je v `docs/assistant-ollama.md`, opravy jsou v 3806379.
 
 ### Otevřené
 
