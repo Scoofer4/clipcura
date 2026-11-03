@@ -1,11 +1,12 @@
 /*
  * Clipsana design tokens. Every colour in the UI comes from here, so brand changes are one-file edits.
- * Themes: data-theme="dark" (default) | "light". Accents: data-accent="brand" (Metaverse Media crimson,
+ * Themes: data-theme="dark" (default) | "light"; each sets color-scheme so native scrollbars and controls match. Accents: data-accent="brand" (Metaverse Media crimson,
  * measured from the logo) | "aurora" (violet -> cyan from the original brief).
  */
 
 :root,
 [data-theme="dark"] {
+  color-scheme: dark;
   --bg: #12151a;
   --bg-deep: #0c0e12;
   --surface: rgb(255 255 255 / 0.035);
@@ -31,6 +32,7 @@
 }
 
 [data-theme="light"] {
+  color-scheme: light;
   --bg: #f3f5f8;
   --bg-deep: #e6eaf0;
   --surface: rgb(255 255 255 / 0.72);
