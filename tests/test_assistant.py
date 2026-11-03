@@ -328,3 +328,23 @@ def test_explain_a_job_sends_its_error_recipe_and_measured_values(api, raw_folde
     data = wait_idle(human, r.json()["conversation"])
     assert data["transcript"][0]["text"] == "Vysvětli, co se stalo: a44k.mp4"
     assert "44100" in fake.chats[0]["messages"][1]["content"]
+
+
+def test_blank_text_between_tool_calls_does_not_show_as_an_empty_answer(api):
+    # Seen with nemotron: a line break streamed before every tool call.
+    _, assistant, fake = api
+    fake.replies = [{"content": "\n\n", "tool_calls": [{"function": {"name": "list_rules", "arguments": {}}}]},
+                    text("\n\nDone.")]
+    conv = assistant.ask("Rules?", lang="en", settings=settings(), wait=True)
+    assert [i["role"] for i in conv.transcript] == ["user", "tool", "assistant"]
+    assert conv.transcript[-1]["text"] == "Done."
+
+
+def test_a_folder_that_does_not_exist_is_reported_as_missing_not_as_forbidden(api, tmp_path):
+    # Seen with gpt-oss: a backslash lost from the path, and the model then asked the person to allow the folder.
+    _, assistant, fake = api
+    missing = str(tmp_path.parent / "no-such-folder")   # outside the allowed folder, like the mangled path
+    fake.replies = [tool("scan_folder", path=missing), text("Check the path.")]
+    conv = assistant.ask("Check it", lang="en", settings=settings(), wait=True)
+    step = conv.transcript[1]
+    assert step["ok"] is False and "no folder" in step["summary"] and "allow" not in step["summary"]

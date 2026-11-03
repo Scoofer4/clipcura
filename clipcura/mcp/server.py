@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from pathlib import PurePath
+from pathlib import Path, PurePath
 from typing import Any, Literal
 
 import httpx
@@ -101,6 +101,10 @@ def build_server(connect: Callable[[], httpx.Client] = _connect) -> MCPServer:
     def scan_folder(path: str, profile: str = "social-30", recursive: bool = False, deep: bool = False,
                     lang: Lang = "en") -> dict[str, Any]:
         """Check every clip in a folder. Writes only to Clipcura's database. Returns scan_id and a summary."""
+        # A model that mangles a path (e.g. drops a backslash) would otherwise hear "not allowed" and send the
+        # person to Settings for a folder that does not exist.
+        if not Path(path).is_dir():
+            raise ToolError(f"There is no folder {path}. Check the path; in JSON every backslash is written twice.")
         s = call("POST", "/api/scans", json={"path": path, "profile": profile, "recursive": recursive, "deep": deep})
         n = s["summary"]
         summary = _say(

@@ -25,8 +25,19 @@ Clipcura runs the tool loop itself, so there is nothing else to install.
 3. Press **Test connection**. The list shows only models that can call tools.
 4. Choose a model and turn on **Use the assistant**.
 
-In testing, a 27B model with tool support (`qwen3.6:27b`) handled scan, report, plan and apply reliably. Small
-models (a few billion parameters) often call the wrong tool or stop half-way.
+Models compared on the same task (check a folder, prepare the fixes, start them), November 2026:
+
+| Model | Result |
+|---|---|
+| `qwen3.8:27b` | All steps, the most complete answer (41 s) |
+| `qwen3.6:27b` | All steps (50 s) |
+| `gemma4:26b` | All steps (34 s) |
+| `nemotron-3.5-lightning:30b` | Once correct, once broke the folder path |
+| `gpt-oss:20b` | Lost a backslash in the path, then fixed it after Clipcura said the folder does not exist (29 s) |
+| `qwen3.5:9b` | Did not start the conversions, but said they were waiting for approval |
+
+Use a model of about 25B parameters or more. Smaller models skip steps or describe things they did not do.
+The same model can behave differently from run to run, so watch the steps it shows.
 
 **Explain** appears next to a failed job and next to warnings and errors on the Log screen. It opens a
 conversation that already contains the details: the error, the end of the FFmpeg output, and the file's measured

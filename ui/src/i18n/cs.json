@@ -734,7 +734,7 @@
     "modelsFound_other": "{{count}} modelů umí nástroje",
     "testFailed": "Spojení selhalo",
     "model": "Model",
-    "modelHint": "Nabízejí se jen modely, které umí volat nástroje. Větší modely plní úkoly spolehlivěji; v testu se osvědčil qwen3.6:27b.",
+    "modelHint": "Nabízejí se jen modely, které umí volat nástroje. V testu zvládly celé úkoly spolehlivě qwen3.8:27b, qwen3.6:27b a gemma4:26b; modely pod zhruba 20B vynechávaly kroky nebo kazily cesty.",
     "vision": "vidí obraz",
     "cloud": "cloud",
     "cloudWarning": "Cloudové modely neběží na tvém serveru: Ollama posílá konverzaci na ollama.com.",

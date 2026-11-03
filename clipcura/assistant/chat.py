@@ -32,9 +32,13 @@ SYSTEM = INSTRUCTIONS + """
 You are the assistant built into the Clipcura window: the person types tasks here and sees every tool you
 call. Use the tools instead of guessing, and say plainly what you did and what now waits for the person.
 You cannot approve conversions, change settings or allow folders; tell the person where to do that in
-Clipcura (AI activity for approvals, Settings for folders). Keep answers short. Paths are Windows paths."""
+Clipcura (AI activity for approvals, Settings for folders). Keep answers short. Paths are Windows paths.
+Only recommend a fix you are sure works; when a file is damaged or cut short, say that the best fix is a new
+copy from the camera or card, and never suggest commands that write over the original files."""
 
-LANGUAGE = {"en": "Answer in English.", "cs": 'Answer in Czech and pass lang="cs" to the tools.'}
+# Clipcura's Czech texts address the person informally; the model would otherwise switch to the formal "vy".
+LANGUAGE = {"en": "Answer in English.",
+            "cs": 'Answer in Czech, addressing the person informally (ty), and pass lang="cs" to the tools.'}
 MAX_TOOL_CHARS = 20_000      # a big report would push the conversation out of a small model's context
 MAX_CONVERSATIONS = 50
 
@@ -139,10 +143,17 @@ class Assistant:
         try:
             for _ in range(self.max_rounds):
                 text_item: dict | None = None
+                pending = ""
 
                 def on_text(delta: str) -> None:
-                    nonlocal text_item
+                    # Some models stream a bare line break before each tool call; it must not become an empty
+                    # answer, so text starts only with the first visible character.
+                    nonlocal text_item, pending
                     if text_item is None:
+                        pending += delta
+                        if not pending.strip():
+                            return
+                        delta, pending = pending.lstrip(), ""
                         text_item = {"role": "assistant", "text": ""}
                         conv.transcript.append(text_item)
                     text_item["text"] += delta

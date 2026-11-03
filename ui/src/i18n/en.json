@@ -721,7 +721,7 @@
     "modelsFound_other": "{{count}} models can use tools",
     "testFailed": "Connection failed",
     "model": "Model",
-    "modelHint": "Only models that can call tools are listed. Larger models follow tasks more reliably; qwen3.6:27b worked well in testing.",
+    "modelHint": "Only models that can call tools are listed. In testing, qwen3.8:27b, qwen3.6:27b and gemma4:26b did whole tasks reliably; models under about 20B skipped steps or broke paths.",
     "vision": "sees images",
     "cloud": "cloud",
     "cloudWarning": "Cloud models run outside your server: Ollama forwards the conversation to ollama.com.",
