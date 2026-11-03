@@ -56,6 +56,19 @@ uv run clipcura app      # the GUI in its own window; the icon in the notificati
 ```
 
 Closing the window keeps Clipcura in the notification area, so conversions continue; quit from the icon's menu.
+
+`Clipcura.exe --browser` (or `clipcura app --browser`, or Settings → Appearance) shows the same GUI in your default
+browser instead of the window; Clipcura does this by itself when WebView2 is missing. The browser gets a one-time
+code (valid two minutes, once), never the access key, so its history holds nothing reusable.
+
+## Updates
+
+Clipcura asks on first start whether it may check GitHub for new versions once a day. Nothing is downloaded until
+you press a button: Settings → Updates downloads the package matching your copy, verifies it against the release's
+`SHA256SUMS.txt`, then runs the installer or unpacks the portable copy next to the current one and switches to it
+with your settings. The same place restores a missing FFmpeg (the exact pinned build) and installs a missing
+WebView2 (Microsoft's signed bootstrapper). From the command line: `clipcura update` (`--install`, `--ffmpeg`,
+`--webview2`, `--auto/--no-auto`).
 Every screen has help (the Help button or F1), and **About** lists the owner, the licence and every component
 Clipcura is built from with its licence.
 

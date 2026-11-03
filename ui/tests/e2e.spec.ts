@@ -234,3 +234,18 @@ test("browser mode: a one-time code opens the GUI once and never shows the key (
   await expect(stale.getByRole("heading", { name: "This link has expired" })).toBeVisible();
   await again.close();
 });
+
+test("first start asks before checking for new versions; nothing is asked of GitHub without a yes (#22)", async ({ page }) => {
+  await page.goto(`${base}/settings?theme=dark&lang=en#token=${token}`);
+  const banner = page.getByRole("status").filter({ hasText: "Should Clipcura check for new versions?" });
+  await expect(banner).toBeVisible();
+  const updates = page.locator("section").filter({ has: page.getByRole("heading", { name: "Updates", exact: true }) });
+  await expect(updates.getByText("Not checked yet.")).toBeVisible();
+  await expect(updates.getByText("Microsoft Edge WebView2")).toBeVisible();
+  await shoot(page, "updates-consent-dark");
+  await banner.getByRole("button", { name: "Not now" }).click();
+  await expect(banner).toBeHidden();
+  await expect(updates.getByRole("switch", { name: /Check for new versions every day/ })).not.toBeChecked();
+  await updates.scrollIntoViewIfNeeded();
+  await shoot(page, "updates-settings-dark");
+});

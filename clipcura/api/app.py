@@ -10,6 +10,7 @@ import asyncio
 import os
 import secrets
 import time
+from collections.abc import Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, Literal
@@ -28,7 +29,7 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Res
 from pydantic import BaseModel
 
 from clipcura import __version__, rules
-from clipcura.core import config, events, licenses, previews, profiles, security, service
+from clipcura.core import config, events, licenses, paths, previews, profiles, security, service, updates
 from clipcura.core.config import Concurrency
 from clipcura.core.models import Paths
 from clipcura.core.paths import REPO_ROOT
@@ -68,6 +69,10 @@ class LoginRequest(BaseModel):
     code: str
 
 
+class UpdateSettings(BaseModel):
+    check: bool
+
+
 class QueueState(BaseModel):
     paused: bool
 
@@ -79,7 +84,8 @@ def _host_ok(host: str | None) -> bool:
     return name.lower() in _LOOPBACK
 
 
-def create_app() -> FastAPI:
+def create_app(updater: updates.Updater | None = None, on_restart: Callable[[Path], None] | None = None) -> FastAPI:
+    """`on_restart` is given by the desktop app hosting this service: it quits and starts the given Clipcura.exe."""
     cfg = config.load_config()
     worker = Worker(cfg.concurrency.gpu, cfg.concurrency.cpu)
 
@@ -355,6 +361,78 @@ def create_app() -> FastAPI:
             return service.reject(job_id, actor=who)
         except ValueError as e:
             raise HTTPException(409, str(e)) from e
+
+    # --- updates and missing parts (#22): anyone may look, only a person decides --------------------------
+    updater = updater or updates.Updater()
+
+    def update_status() -> dict:
+        return {**updater.status(), "consent": config.load_config().update_check,
+                "can_restart": on_restart is not None}
+
+    def attempt(fn):
+        try:
+            return fn()
+        except updates.UpdateError as e:
+            raise HTTPException(409, str(e)) from e
+
+    @api.get("/updates")
+    def get_updates() -> dict:
+        updater.maybe_check(config.load_config().update_check)   # daily, and only with consent
+        return update_status()
+
+    @api.post("/updates/settings")
+    def update_settings(req: UpdateSettings, who: Annotated[Actor, Depends(actor)]) -> dict:
+        human_only(who)
+        cfg_now = config.load_config()
+        cfg_now.update_check = req.check
+        config.save_config(cfg_now)
+        return update_status()
+
+    @api.post("/updates/check")
+    def check_updates(who: Annotated[Actor, Depends(actor)]) -> dict:
+        human_only(who)
+        attempt(updater.check)
+        return update_status()
+
+    @api.post("/updates/download", status_code=202)
+    def download_update(who: Annotated[Actor, Depends(actor)]) -> dict:
+        human_only(who)
+        attempt(updater.download)
+        return update_status()
+
+    @api.post("/updates/install")
+    def install_update(who: Annotated[Actor, Depends(actor)]) -> dict:
+        human_only(who)
+        if updater.kind == "installed":
+            attempt(updater.run_installer)
+            return {"action": "installer"}
+        exe = attempt(updater.unpack_portable)
+        if on_restart is None:   # a service without a window (clipcura serve): the person starts the new copy
+            return {"action": "unpacked", "path": str(exe)}
+        on_restart(exe)
+        return {"action": "restart", "path": str(exe)}
+
+    @api.post("/updates/webview2", status_code=202)
+    def install_webview2(who: Annotated[Actor, Depends(actor)]) -> dict:
+        human_only(who)
+        attempt(updater.install_webview2)
+        return update_status()
+
+    @api.post("/updates/ffmpeg", status_code=202)
+    def restore_ffmpeg(who: Annotated[Actor, Depends(actor)]) -> dict:
+        human_only(who)
+        attempt(updater.restore_ffmpeg)
+        return update_status()
+
+    @api.post("/restart")
+    def restart(who: Annotated[Actor, Depends(actor)]) -> dict:
+        """Start this copy again, e.g. to use the window once WebView2 is installed."""
+        human_only(who)
+        folder = paths.install_dir()
+        if on_restart is None or folder is None:
+            raise HTTPException(409, "Quit Clipcura from its icon and start it again.")
+        on_restart(folder / "Clipcura.exe")
+        return {"action": "restart"}
 
     app.include_router(api)
 

@@ -85,8 +85,22 @@ export interface Component {
 export interface About {
   name: string; version: string; licence: string; source: string;
   owner: { name: string; url: string };
-  install: { kind: "installed" | "portable" | "source"; data_dir: string };
+  install: { kind: InstallKind; data_dir: string };
   components: Component[];
+}
+export type InstallKind = "installed" | "portable" | "source";
+
+/** One background task of the updater: a download, the WebView2 install or the FFmpeg restore. */
+export interface UpdateTask { state: "idle" | "running" | "ready" | "failed"; progress: number; error: string | null; path: string | null }
+export interface UpdateStatus {
+  current: string; kind: InstallKind; last_check: string | null; checking: boolean; error: string | null;
+  /** Daily check: null until the person answers the question on first start (#22). */
+  consent: boolean | null;
+  can_restart: boolean;
+  latest: { version: string; url: string; notes: string; package: string | null } | null;
+  download: UpdateTask;
+  webview2: UpdateTask & { installed: boolean };
+  ffmpeg: UpdateTask & { installed: boolean };
 }
 
 async function text(path: string, auth: boolean): Promise<string> {
@@ -115,6 +129,14 @@ export const api = {
   notices: async () =>
     (await Promise.all([text("/api/about/notices", true), text("/ui-licenses.txt", false)])).join("\n\n"),
   system: () => request<SystemReport>("GET", "/api/system"),
+  updates: () => request<UpdateStatus>("GET", "/api/updates"),
+  updateSettings: (check: boolean) => request<UpdateStatus>("POST", "/api/updates/settings", { check }),
+  checkUpdates: () => request<UpdateStatus>("POST", "/api/updates/check"),
+  downloadUpdate: () => request<UpdateStatus>("POST", "/api/updates/download"),
+  installUpdate: () => request<{ action: "installer" | "restart" | "unpacked"; path?: string }>("POST", "/api/updates/install"),
+  installWebview2: () => request<UpdateStatus>("POST", "/api/updates/webview2"),
+  restoreFfmpeg: () => request<UpdateStatus>("POST", "/api/updates/ffmpeg"),
+  restart: () => request<{ action: string }>("POST", "/api/restart"),
   profiles: () => request<Profile[]>("GET", "/api/profiles"),
   rules: () => request<RuleInfo[]>("GET", "/api/rules"),
   saveProfile: (p: Profile) => {

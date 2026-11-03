@@ -13,8 +13,10 @@ from __future__ import annotations
 import ctypes
 import logging
 import os
+import subprocess
 import sys
 import threading
+from pathlib import Path
 
 import httpx
 
@@ -66,6 +68,7 @@ class DesktopApp:
         self.quitting = threading.Event()
         self._told_background = False
         self._client: httpx.Client | None = None
+        self.restart_to: Path | None = None   # set by restart_into: start this Clipcura.exe after quitting
 
     # --- lifecycle -----------------------------------------------------------------------------------------
     def run(self) -> None:
@@ -74,7 +77,7 @@ class DesktopApp:
         cfg = load_config()
         info = running_server()
         if info is None:
-            self.service = ServiceThread()
+            self.service = ServiceThread(on_restart=self.restart_into)
             info = self.service.start()
         self._info, self._token = info, cfg.token
         self._client = httpx.Client(base_url=info["url"], timeout=5,
@@ -84,6 +87,8 @@ class DesktopApp:
         else:
             self._run_in_window()
         self._shutdown()
+        if self.restart_to:
+            self._start_next(self.restart_to)
 
     def _run_in_window(self) -> None:
         import webview
@@ -118,6 +123,24 @@ class DesktopApp:
             webbrowser.open(browser_url(self._info, self._token))
         except (OSError, ValueError, KeyError):
             log.warning("could not open the browser", exc_info=True)
+
+    def restart_into(self, exe: Path) -> None:
+        """Quit and start `exe`: a newer portable copy (#22), or this copy again once WebView2 is installed."""
+        self.restart_to = exe
+        # Called from an API request: let it answer before the service goes down.
+        threading.Timer(0.5, self.quit).start()
+
+    def _start_next(self, exe: Path) -> None:
+        from clipcura.core import paths, updates
+
+        data = paths.portable_data_dir()
+        if data and exe.parent != data.parent:
+            updates.carry_data(data, exe.parent)   # settings and history move with the user to the new copy
+        flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        # No inherited standard handles: a started GUI copy has no use for them, and one it cannot write to can
+        # stall its start.
+        subprocess.Popen([str(exe)], creationflags=flags, close_fds=True, stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     def _start_tray(self) -> None:
         if sys.platform != "win32":

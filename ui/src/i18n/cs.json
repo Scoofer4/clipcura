@@ -142,7 +142,7 @@
     "interface": "Otevírat Clipcuru",
     "interfaceWindow": "Ve vlastním okně",
     "interfaceBrowser": "Ve výchozím prohlížeči",
-    "interfaceHint": "Projeví se při dalším spuštění. V prohlížeči běží Clipcura po zavření karty dál z ikony v oznamovací oblasti.",
+    "interfaceHint": "Kde se Clipcura otevírá: ve vlastním okně, nebo na kartě výchozího prohlížeče. Projeví se při dalším spuštění. V prohlížeči běží Clipcura po zavření karty dál z ikony v oznamovací oblasti.",
     "saved": "Uloženo",
     "saveFailed": "Nepodařilo se uložit",
     "folders": "Povolené složky",
@@ -176,7 +176,9 @@
     "newProfile": "Nový profil",
     "profileSaved": "Profil uložen",
     "profileReset": "Profil vrácen na výchozí",
-    "profileDeleted": "Profil smazán"
+    "profileDeleted": "Profil smazán",
+    "updates": "Aktualizace",
+    "updatesIntro": "Nové verze Clipcury a části, které potřebuje. Nic se nestáhne, dokud nestiskneš tlačítko."
   },
   "ks": {
     "title": "Design system",
@@ -562,6 +564,7 @@
           "Povolené složky: přidej složky se záběry. Clipcura čte a zapisuje jen v nich.",
           "Asistenti a úlohy: nech zapnuté schvalování, ať se asistenti před převodem ptají, a nastav, kolik úloh běží najednou.",
           "Profily: uprav vestavěný profil nebo ho zduplikuj a vytvoř si vlastní. Upravený vestavěný profil jde vrátit na výchozí.",
+          "Aktualizace: denní kontrola nových verzí (jen když ji zapneš) a tlačítka pro stažení nové verze nebo chybějící části.",
           "Vzhled: téma, barva akcentu, jazyk a animace a jestli se Clipcura otevírá ve vlastním okně, nebo ve výchozím prohlížeči."
         ],
         "tips": [
@@ -613,5 +616,36 @@
     "name": "Součást",
     "website": "Web",
     "ffmpegNote": "Dělá samotné dekódování, filtry a kódování. Běží jako samostatný program pod vlastní licencí; Clipcura volá ffmpeg a ffprobe jako procesy."
+  },
+  "updates": {
+    "daily": "Každý den zkontrolovat nové verze",
+    "dailyHint": "Clipcura se jednou denně zeptá GitHubu. Novou verzi stáhne, až když stiskneš Stáhnout.",
+    "checkNow": "Zkontrolovat teď",
+    "neverChecked": "Zatím nezkontrolováno.",
+    "upToDate": "Aktuální (kontrola {{when}}).",
+    "available": "Je k dispozici Clipcura {{version}}.",
+    "whatsNew": "Co je nového",
+    "download": "Stáhnout",
+    "downloading": "Stahuje se nová verze",
+    "runInstaller": "Nainstalovat a restartovat",
+    "switch": "Přepnout na novou verzi",
+    "unpacked": "Nová verze je rozbalená vedle této kopie. Ukonči Clipcuru a spusť ji odtamtud:",
+    "fromSource": "Tato kopie běží ze zdrojového kódu: aktualizuj ji přes git pull.",
+    "installed": "Nainstalováno.",
+    "webview2Missing": "Chybí: Clipcura se místo vlastního okna otevírá v prohlížeči.",
+    "installWebview2": "Nainstalovat od Microsoftu",
+    "ffmpegMissing": "Chybí: bez něj Clipcura neumí klipy číst ani převádět.",
+    "restoreFfmpeg": "Stáhnout FFmpeg",
+    "restart": "Restartovat Clipcuru",
+    "taskFailed": "Nedokončeno: {{error}}",
+    "failed": "Nepovedlo se",
+    "dismiss": "Skrýt do příštího spuštění",
+    "bannerFfmpeg": "Chybí FFmpeg, takže Clipcura neumí klipy číst ani převádět. Stáhnout přesně ten build, se kterým je tato verze otestovaná?",
+    "bannerConsent": "Má Clipcura kontrolovat nové verze? Jednou denně se zeptá GitHubu a bez tebe nic nestáhne.",
+    "yesDaily": "Kontrolovat denně",
+    "noThanks": "Teď ne",
+    "bannerNew": "Je k dispozici Clipcura {{version}}.",
+    "bannerWebview2": "Vlastní okno Clipcury potřebuje Microsoft Edge WebView2, který chybí, proto se otevírá v prohlížeči.",
+    "bannerWebview2Ready": "WebView2 je nainstalovaný. Restartuj Clipcuru a otevře se ve vlastním okně."
   }
 }

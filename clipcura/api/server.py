@@ -130,12 +130,12 @@ class ServiceThread:
     """The API and worker inside the desktop app's process (CLAUDE.md §3), announced like `clipcura serve` so
     the MCP server finds it and does not start a second worker."""
 
-    def __init__(self, port: int | None = None) -> None:
+    def __init__(self, port: int | None = None, on_restart=None) -> None:
         from clipcura.api.app import create_app
 
         self.port = port or load_config().port or free_port()
         # The graceful-shutdown limit is a backstop: a client that never lets go must not keep Quit waiting.
-        self._server = uvicorn.Server(uvicorn.Config(create_app(), host=HOST, port=self.port, log_level="warning",
+        self._server = uvicorn.Server(uvicorn.Config(create_app(on_restart=on_restart), host=HOST, port=self.port, log_level="warning",
                                                      timeout_graceful_shutdown=5))
         self._thread = threading.Thread(target=self._server.run, name="clipcura-service", daemon=True)
         self.info: dict = {}

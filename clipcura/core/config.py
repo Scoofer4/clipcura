@@ -24,6 +24,7 @@ class Config(BaseModel):
     approval_mode: bool = True             # jobs requested by AI wait for a human (CLAUDE.md §10)
     concurrency: Concurrency = Field(default_factory=Concurrency)
     interface: Literal["window", "browser"] = "window"   # where the desktop app shows the GUI (#23)
+    update_check: bool | None = None       # daily check for new versions; None = not asked yet (#22)
 
 
 def _path() -> Path:

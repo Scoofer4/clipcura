@@ -39,8 +39,14 @@ Ovládá ji **člověk přes GUI** a **AI přes MCP**. Obojí volá stejné jád
 - **Worker** běží v procesu aplikace (nebo headless `clipcura serve`). Souběžnost konfigurovatelná, výchozí 1 GPU + 1 CPU úloha.
 - **Lokální API** (`clipcura/api`): FastAPI na `127.0.0.1`, náhodný port, bearer token uložený v `%APPDATA%\Clipcura\config.json`. WebSocket kanál pro průběh úloh a události (včetně akcí AI).
 - **MCP server** (`clipcura/mcp`): FastMCP, transport stdio. Volá lokální API; když aplikace neběží, spustí headless server.
-- **GUI** (`ui/`): React + TypeScript, build do statických souborů, servíruje je API a zobrazuje okno **pywebview** (Edge WebView2, je součástí Windows 10/11).
-- **CLI** (`clipcura` příkaz): `scan`, `plan`, `apply`, `serve`, `doctor`.
+- **GUI** (`ui/`): React + TypeScript, build do statických souborů, servíruje je API a zobrazuje okno **pywebview** (Edge WebView2, je součástí Windows 10/11). **Režim prohlížeče** (rozhodnutí vlastníka 3. 11. 2026, #23): stejné GUI ve výchozím prohlížeči uživatele (`--browser`, volba v Nastavení, automaticky bez WebView2); prohlížeč dostane jednorázový kód, nikdy token.
+- **CLI** (`clipcura` příkaz): `scan`, `plan`, `apply`, `serve`, `doctor`, `app`, `open`, `update`, `mcp`.
+- **Platformy:** jen Windows. macOS a Linux by byly samostatný projekt, teď se neřeší (rozhodnutí vlastníka 3. 11. 2026). Nápad na aplikaci pro iPad je v #24.
+
+### Balíčky, aktualizace a chybějící části (rozhodnutí vlastníka 3. 11. 2026)
+
+- Každé vydání na GitHubu má **instalátor i přenosný ZIP** (#21). Přenosná kopie nic neinstaluje a data drží ve složce `data` vedle sebe (značka `portable.txt`).
+- **Nic se nestahuje ani neinstaluje bez souhlasu** (#22): denní kontrolu nových verzí se aplikace zeptá při prvním spuštění; nová verze, chybějící FFmpeg (přesně zafixovaný build) i chybějící WebView2 (podepsaný bootstrapper Microsoftu) se stáhnou až po stisku tlačítka a ověří (SHA-256, podpis). FFmpeg se neaktualizuje samostatně, přichází s novou verzí Clipcury.
 
 ### Proč webové UI místo PySide6 (změna proti v0.1)
 High-tech vzhled (animace, sklo, glow, plynulé grafy) se ve webovém stacku dělá výrazně lépe a rychleji než v Qt Widgets. API, které UI potřebuje, zároveň poslouží n8n. pywebview zachová jednu Python aplikaci a balení přes PyInstaller.
@@ -226,7 +232,7 @@ docs/          screenshoty, poznámky k vydání
 | M3a | Design system + kitchen sink | Roman schválí vizuální styl |
 | M3b | Obrazovky 1–6 | celý cyklus jde udělat jen myší i jen klávesnicí |
 | M4 | MCP server + schvalování | Claude přes MCP projde scan → plan → apply → status, úloha čeká na schválení v GUI |
-| M5 | Instalátor + ikona v oznamovací oblasti | instalace na čistých Windows jedním souborem |
+| M5 | Instalátor, přenosný ZIP, ikona v oznamovací oblasti, aktualizace se souhlasem | instalace na čistých Windows jedním souborem; přenosná verze běží po rozbalení kamkoli |
 
 ## 13. Akceptační kritéria
 

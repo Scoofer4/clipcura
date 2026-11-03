@@ -8,6 +8,7 @@ import { Segmented, Switch } from "../design-system/Controls";
 import { Panel } from "../design-system/Panel";
 import { useAppearance } from "../design-system/theme";
 import { setLanguage, type Language } from "../i18n";
+import { UpdatesSection } from "../app/updates";
 import { ProfileEditor } from "./ProfileEditor";
 
 function Section({ title, intro, children }: { title: string; intro?: string; children: React.ReactNode }) {
@@ -128,6 +129,10 @@ export function SettingsScreen() {
             <p className="mt-2 max-w-[70ch] text-xs text-muted">{t("settings.interfaceHint")}</p>
           </div>
         )}
+      </Section>
+
+      <Section title={t("settings.updates")} intro={t("settings.updatesIntro")}>
+        <UpdatesSection />
       </Section>
 
       <Section title={t("settings.profiles")} intro={t("settings.profilesIntro")}>

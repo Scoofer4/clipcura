@@ -137,7 +137,7 @@
     "interface": "Open Clipcura in",
     "interfaceWindow": "Its own window",
     "interfaceBrowser": "Default browser",
-    "interfaceHint": "Takes effect the next time Clipcura starts. In the browser it keeps running from its icon in the notification area when you close the tab.",
+    "interfaceHint": "Where Clipcura opens: its own window, or a tab in your default browser. Takes effect the next time Clipcura starts. In the browser it keeps running from its icon in the notification area when you close the tab.",
     "saved": "Saved",
     "saveFailed": "Could not save",
     "folders": "Allowed folders",
@@ -171,7 +171,9 @@
     "newProfile": "New profile",
     "profileSaved": "Profile saved",
     "profileReset": "Profile reset to the default",
-    "profileDeleted": "Profile deleted"
+    "profileDeleted": "Profile deleted",
+    "updates": "Updates",
+    "updatesIntro": "New versions of Clipcura and the parts it needs. Nothing is downloaded until you press a button."
   },
   "ks": {
     "title": "Design system",
@@ -553,6 +555,7 @@
           "Allowed folders: add the folders with your footage. Clipcura reads and writes only inside them.",
           "Assistants and jobs: keep approval on so assistants ask before converting, and set how many jobs run at once.",
           "Profiles: edit a built-in profile or duplicate it to make your own. An edited built-in profile can be reset to the default.",
+          "Updates: a daily check for new versions (only if you turn it on), and buttons to download a new version or a missing part.",
           "Appearance: theme, accent colour, language and animations, and whether Clipcura opens in its own window or in your default browser."
         ],
         "tips": [
@@ -604,5 +607,36 @@
     "name": "Component",
     "website": "Website",
     "ffmpegNote": "Does the actual decoding, filtering and encoding. It runs as a separate program under its own licence; Clipcura calls ffmpeg and ffprobe as processes."
+  },
+  "updates": {
+    "daily": "Check for new versions every day",
+    "dailyHint": "Clipcura asks GitHub once a day. A new version is only downloaded when you press Download.",
+    "checkNow": "Check now",
+    "neverChecked": "Not checked yet.",
+    "upToDate": "Up to date (checked {{when}}).",
+    "available": "Clipcura {{version}} is available.",
+    "whatsNew": "What's new",
+    "download": "Download",
+    "downloading": "Downloading the new version",
+    "runInstaller": "Install and restart",
+    "switch": "Switch to the new version",
+    "unpacked": "The new version is unpacked next to this copy. Quit Clipcura and start it from there:",
+    "fromSource": "This copy runs from source code: update it with git pull.",
+    "installed": "Installed.",
+    "webview2Missing": "Missing: Clipcura opens in your browser instead of its own window.",
+    "installWebview2": "Install from Microsoft",
+    "ffmpegMissing": "Missing: Clipcura cannot read or convert clips without it.",
+    "restoreFfmpeg": "Download FFmpeg",
+    "restart": "Restart Clipcura",
+    "taskFailed": "Did not finish: {{error}}",
+    "failed": "That did not work",
+    "dismiss": "Hide until next start",
+    "bannerFfmpeg": "FFmpeg is missing, so Clipcura cannot read or convert clips. Download the exact build this version was tested with?",
+    "bannerConsent": "Should Clipcura check for new versions? It asks GitHub once a day and downloads nothing without you.",
+    "yesDaily": "Check daily",
+    "noThanks": "Not now",
+    "bannerNew": "Clipcura {{version}} is available.",
+    "bannerWebview2": "Clipcura's own window needs Microsoft Edge WebView2, which is missing, so it opens in your browser.",
+    "bannerWebview2Ready": "WebView2 is installed. Restart Clipcura to open it in its own window."
   }
 }

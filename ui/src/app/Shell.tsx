@@ -9,6 +9,7 @@ import { Lockup } from "../design-system/Logo";
 import { useAppearance } from "../design-system/theme";
 import { CommandPalette, type Command } from "./CommandPalette";
 import { HelpPanel, helpScreenFor } from "./HelpPanel";
+import { UpdateBanner } from "./updates";
 
 export const LAST_SCAN_KEY = "clipcura.lastScan";
 
@@ -132,6 +133,7 @@ export function Shell() {
                   className="absolute right-6 top-6 z-10 flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-muted backdrop-blur hover:border-[var(--line-strong)] hover:text-ink md:right-10">
             <CircleHelp className="size-3.5" aria-hidden />{t("nav.help")}
           </button>
+          <UpdateBanner />
           <Outlet />
         </main>
       </div>

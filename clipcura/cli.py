@@ -281,6 +281,62 @@ def doctor(
         raise typer.Exit(code=1)
 
 
+@app.command()
+def update(
+    install: Annotated[bool, typer.Option("--install", help="Download the new version and install or unpack it.")]
+    = False,
+    ffmpeg: Annotated[bool, typer.Option("--ffmpeg", help="Download the bundled FFmpeg build again.")] = False,
+    webview2: Annotated[bool, typer.Option("--webview2", help="Install Microsoft Edge WebView2 Runtime.")] = False,
+    auto: Annotated[bool | None, typer.Option("--auto/--no-auto", help="Turn the app's daily check on or off.")]
+    = None,
+    yes: Annotated[bool, typer.Option("--yes", "-y", help="Do not ask before downloading.")] = False,
+) -> None:
+    """Check GitHub for a new Clipcura version; download and install only after you confirm (#22)."""
+    from clipcura.core import config, updates
+
+    console = Console(highlight=False)
+    up = updates.Updater()
+    try:
+        if auto is not None:
+            cfg = config.load_config()
+            cfg.update_check = auto
+            config.save_config(cfg)
+            console.print(f"Daily check in the app: {'on' if auto else 'off'}")
+        if ffmpeg and (yes or typer.confirm(f"Download FFmpeg ({updates.paths.vendored_ffmpeg_dir()})?")):
+            console.print(f"FFmpeg restored: {up.restore_ffmpeg(wait=True)}")
+        if webview2 and (yes or typer.confirm("Download WebView2 Runtime from Microsoft and install it?")):
+            up.install_webview2(wait=True)
+            console.print("WebView2 installed.")
+        latest = up.check()   # running this command is the request to ask GitHub
+        status = up.status()
+        console.print(f"Clipcura {status['current']} ({status['kind']})")
+        if not status["ffmpeg"]["installed"]:
+            console.print("[red]FFmpeg is missing[/]: clipcura update --ffmpeg")
+        if not status["webview2"]["installed"]:
+            console.print("[yellow]WebView2 is missing[/] (the app opens in the browser): clipcura update --webview2")
+        if latest is None:
+            console.print("[green]This is the latest version.[/]")
+            return
+        console.print(f"[bold]Clipcura {latest['version']} is available[/]: {latest['url']}")
+        if not install:
+            console.print("Install it with: clipcura update --install")
+            return
+        if not (yes or typer.confirm(f"Download Clipcura {latest['version']}?")):
+            return
+        console.print(f"Downloaded and verified: {up.download(wait=True)}")
+        if up.kind == "installed":
+            up.run_installer()
+            console.print("The installer is starting; it closes Clipcura before it replaces files.")
+        else:
+            exe = up.unpack_portable()
+            console.print(f"Unpacked next to this copy: {exe}\nQuit Clipcura, copy this copy's data folder next "
+                          "to the new Clipcura.exe to keep settings and history, then start the new copy. "
+                          "(Settings > Updates in the app does this for you.)")
+    except updates.UpdateError as e:
+        console.print(f"[red]{escape(str(e))}[/]")
+        raise typer.Exit(code=1) from e
+
+
 def _print_doctor(report: DoctorReport, saved: Path) -> None:
     console = Console(highlight=False)
     s = report.system
