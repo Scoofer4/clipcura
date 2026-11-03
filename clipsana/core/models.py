@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal, Protocol
 
-from pydantic import BaseModel, Field, PositiveFloat, PositiveInt
+from pydantic import BaseModel, ConfigDict, Field, PositiveFloat, PositiveInt
 
 Backend = Literal["cuda", "qsv", "cpu"]
 Vendor = Literal["nvidia", "intel", "amd", "other"]
@@ -70,6 +70,14 @@ class RuleSettings(BaseModel):
     disabled: list[str] = Field(default_factory=list)
     vfr_deep_check: bool = False
     add_silent_audio: bool = False
+
+    # Rules added as plugins keep their own settings here under their rule id (e.g. `loudness: {...}`), so a
+    # new rule never needs a core change (CLAUDE.md §6).
+    model_config = ConfigDict(extra="allow")
+
+    def settings(self, rule_id: str) -> dict:
+        value = (self.model_extra or {}).get(rule_id)
+        return value if isinstance(value, dict) else {}
 
 
 class Profile(BaseModel):
