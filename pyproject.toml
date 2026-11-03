@@ -12,10 +12,12 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "pydantic>=2.8",
     "pyyaml>=6.0",
-    "mcp>=1.2",          # oficiální MCP Python SDK (FastMCP)
-    "pywebview>=5.0",    # nativní okno s WebView2 pro GUI
+    "mcp>=1.2",          # official MCP Python SDK
+    "pywebview>=5.0",    # native WebView2 window for the GUI
     "typer>=0.12",       # CLI
-    "rich>=13.7",        # čitelný výstup CLI
+    "rich>=13.7",        # readable CLI output
+    "pillow>=11",        # draws the tray icon with batch progress (HPND licence)
+    "httpx>=0.28.1",     # MCP server and desktop app talk to the local API
 ]
 
 [project.scripts]
@@ -26,7 +28,6 @@ dev = [
     "pytest>=8",
     "ruff>=0.6",
     "pyinstaller>=6.10",
-    "httpx>=0.28.1",
 ]
 
 [build-system]

@@ -100,6 +100,13 @@ def mcp_server() -> None:
     main()
 
 
+@app.command("app")
+def desktop_app() -> None:
+    """Open Clipsana in its own window with an icon in the notification area (the installed app's default)."""
+    from clipsana.app import run_app
+    run_app()
+
+
 @app.command("open")
 def open_gui(
     print_only: Annotated[bool, typer.Option("--print", help="Only print the URL (contains the access key).")] = False,

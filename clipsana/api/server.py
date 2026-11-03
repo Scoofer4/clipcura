@@ -7,6 +7,7 @@ import os
 import socket
 import subprocess
 import sys
+import threading
 import time
 import urllib.parse
 import urllib.request
@@ -49,10 +50,20 @@ def gui_url(base: str, token: str) -> str:
     return f"{base}/#token={urllib.parse.quote(token)}"
 
 
+CLI_EXE = "clipsana-cli.exe"  # console executable next to Clipsana.exe in the installed app
+
+
+def service_command() -> list[str]:
+    """How to start `clipsana serve` from this process: the installed app has no Python to run `-m` with."""
+    if getattr(sys, "frozen", False):
+        return [str(Path(sys.executable).with_name(CLI_EXE)), "serve"]
+    return [sys.executable, "-m", "clipsana.cli", "serve"]
+
+
 def start_background() -> dict:
     """Start `clipsana serve` detached from this console and wait until it answers."""
     flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-    cmd = [sys.executable, "-m", "clipsana.cli", "serve"]
+    cmd = service_command()
     # MCP clients may run their server in a Windows job object that kills every member when the session ends;
     # the service (and the conversions a person approves later) must outlive the session, so leave the job.
     # Not every job allows that; then the service lives as long as the session and the next start resumes jobs.
@@ -73,16 +84,61 @@ def start_background() -> dict:
     raise RuntimeError("Clipsana service did not start within 30 s")
 
 
-def serve(port: int | None = None) -> None:
-    from clipsana.api.app import create_app
-
-    cfg = load_config()
-    port = port or cfg.port or free_port()
+def _announce(port: int) -> dict:
     info = {"url": f"http://{HOST}:{port}", "port": port, "pid": os.getpid()}
     path = server_file()
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(info), encoding="utf-8")
+    return info
+
+
+def _withdraw() -> None:
+    # Only our own announcement: a second instance must not hide the first one's.
+    path = server_file()
+    try:
+        if json.loads(path.read_text(encoding="utf-8")).get("pid") == os.getpid():
+            path.unlink(missing_ok=True)
+    except (OSError, ValueError):
+        pass
+
+
+def serve(port: int | None = None) -> None:
+    from clipsana.api.app import create_app
+
+    port = port or load_config().port or free_port()
+    _announce(port)
     try:
         uvicorn.run(create_app(), host=HOST, port=port, log_level="warning")
     finally:
-        path.unlink(missing_ok=True)
+        _withdraw()
+
+
+class ServiceThread:
+    """The API and worker inside the desktop app's process (CLAUDE.md §3), announced like `clipsana serve` so
+    the MCP server finds it and does not start a second worker."""
+
+    def __init__(self, port: int | None = None) -> None:
+        from clipsana.api.app import create_app
+
+        self.port = port or load_config().port or free_port()
+        # The graceful-shutdown limit is a backstop: a client that never lets go must not keep Quit waiting.
+        self._server = uvicorn.Server(uvicorn.Config(create_app(), host=HOST, port=self.port, log_level="warning",
+                                                     timeout_graceful_shutdown=5))
+        self._thread = threading.Thread(target=self._server.run, name="clipsana-service", daemon=True)
+        self.info: dict = {}
+
+    def start(self, timeout: float = 30.0) -> dict:
+        self._thread.start()
+        deadline = time.monotonic() + timeout
+        while not self._server.started:
+            if not self._thread.is_alive() or time.monotonic() > deadline:
+                raise RuntimeError("Clipsana service did not start")
+            time.sleep(0.05)
+        self.info = _announce(self.port)
+        return self.info
+
+    def stop(self, timeout: float = 30.0) -> None:
+        # Uvicorn's shutdown runs the app lifespan, which stops the worker; queued jobs resume next start.
+        _withdraw()
+        self._server.should_exit = True
+        self._thread.join(timeout)
