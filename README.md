@@ -133,10 +133,20 @@ claude mcp add clipcura -s user -- uv run --project D:\path\to\clipcura clipcura
 claude mcp add clipcura -s user -- "%LOCALAPPDATA%\Programs\Clipcura\clipcura-cli.exe" mcp   # installed app
 ```
 
+## Built-in assistant (Ollama)
+
+Clipcura can also run the assistant itself, on a model from your own Ollama server, with nothing else installed.
+Give it tasks in plain words on the **Assistant** screen, or press **Explain** next to a failed job or a log error.
+It uses the same tools as an MCP assistant, as actor `ai`, so the same limits apply. Turn it on in
+**Settings → Assistant (Ollama)**: the server address, an optional access key and a model that can call tools.
+The access key is never sent back to the GUI and never written to the log. Clipcura sends file names, paths and
+measured values to that server, never the videos. See [docs/assistant-ollama.md](docs/assistant-ollama.md),
+including how to protect Ollama with an access key.
+
 ## Project layout
 
 ```
-clipcura/    core, rules (check plugins), api (local API), mcp (MCP server), desktop (window, tray)
+clipcura/    core, rules (check plugins), api (local API), mcp (MCP server), assistant (Ollama), desktop (window, tray)
 profiles/    target parameters (YAML)
 ui/          React GUI (from M3)
 tests/       tests, generated and real samples

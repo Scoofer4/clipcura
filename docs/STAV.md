@@ -2,6 +2,52 @@
 
 Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 
+## 3. 11. 2026 (večer) – vestavěný asistent s Ollamou (#27)
+
+### Hotovo
+
+- **Rozhodnutí vlastníka:** Ollama se připojuje přímo z Clipcury přes API klíč, bez dalšího prostředníka.
+  Pořadí: připojení, Asistent a Vysvětlit teď; vizuální kontrola výstupu a „druhý názor“ na data souboru
+  až po pilotu. Zapsáno v `CLAUDE.md` (kap. 3, 8, 9, 11) a v #27.
+- **Jádro `clipcura/assistant`:**
+  - `ollama.py` je klient Ollamy: verze, modely s podporou nástrojů, streamovaný chat a klíč jako bearer
+    token;
+  - `chat.py` provádí smyčku nástrojů. Nástroje bere z MCP serveru a volá je jako `ai`, takže platí stejné
+    hranice. Turnů je nejvýš 12, konverzace se drží v paměti služby.
+- **API:**
+  - `/api/assistant` (stav, nastavení, test spojení, konverzace, zastavení, vysvětlení);
+  - vše, co něco mění, smí jen člověk;
+  - klíč se nikdy nevrací, v `/api/config` je jen `has_key`, a v logu se maskuje i po změně za běhu.
+- **GUI:**
+  - obrazovka **Asistent**: chat, kroky nástrojů, příklady úkolů, historie;
+  - **Nastavení → Asistent (Ollama)**: adresa, klíč, Vyzkoušet spojení, výběr modelu, varování
+    u `:cloud` modelů;
+  - tlačítko **Vysvětlit** u neúspěšné úlohy a u varování a chyb v logu;
+  - nápověda, EN/CS.
+- **Návod `docs/assistant-ollama.md`** včetně ochrany Ollamy klíčem: obecná ukázka Caddy/nginx, bez firemní
+  adresy.
+
+### Ověřeno
+
+- pytest 298 prošlo / 2 přeskočeny (+23 testů asistenta s falešným Ollama serverem), ruff, tsc, eslint,
+  Playwright 15/15 v Edge
+  (nový e2e: nastavení → test spojení → úkol → krok nástroje → odpověď, klíč se na stránce neobjeví).
+- **Naostro proti skutečnému Ollama serveru**, jen s vygenerovanými testovacími klipy:
+  - `qwen3.6:27b` za 61 s sám zavolal `scan_folder` → `get_report` → `plan_fixes` → `apply_fixes`;
+  - česky a správně popsal oba problémové klipy;
+  - převody čekaly na schválení.
+- **Neověřeno:**
+  - přístup s klíčem přes proxy (zatím nenastavená);
+  - Vysvětlit u skutečně selhané úlohy naostro (testy pokrývají záznam v logu i úlohu s falešným
+    serverem);
+  - další modely.
+
+### Otevřené
+
+- Ollama server má mít před sebou proxy s klíčem (návod v `docs/assistant-ollama.md`), pak ověřit spojení s klíčem.
+- **#27 po pilotu:** vizuální kontrola výstupu modelem, který vidí obraz, a „druhý názor“ na technická data
+  souboru.
+
 ## 3. 11. 2026 (odpoledne) – přenosný ZIP, režim prohlížeče, aktualizace se souhlasem, log
 
 ### Hotovo

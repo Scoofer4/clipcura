@@ -26,7 +26,8 @@ Ovládá ji **člověk přes GUI** a **AI přes MCP**. Obojí volá stejné jád
 ```
  GUI (React v okně pywebview/WebView2) ──┐
  n8n (později) ──────────────────────────┼──► lokální API (FastAPI, 127.0.0.1, token, WebSocket události)
- MCP server (stdio, tenký klient) ───────┘                       │
+ MCP server (stdio, tenký klient) ───────┤                       │
+ Asistent (Ollama, smyčka nástrojů MCP) ─┘                       │
  CLI ───────────────────────────────────────────────────────────►│
                                                                   ▼
                  JÁDRO clipcura.core: probe → pravidla → plán → fronta úloh → worker → report
@@ -39,6 +40,7 @@ Ovládá ji **člověk přes GUI** a **AI přes MCP**. Obojí volá stejné jád
 - **Worker** běží v procesu aplikace (nebo headless `clipcura serve`). Souběžnost konfigurovatelná, výchozí 1 GPU + 1 CPU úloha.
 - **Lokální API** (`clipcura/api`): FastAPI na `127.0.0.1`, náhodný port, bearer token uložený v `%APPDATA%\Clipcura\config.json`. WebSocket kanál pro průběh úloh a události (včetně akcí AI).
 - **MCP server** (`clipcura/mcp`): FastMCP, transport stdio. Volá lokální API; když aplikace neběží, spustí headless server.
+- **Vestavěný asistent** (`clipcura/assistant`, rozhodnutí vlastníka 3. 11. 2026, #27): Clipcura sama mluví s Ollama serverem (adresa, přístupový klíč jako bearer token, model s podporou nástrojů) a sama provádí smyčku nástrojů, bez dalšího prostředníka. Nástroje bere z MCP serveru a volá je jako `ai`, takže platí stejné hranice. Spojení jde jen ven; API Clipcury zůstává na `127.0.0.1`. Výchozí stav vypnuto; adresa serveru se v kódu nikde neuvádí.
 - **GUI** (`ui/`): React + TypeScript, build do statických souborů, servíruje je API a zobrazuje okno **pywebview** (Edge WebView2, je součástí Windows 10/11). **Režim prohlížeče** (rozhodnutí vlastníka 3. 11. 2026, #23): stejné GUI ve výchozím prohlížeči uživatele (`--browser`, volba v Nastavení, automaticky bez WebView2); prohlížeč dostane jednorázový kód, nikdy token.
 - **CLI** (`clipcura` příkaz): `scan`, `plan`, `apply`, `serve`, `doctor`, `app`, `open`, `update`, `mcp`.
 - **Platformy:** jen Windows. macOS a Linux by byly samostatný projekt, teď se neřeší (rozhodnutí vlastníka 3. 11. 2026). Nápad na aplikaci pro iPad je v #24.
@@ -164,6 +166,8 @@ Kopírují akce v GUI. Odpovědi = strukturovaný JSON + krátké shrnutí v jaz
 | `cancel_job` | job_id | stav | ano |
 | `get_logs` | level, text, limit | záznamy logu všech procesů (stejné jako obrazovka Log, #26) | ne |
 
+**Vestavěný asistent (rozhodnutí vlastníka 3. 11. 2026, #27):** Ollama se připojuje přímo z Clipcury přes API klíč, bez samostatného MCP klienta. Asistent dostává stejné nástroje jako MCP (žádný navíc, žádný schvalovací), úkoly mu zadává jen člověk a nastavuje ho jen člověk. Klíč se nikdy nevrací do GUI a v logu se maskuje. Model nerozhoduje o opravách, ty dál určují pravidla. První etapa: připojení, Asistent, Vysvětlit. Po pilotu: vizuální kontrola výstupu modelem, který vidí obraz, a „druhý názor“ na technická data souboru (jen poznámky, nikdy automatická oprava).
+
 **Log (rozhodnutí vlastníka 3. 11. 2026, #26):** každý proces (aplikace, služba, MCP, CLI) loguje vždy od spuštění do ukončení do `<app data>/logs/`, včetně neošetřených chyb a pádů. Člověk ho vidí na obrazovce Log, AI přes `get_logs`, příkazová řádka přes `clipcura logs`. Přístupový klíč a jednorázové kódy se do logu nikdy nedostanou. Log se nemaže ani po pádu, ani po řádném ukončení, jen se rotuje (5 × 5 MB na proces). Další start zapíše, že předchozí běh neskončil normálně.
 
 ## 9. UX a UI – high-tech, ale srozumitelné
@@ -188,6 +192,7 @@ Kopírují akce v GUI. Odpovědi = strukturovaný JSON + krátké shrnutí v jaz
 4. **Fronta úloh:** živé karty s průběhem (%, fps zpracování, zbývající čas), mini graf rychlosti, zrušení. Úlohy od AI označené odznakem „AI“.
 5. **AI aktivita a schvalování:** časová osa akcí přes MCP (sken, plán, žádost o spuštění). Žádosti ve stavu `awaiting_approval` jako výrazné karty s tlačítky **Schválit / Zamítnout** a shrnutím, co se stane.
 6. **Nastavení:** profily (editor s validací), backend akcelerace, souběžnost, povolené složky (whitelist), schvalovací režim, cesta k ffmpeg, téma, animace.
+7. **Asistent (#27):** chat, kde člověk zadává úkoly obyčejnou řečí. Každé volání nástroje je vidět jako krok. Tlačítko **Vysvětlit** u neúspěšné úlohy a u chyb v logu otevře konverzaci s podrobnostmi (chyba, konec výpisu FFmpegu, naměřené hodnoty, nálezy).
 
 ### Interakce navíc
 - **Paleta příkazů** `Ctrl+K` (otevřít složku, přepnout profil, opravit vše, přejít na frontu).
@@ -216,6 +221,7 @@ clipcura/
   rules/       vfr.py, fps_mismatch.py, hdr.py, hevc_10bit.py, resolution.py, audio_rate.py, rotation.py, no_audio.py, insv.py, corrupt.py
   api/         app.py, routes/, events.py (WebSocket)
   mcp/         server.py
+  assistant/   ollama.py (klient Ollama), chat.py (smyčka nástrojů, konverzace)
   cli.py
   app.py       spuštění okna pywebview + API + worker + tray
 profiles/      social-30.yaml, ipad-light.yaml, hero-10bit.yaml
