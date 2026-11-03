@@ -27,22 +27,35 @@ _TOO_SMALL = {
 }
 
 
-# video args (fps -> list), pixel format, intra-frame editing codec (gets PCM audio)
+# GPU encoders: the flag that sets their constant-quality target and the steps doctor tries, best size first
+# (issue #14). The first step is the default when doctor has not calibrated the encoder on this machine.
+GPU_QUALITY: dict[str, tuple[str, tuple[int, ...]]] = {
+    "h264_nvenc": ("-cq", (19, 17, 15, 13)),
+    "hevc_nvenc": ("-cq", (21, 19, 17, 15)),
+    "h264_qsv": ("-global_quality", (21, 19, 17, 15)),
+    "hevc_qsv": ("-global_quality", (23, 21, 19, 17)),
+}
+# Without an explicit ceiling NVENC caps constant-quality VBR at a low rate, and grainy footage then loses
+# detail at any CQ (measured: 23 Mbit/s for 1080p, VMAF 1.2 below libx264).
+_NVENC_RATE = ["-b:v", "0", "-maxrate", "200M", "-bufsize", "400M"]
+
+# video args (fps, quality -> list), pixel format, intra-frame editing codec (gets PCM audio)
 _ENCODERS: dict[str, tuple] = {
-    "dnxhr_hq": (lambda fps: ["-c:v", "dnxhd", "-profile:v", "dnxhr_hq"], "yuv422p", True),
-    "dnxhr_hqx": (lambda fps: ["-c:v", "dnxhd", "-profile:v", "dnxhr_hqx"], "yuv422p10le", True),
-    "prores_422": (lambda fps: ["-c:v", "prores_ks", "-profile:v", "2", "-vendor", "apl0"], "yuv422p10le", True),
+    "dnxhr_hq": (lambda fps, q: ["-c:v", "dnxhd", "-profile:v", "dnxhr_hq"], "yuv422p", True),
+    "dnxhr_hqx": (lambda fps, q: ["-c:v", "dnxhd", "-profile:v", "dnxhr_hqx"], "yuv422p10le", True),
+    "prores_422": (lambda fps, q: ["-c:v", "prores_ks", "-profile:v", "2", "-vendor", "apl0"], "yuv422p10le", True),
     # Long-GOP codecs get a one-second GOP: much smoother scrubbing in the editor at a small size cost.
-    "libx264": (lambda fps: ["-c:v", "libx264", "-preset", "medium", "-crf", "18", "-g", fps], "yuv420p", False),
-    "libx265": (lambda fps: ["-c:v", "libx265", "-preset", "medium", "-crf", "20", "-g", fps,
-                             "-x265-params", "log-level=error"], "yuv420p", False),
-    "h264_nvenc": (lambda fps: ["-c:v", "h264_nvenc", "-preset", "p5", "-tune", "hq", "-rc", "vbr", "-cq", "19",
-                                "-b:v", "0", "-g", fps], "yuv420p", False),
-    "hevc_nvenc": (lambda fps: ["-c:v", "hevc_nvenc", "-preset", "p5", "-tune", "hq", "-rc", "vbr", "-cq", "21",
-                                "-b:v", "0", "-g", fps], "yuv420p", False),
-    "h264_qsv": (lambda fps: ["-c:v", "h264_qsv", "-preset", "medium", "-global_quality", "21", "-g", fps],
-                 "nv12", False),
-    "hevc_qsv": (lambda fps: ["-c:v", "hevc_qsv", "-preset", "medium", "-global_quality", "23", "-g", fps],
+    "libx264": (lambda fps, q: ["-c:v", "libx264", "-preset", "medium", "-crf", "18", "-g", fps], "yuv420p", False),
+    "libx265": (lambda fps, q: ["-c:v", "libx265", "-preset", "medium", "-crf", "20", "-g", fps,
+                                "-x265-params", "log-level=error"], "yuv420p", False),
+    # GPU H.264 writes the High profile like libx264 (the default Main lacks 8x8 transforms).
+    "h264_nvenc": (lambda fps, q: ["-c:v", "h264_nvenc", "-profile:v", "high", "-preset", "p5", "-tune", "hq",
+                                   "-rc", "vbr", "-cq", q, *_NVENC_RATE, "-g", fps], "yuv420p", False),
+    "hevc_nvenc": (lambda fps, q: ["-c:v", "hevc_nvenc", "-preset", "p5", "-tune", "hq", "-rc", "vbr", "-cq", q,
+                                   *_NVENC_RATE, "-g", fps], "yuv420p", False),
+    "h264_qsv": (lambda fps, q: ["-c:v", "h264_qsv", "-profile:v", "high", "-preset", "medium",
+                                 "-global_quality", q, "-g", fps], "nv12", False),
+    "hevc_qsv": (lambda fps, q: ["-c:v", "hevc_qsv", "-preset", "medium", "-global_quality", q, "-g", fps],
                  "nv12", False),
 }
 _AUTO = {"auto_h264": {"cuda": "h264_nvenc", "qsv": "h264_qsv", "cpu": "libx264"},
@@ -64,9 +77,23 @@ _REC709 = ["-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "b
 _REC709_FRAMES = "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709"
 
 
-def resolve_codec(codec: str, backend: Backend) -> str:
+def cpu_equivalent(codec: str) -> str:
+    return _CPU_EQUIVALENT.get(codec, codec)
+
+
+def encoder_args(codec: str, fps: str, quality: int | None = None) -> tuple[list[str], str, bool]:
+    """(video args, pixel format, intra) for one concrete encoder; `quality` overrides a GPU encoder's default."""
+    make, pix_fmt, intra = _ENCODERS[codec]
+    if quality is None and codec in GPU_QUALITY:
+        quality = GPU_QUALITY[codec][1][0]
+    return make(fps, str(quality)), pix_fmt, intra
+
+
+def resolve_codec(codec: str, backend: Backend, cpu_only: list[str] | tuple = ()) -> str:
     if codec in _AUTO:
-        return _AUTO[codec][backend]
+        chosen = _AUTO[codec][backend]
+        # An auto codec promises the best path, so a GPU encoder that could not match CPU quality is skipped.
+        return cpu_equivalent(chosen) if chosen in cpu_only else chosen
     if backend == "cpu":
         return _CPU_EQUIVALENT.get(codec, codec)
     if codec not in _ENCODERS:
@@ -132,9 +159,9 @@ def build_args(media: MediaInfo, steps: list[FixStep], profile: Profile, backend
     """ffmpeg arguments for one file. `backend` is the decode path; `paths` (if given) picks GPU filter
     variants and the backend for auto_* encoders. Without `paths` everything but decoding runs on the CPU."""
     steps = sorted(steps, key=lambda s: s.order)
-    codec = resolve_codec(profile.output.codec, paths.encode if paths else "cpu")
-    video_args, pix_fmt, intra = _ENCODERS[codec]
+    codec = resolve_codec(profile.output.codec, paths.encode if paths else "cpu", paths.cpu_only if paths else ())
     fps = str(round(profile.fps))
+    video_args, pix_fmt, intra = encoder_args(codec, fps, paths.gpu_quality.get(codec) if paths else None)
 
     args = [*_HWACCEL[backend], "-i", media.path]
     extra = [inp for s in steps for inp in s.extra_inputs]
@@ -151,7 +178,7 @@ def build_args(media: MediaInfo, steps: list[FixStep], profile: Profile, backend
     af = merge_filters([f for s in steps for f in s.audio_filters])
     if af:
         args += ["-af", ",".join(af)]
-    args += video_args(fps)
+    args += video_args
     if media.audio is not None or extra:
         args += ["-c:a", "pcm_s16le"] if intra else ["-c:a", "aac", "-b:a", "320k"]
     args += _dedupe_pairs([a for s in steps for a in s.output_args])
@@ -219,6 +246,7 @@ def build_item(media: MediaInfo, issues: list[Issue], profile: Profile, backend:
         source=media.path, output=str(out), args=args, fallback_args=fallback, backend=backend,
         rule_ids=sorted({i.rule_id for i in fixable}),
         plan_hash=hashlib.sha256(recipe.encode()).hexdigest()[:16],
-        est_bytes=_estimate_bytes(media, vf, resolve_codec(profile.output.codec, paths.encode if paths else "cpu"),
+        est_bytes=_estimate_bytes(media, vf, resolve_codec(profile.output.codec, paths.encode if paths else "cpu",
+                                                         paths.cpu_only if paths else ()),
                                   profile),
         duration=media.duration)

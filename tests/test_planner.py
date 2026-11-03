@@ -206,3 +206,36 @@ def test_plan_item_has_size_estimate_and_stable_hash():
     assert a.est_bytes > 0
     assert a.plan_hash == b.plan_hash
     assert a.rule_ids == ["audio_rate"]
+
+
+# Issue #14: a faster GPU encoder may only replace the CPU one when the output quality does not drop (§4).
+@pytest.mark.parametrize(("backend", "encoder"), [("cuda", "h264_nvenc"), ("qsv", "h264_qsv")])
+def test_gpu_h264_encoders_write_the_high_profile_like_libx264(backend, encoder):
+    p = profile(output={"codec": "auto_h264", "container": "mp4"})
+    args = planner.build_args(media(), [], p, "cpu", Path("o.mp4"), paths=Paths(encode=backend))
+    assert flag_value(args, "-c:v") == encoder
+    assert flag_value(args, "-profile:v") == "high"
+
+
+@pytest.mark.parametrize("encoder", ["h264_nvenc", "hevc_nvenc"])
+def test_nvenc_quality_target_is_not_capped_by_a_hidden_bitrate_limit(encoder):
+    # Without -maxrate NVENC caps constant-quality VBR, and grainy footage loses detail at any CQ.
+    args, _, _ = planner.encoder_args(encoder, "30")
+    assert int(flag_value(args, "-maxrate").rstrip("M")) >= 100
+
+
+def test_calibrated_gpu_quality_from_doctor_is_used():
+    p = profile(output={"codec": "auto_h264", "container": "mp4"})
+    paths = Paths(encode="cuda", gpu_quality={"h264_nvenc": 15})
+    assert flag_value(planner.build_args(media(), [], p, "cpu", Path("o.mp4"), paths=paths), "-cq") == "15"
+    assert flag_value(planner.build_args(media(), [], p, "cpu", Path("o.mp4"), paths=Paths(encode="cuda")),
+                      "-cq") == str(planner.GPU_QUALITY["h264_nvenc"][1][0])
+
+
+def test_gpu_encoder_that_cannot_match_cpu_quality_is_not_used_for_auto_codecs():
+    p = profile(output={"codec": "auto_hevc", "container": "mp4"})
+    paths = Paths(encode="cuda", cpu_only=["hevc_nvenc"])
+    assert flag_value(planner.build_args(media(), [], p, "cpu", Path("o.mp4"), paths=paths), "-c:v") == "libx265"
+    # A GPU encoder named explicitly in a profile is the owner's choice and stays.
+    p = profile(output={"codec": "hevc_nvenc", "container": "mp4"})
+    assert flag_value(planner.build_args(media(), [], p, "cpu", Path("o.mp4"), paths=paths), "-c:v") == "hevc_nvenc"

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -15,7 +16,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from clipsana.core.models import Backend, Benchmarks, FfmpegInfo, Paths, Probe
+from clipsana.core.models import Backend, Benchmarks, EncoderQuality, FfmpegInfo, Paths, Probe
 from clipsana.core.paths import vendored_ffmpeg_dir
 
 _EXE = ".exe" if sys.platform == "win32" else ""
@@ -123,7 +124,10 @@ def choose_paths(info: FfmpegInfo | None) -> Paths:
     # libplacebo tone-maps with BT.2390 and peak detection: better than zscale+hable, so it wins whenever it
     # works, regardless of speed.
     placebo_ok = b.tonemap.get("libplacebo", 0) > 0 if b and b.tonemap else info.works("libplacebo")
-    return Paths(decode=decode, encode=encode, scale=scale, tonemap="libplacebo" if placebo_ok else "zscale")
+    quality = b.quality if b else {}
+    return Paths(decode=decode, encode=encode, scale=scale, tonemap="libplacebo" if placebo_ok else "zscale",
+                 gpu_quality={e: r.quality for e, r in quality.items() if r.quality is not None},
+                 cpu_only=sorted(e for e, r in quality.items() if r.quality is None))
 
 
 def _run(cmd: list[str], timeout: float = PROBE_TIMEOUT_S) -> subprocess.CompletedProcess:
@@ -217,7 +221,96 @@ def run_benchmarks(info: FfmpegInfo, workdir: Path) -> Benchmarks:
            "setparams=color_primaries=bt2020:color_trc=arib-std-b67:colorspace=bt2020nc,format=yuv420p10le,{tm}"]
     tonemap = {"zscale": ZSCALE_TONEMAP} | ({"libplacebo": LIBPLACEBO_TONEMAP} if info.works("libplacebo") else {})
     bench.tonemap = {k: _measure_fps(ffmpeg, [*hlg[:-1], hlg[-1].format(tm=tm)], frames) for k, tm in tonemap.items()}
+    bench.quality = calibrate_encoders(info, workdir)
     return bench
+
+
+# How far a GPU encoder may score below its CPU equivalent and still count as the same quality. 0.5 VMAF is
+# well under one just-noticeable difference (about 6 points); SSIM is the fallback without libvmaf.
+QUALITY_MARGIN = {"vmaf": 0.5, "ssim": 0.002}
+_SCORE = {"vmaf": re.compile(r"VMAF score: ([\d.]+)"), "ssim": re.compile(r"SSIM .*All:([\d.]+)")}
+
+
+def first_matching(steps: list[tuple[int, list[float]]], margin: float) -> tuple[int | None, float | None]:
+    """First quality step whose worst per-clip delta (GPU minus CPU score) stays within the margin.
+    Without a match, returns None and the best worst-case delta seen, so doctor can say how far off it was."""
+    best = None
+    for quality, deltas in steps:
+        worst = min(deltas)
+        if worst >= -margin:
+            return quality, round(worst, 3)
+        best = worst if best is None else max(best, worst)
+    return None, None if best is None else round(best, 3)
+
+
+def _quality_clips(ffmpeg: str, directory: Path) -> list[Path]:
+    """Two lossless references: clean motion graphics, and the same with heavy sensor-like grain. Grain is
+    where rate control starves first, so a GPU encoder has to hold up on both."""
+    size, frames = ("640x360", 10) if os.environ.get("CLIPSANA_BENCH_FAST") else ("1920x1080", 30)
+    clips = []
+    for name, vf in (("clean", "null"), ("grain", "noise=alls=8:allf=t")):
+        clip = directory / f"quality_{name}.mkv"
+        p = _run([ffmpeg, "-hide_banner", "-nostdin", "-v", "error", "-f", "lavfi", "-i", f"testsrc2=s={size}:r=30",
+                  "-frames:v", str(frames), "-vf", vf, "-pix_fmt", "yuv420p", "-c:v", "ffv1", "-y", str(clip)],
+                 timeout=120)
+        if p.returncode == 0:
+            clips.append(clip)
+    return clips
+
+
+def _score(ffmpeg: str, codec: str, quality: int | None, clip: Path, metric: str) -> float | None:
+    from clipsana.core import planner
+
+    args, pix_fmt, _ = planner.encoder_args(codec, "30", quality)
+    out = clip.with_name(f"{clip.stem}_{codec}_{quality}.mp4")
+    try:
+        enc = _run([ffmpeg, "-hide_banner", "-nostdin", "-v", "error", "-i", str(clip), "-pix_fmt", pix_fmt, *args,
+                    "-an", "-y", str(out)], timeout=300)
+        if enc.returncode != 0:
+            return None
+        # [distorted][reference]; ffmpeg prints the score at info level.
+        compare = "libvmaf=n_threads=4" if metric == "vmaf" else "ssim"
+        m = _run([ffmpeg, "-hide_banner", "-nostdin", "-i", str(out), "-i", str(clip), "-lavfi",
+                  f"[0:v][1:v]{compare}", *_NULL], timeout=300)
+    except subprocess.TimeoutExpired:
+        return None
+    finally:
+        out.unlink(missing_ok=True)
+    found = _SCORE[metric].search(m.stderr)
+    return float(found.group(1)) if m.returncode == 0 and found else None
+
+
+def calibrate_encoders(info: FfmpegInfo, workdir: Path) -> dict[str, EncoderQuality]:
+    """Compare every working GPU encoder with its CPU equivalent on the same clips (issue #14): a faster path
+    may only be used when the quality does not drop (CLAUDE.md §4). Tries the encoder's quality steps until
+    one matches; an encoder that never matches is reported so auto codecs keep encoding on the CPU."""
+    from clipsana.core import planner
+
+    gpu = [e for e in planner.GPU_QUALITY if info.works(e)]
+    if not gpu:
+        return {}
+    ffmpeg = info.ffmpeg
+    metric = "vmaf" if "libvmaf" in info.filters else "ssim"
+    clips = _quality_clips(ffmpeg, workdir)
+    cpu_scores: dict[str, list[float | None]] = {}
+    results: dict[str, EncoderQuality] = {}
+    for encoder in gpu:
+        cpu = planner.cpu_equivalent(encoder)
+        if cpu not in cpu_scores:
+            cpu_scores[cpu] = [_score(ffmpeg, cpu, None, c, metric) for c in clips]
+        reference = cpu_scores[cpu]
+        steps: list[tuple[int, list[float]]] = []
+        if clips and all(r is not None for r in reference):
+            for quality in planner.GPU_QUALITY[encoder][1]:
+                scores = [_score(ffmpeg, encoder, quality, c, metric) for c in clips]
+                if any(s is None for s in scores):
+                    break
+                steps.append((quality, [s - r for s, r in zip(scores, reference, strict=True)]))
+                if min(steps[-1][1]) >= -QUALITY_MARGIN[metric]:
+                    break
+        chosen, delta = first_matching(steps, QUALITY_MARGIN[metric])
+        results[encoder] = EncoderQuality(cpu_encoder=cpu, metric=metric, quality=chosen, delta=delta)
+    return results
 
 
 def inspect_ffmpeg(run_probes: bool = True, run_benchmarks_too: bool = False) -> FfmpegInfo:

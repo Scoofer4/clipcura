@@ -1,6 +1,6 @@
 """Choosing processing paths from doctor measurements (issue #5): quality first, then measured speed."""
 from clipsana.core import backends
-from clipsana.core.models import Benchmarks, FfmpegInfo, Probe
+from clipsana.core.models import Benchmarks, EncoderQuality, FfmpegInfo, Probe
 
 WORKING = ["cuda", "qsv", "h264_nvenc", "h264_qsv", "libplacebo", "zscale"]
 
@@ -57,3 +57,18 @@ def test_intel_only_machine_decodes_with_d3d11va_not_qsv():
 def test_encoder_backend_follows_capability_not_decode_speed():
     p = backends.choose_paths(info(Benchmarks(decode={"cpu": 500, "cuda": 100})))
     assert (p.decode, p.encode) == ("cpu", "cuda")
+
+
+def test_gpu_encoder_quality_calibration_reaches_the_paths():
+    # Issue #14: doctor measured that h264_nvenc matches libx264 at CQ 15, while hevc_nvenc never matched libx265.
+    quality = {"h264_nvenc": EncoderQuality(cpu_encoder="libx264", metric="vmaf", quality=15, delta=0.2),
+               "hevc_nvenc": EncoderQuality(cpu_encoder="libx265", metric="vmaf", quality=None, delta=-1.4)}
+    p = backends.choose_paths(info(Benchmarks(quality=quality)))
+    assert p.gpu_quality == {"h264_nvenc": 15}
+    assert p.cpu_only == ["hevc_nvenc"]
+
+
+def test_parity_picks_the_first_quality_step_that_matches_cpu_on_every_clip():
+    # deltas = GPU score minus CPU score per test clip, for each quality step in ladder order
+    assert backends.first_matching([(19, [0.8, -1.2]), (17, [1.0, -0.3]), (15, [1.2, 0.1])], margin=0.5) == (17, -0.3)
+    assert backends.first_matching([(19, [-2.0]), (17, [-0.9])], margin=0.5) == (None, -0.9)

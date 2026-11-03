@@ -44,3 +44,17 @@ def test_doctor_json_reports_capabilities_and_saves_report(tmp_path, monkeypatch
     bench = report["ffmpeg"]["benchmarks"]
     assert bench["decode"]["cpu"] > 0 and bench["scale"]["cpu"] > 0 and bench["tonemap"]["zscale"] > 0
     assert report["paths"]["scale"] in {"cpu", "scale_cuda", "libplacebo"}
+
+
+@pytest.mark.skipif(not _ffmpeg_available(), reason="ffmpeg not installed (run tools/fetch_ffmpeg.py)")
+def test_quality_calibration_compares_each_working_gpu_encoder_with_its_cpu_equivalent(tmp_path, monkeypatch):
+    monkeypatch.setenv("CLIPSANA_BENCH_FAST", "1")
+    from clipsana.core import planner
+
+    info = backends.inspect_ffmpeg(run_probes=True)
+    quality = backends.calibrate_encoders(info, tmp_path)
+    gpu = {e for e in planner.GPU_QUALITY if info.works(e)}
+    assert set(quality) == gpu  # empty on a machine without a GPU encoder (CI)
+    for result in quality.values():
+        assert result.cpu_encoder in {"libx264", "libx265"}
+        assert result.quality is None or result.delta >= -backends.QUALITY_MARGIN[result.metric]

@@ -304,6 +304,15 @@ def _print_doctor(report: DoctorReport, saved: Path) -> None:
                 cells = "  ".join(f"{k} {v:g}" if v else f"{k} [red]failed[/]" for k, v in measured.items())
                 bench.add_row(step, cells, f"[bold cyan]{chosen[step]}[/]")
             console.print(bench)
+        if f.benchmarks and f.benchmarks.quality:
+            quality = Table(title="GPU encoder quality against the CPU encoder", title_justify="left")
+            for col in ("GPU encoder", "Compared with", "Setting", "Worst delta", "Used for auto codecs"):
+                quality.add_column(col)
+            for enc, r in f.benchmarks.quality.items():
+                delta = "-" if r.delta is None else f"{r.delta:+.2f} {r.metric.upper()}"
+                used = "[green]yes[/]" if r.quality is not None else "[orange1]no, CPU keeps the quality[/]"
+                quality.add_row(enc, r.cpu_encoder, "-" if r.quality is None else str(r.quality), delta, used)
+            console.print(quality)
 
     for problem in report.problems:
         console.print(f"[bold orange1]![/] {problem}")

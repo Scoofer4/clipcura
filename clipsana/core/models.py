@@ -134,6 +134,14 @@ class Probe(BaseModel):
     detail: str = ""
 
 
+class EncoderQuality(BaseModel):
+    """How a GPU encoder compares with its CPU equivalent at the same profile (issue #14, CLAUDE.md §4)."""
+    cpu_encoder: str
+    metric: Literal["vmaf", "ssim"]
+    quality: int | None   # first CQ / global_quality step that matches the CPU encoder; None = never matched
+    delta: float | None   # worst GPU-minus-CPU score over the test clips at that step (or the best step tried)
+
+
 class Benchmarks(BaseModel):
     """Measured throughput in frames per second per path (0 = path failed on this machine)."""
     # Whole-job throughput (decode -> filters -> DNxHR encode) on a camera-like 4K HEVC sample: measuring a
@@ -141,6 +149,7 @@ class Benchmarks(BaseModel):
     decode: dict[str, float] = Field(default_factory=dict)    # cpu | cuda | d3d11va
     scale: dict[str, float] = Field(default_factory=dict)     # cpu | scale_cuda | libplacebo, 4K -> 1080p
     tonemap: dict[str, float] = Field(default_factory=dict)   # zscale | libplacebo, HLG -> Rec.709
+    quality: dict[str, EncoderQuality] = Field(default_factory=dict)  # per working GPU encoder
 
 
 # Decoding goes through hwaccels that hand frames back in system memory at the source bit depth; QSV decoding
@@ -156,6 +165,10 @@ class Paths(BaseModel):
     encode: Backend = "cpu"         # backend for auto_* encoders (nvenc / qsv / cpu)
     scale: ScalePath = "cpu"
     tonemap: TonemapPath = "zscale"
+    # From doctor's quality calibration (issue #14): the quality setting each GPU encoder needs to match its CPU
+    # equivalent, and the GPU encoders that never matched (auto_* codecs then encode on the CPU).
+    gpu_quality: dict[str, int] = Field(default_factory=dict)
+    cpu_only: list[str] = Field(default_factory=list)
 
 
 class FfmpegInfo(BaseModel):
