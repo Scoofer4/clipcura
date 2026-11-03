@@ -10,6 +10,7 @@ import { ConnectGate } from "./app/ConnectGate";
 import { Shell } from "./app/Shell";
 import { ToastHost } from "./app/toast";
 import { AppearanceProvider } from "./design-system/theme";
+import { AboutScreen } from "./screens/AboutScreen";
 import { ActivityScreen } from "./screens/ActivityScreen";
 import { JobsScreen } from "./screens/JobsScreen";
 import { KitchenSink } from "./screens/KitchenSink";
@@ -36,6 +37,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="jobs" element={<JobsScreen />} />
             <Route path="activity" element={<ActivityScreen />} />
             <Route path="settings" element={<SettingsScreen />} />
+            <Route path="about" element={<AboutScreen />} />
             <Route path="*" element={<StartScreen />} />
           </Route>
         </Routes>

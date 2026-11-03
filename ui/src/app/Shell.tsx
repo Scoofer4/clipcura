@@ -1,13 +1,14 @@
-import { Activity, Bot, FolderSearch, Home, Moon, Settings as SettingsIcon, Sun, Command as CommandIcon } from "lucide-react";
+import { Activity, Bot, CircleHelp, FolderSearch, Home, Info, Moon, Settings as SettingsIcon, Sun, Command as CommandIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api, hasToken, type Job, type RecentScan } from "../api/client";
 import { useEventListener, useEvents } from "../api/events";
 import { fileName } from "../api/present";
 import { Lockup } from "../design-system/Logo";
 import { useAppearance } from "../design-system/theme";
 import { CommandPalette, type Command } from "./CommandPalette";
+import { HelpPanel, helpScreenFor } from "./HelpPanel";
 
 export const LAST_SCAN_KEY = "clipcura.lastScan";
 
@@ -41,6 +42,8 @@ export function Shell() {
   const appearance = useAppearance();
   const { connected } = useEvents();
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const helpScreen = helpScreenFor(useLocation().pathname);
   const [recent, setRecent] = useState<RecentScan[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
 
@@ -55,6 +58,8 @@ export function Shell() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setPaletteOpen((o) => !o); }
+      // F1 is the help key everywhere on Windows; the browser's own F1 help is not useful here.
+      if (e.key === "F1") { e.preventDefault(); setHelpOpen((o) => !o); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -70,6 +75,8 @@ export function Shell() {
     { id: "jobs", label: t("nav.jobs"), icon: <Activity className="size-4" />, run: () => navigate("/jobs") },
     { id: "activity", label: t("nav.activity"), icon: <Bot className="size-4" />, run: () => navigate("/activity") },
     { id: "settings", label: t("nav.settings"), icon: <SettingsIcon className="size-4" />, run: () => navigate("/settings") },
+    { id: "help", label: t("palette.help"), hint: "F1", icon: <CircleHelp className="size-4" />, run: () => setHelpOpen(true) },
+    { id: "about", label: t("palette.about"), icon: <Info className="size-4" />, run: () => navigate("/about") },
     ...recent.map((r) => ({
       id: `scan-${r.scan_id}`, label: t("palette.openScan", { name: fileName(r.root) }), hint: r.root,
       icon: <FolderSearch className="size-4" />, run: () => navigate(`/scans/${r.scan_id}`),
@@ -93,6 +100,9 @@ export function Shell() {
           <NavItem to="/settings" icon={<SettingsIcon className="size-4" aria-hidden />} label={t("nav.settings")} />
         </nav>
         <div className="mt-auto space-y-3 px-2">
+          <NavLink to="/about" className={({ isActive }) => `flex items-center gap-2 text-xs ${isActive ? "text-ink" : "text-muted hover:text-ink"}`}>
+            <Info className="size-3.5" aria-hidden />{t("nav.about")}
+          </NavLink>
           <button type="button" onClick={() => setPaletteOpen(true)}
                   className="flex w-full items-center gap-2 rounded-[var(--radius-control)] border border-line px-3 py-2 text-xs text-muted hover:text-ink">
             <CommandIcon className="size-3.5" aria-hidden />{t("palette.open")}
@@ -116,11 +126,17 @@ export function Shell() {
             <NavLink to="/settings" className="rounded p-2 text-muted" aria-label={t("nav.settings")}><SettingsIcon className="size-4" /></NavLink>
           </nav>
         </header>
-        <main className="min-w-0 flex-1 px-6 pb-16 pt-8 md:px-10">
+        <main className="relative min-w-0 flex-1 px-6 pb-16 pt-8 md:px-10">
+          {/* Same place on every screen, so help is always one look away (F1 opens it too). */}
+          <button type="button" onClick={() => setHelpOpen(true)} aria-keyshortcuts="F1"
+                  className="absolute right-6 top-6 z-10 flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-muted backdrop-blur hover:border-[var(--line-strong)] hover:text-ink md:right-10">
+            <CircleHelp className="size-3.5" aria-hidden />{t("nav.help")}
+          </button>
           <Outlet />
         </main>
       </div>
       <CommandPalette commands={commands} open={paletteOpen} onOpenChange={setPaletteOpen} />
+      <HelpPanel screen={helpScreen} open={helpOpen} onOpenChange={setHelpOpen} />
     </div>
   );
 }

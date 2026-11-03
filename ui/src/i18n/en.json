@@ -273,7 +273,9 @@
     "activity": "AI activity",
     "settings": "Settings",
     "live": "Live",
-    "offline": "Reconnecting…"
+    "offline": "Reconnecting…",
+    "about": "About",
+    "help": "Help"
   },
   "palette": {
     "title": "Commands",
@@ -282,7 +284,9 @@
     "open": "Commands",
     "openScan": "Open {{name}}",
     "light": "Switch to light theme",
-    "dark": "Switch to dark theme"
+    "dark": "Switch to dark theme",
+    "help": "Help for this screen",
+    "about": "About Clipcura"
   },
   "connect": {
     "title": "Open Clipcura from the app",
@@ -441,5 +445,151 @@
       "dnxhr_hq": "Smooth to edit, large files. No GPU encoder; the GPU still decodes and tone-maps.",
       "auto_h264": "Small files; the fastest encoder measured on this computer is used."
     }
+  },
+  "help": {
+    "open": "Help",
+    "title": "Help: {{screen}}",
+    "purpose": "What this screen is for",
+    "steps": "How to use it",
+    "tips": "Good to know",
+    "keys": "Keyboard",
+    "close": "Close help",
+    "about": "About Clipcura",
+    "global": [
+      {
+        "key": "Ctrl K",
+        "does": "Command palette: jump anywhere, scan a recent folder again"
+      },
+      {
+        "key": "F1",
+        "does": "This help, for the screen you are on"
+      }
+    ],
+    "screens": {
+      "start": {
+        "name": "Start",
+        "purpose": "Check a folder of footage. Clipcura reads every clip and tells you what would trip up the edit. Nothing is changed at this point.",
+        "steps": [
+          "Pick the profile on the right. It sets the target frame rate, the largest size and the codec of the converted files.",
+          "Drop a folder on the viewfinder, use Choose folder, or paste the path and press Scan.",
+          "If Clipcura may not read the folder yet, confirm Allow and scan. It only reads and writes inside allowed folders.",
+          "When the scan finishes, the scan result opens."
+        ],
+        "tips": [
+          "Originals are never changed. Converted files go to a separate folder, by default 02_edit next to your footage folder.",
+          "Recent folders can be scanned again with one click.",
+          "The panel on the right shows what this computer converts with: GPU, video memory, free space and the measured fastest paths."
+        ]
+      },
+      "results": {
+        "name": "Scan result",
+        "purpose": "Every clip of the scanned folder with what Clipcura found, and the conversion of the clips that need it.",
+        "steps": [
+          "The cards at the top count the clips: ready, fixable, needing a person, errors. Click a card to show only those clips.",
+          "Fixable clips are selected for you. Change the selection and press Fix.",
+          "Check the summary: what will be written, where, and how much space it needs. Then start the conversion.",
+          "Open a clip to see the measured values, why each finding matters for the edit, the same frame before and after, and the exact ffmpeg command."
+        ],
+        "tips": [
+          "Needing a person means Clipcura cannot fix it safely, for example 360° originals that have to be exported from Insta360 Studio first.",
+          "Clips converted before are skipped, so scanning and fixing the same folder again is safe."
+        ],
+        "keys": [
+          {
+            "key": "Space",
+            "does": "Select or deselect the clip"
+          },
+          {
+            "key": "Enter",
+            "does": "Open the clip's details"
+          },
+          {
+            "key": "F",
+            "does": "Fix the selected clips"
+          },
+          {
+            "key": "Esc",
+            "does": "Close the details"
+          }
+        ]
+      },
+      "jobs": {
+        "name": "Jobs",
+        "purpose": "Conversions in progress and finished ones, with speed and time left.",
+        "steps": [
+          "A running job shows its progress, processing speed and time left. A waiting job starts as soon as a slot is free.",
+          "Cancel a job with its button. The half-written file is deleted; the original stays untouched.",
+          "A finished job shows where the converted file is."
+        ],
+        "tips": [
+          "Jobs marked AI were requested by an assistant and approved by you.",
+          "Closing the window keeps Clipcura running in the notification area. Its icon fills up as the batch progresses, and Windows tells you when the batch is done.",
+          "How many jobs run at once on the GPU and the CPU is set in Settings."
+        ]
+      },
+      "activity": {
+        "name": "AI activity",
+        "purpose": "What assistants and automations did through Clipcura, and the requests waiting for your approval.",
+        "steps": [
+          "A request from an assistant appears at the top with a summary of what would happen.",
+          "Approve or reject each request, or all of them at once. Nothing is converted before you approve.",
+          "The timeline below records every action: who did it, when and with what result."
+        ],
+        "tips": [
+          "Assistants may scan and prepare plans on their own. Converting waits for you while approval is on in Settings.",
+          "Assistants cannot add allowed folders or approve their own requests."
+        ]
+      },
+      "settings": {
+        "name": "Settings",
+        "purpose": "How Clipcura works on this computer: the folders it may use, assistants, jobs at once, profiles and appearance.",
+        "steps": [
+          "Allowed folders: add the folders with your footage. Clipcura reads and writes only inside them.",
+          "Assistants and jobs: keep approval on so assistants ask before converting, and set how many jobs run at once.",
+          "Profiles: edit a built-in profile or duplicate it to make your own. An edited built-in profile can be reset to the default.",
+          "Appearance: theme, accent colour, language and animations."
+        ],
+        "tips": [
+          "System shows what clipcura doctor measured on this computer. Run it again after a graphics driver update."
+        ]
+      },
+      "about": {
+        "name": "About",
+        "purpose": "Who makes Clipcura, under which licence, and the software it is built from.",
+        "steps": [
+          "Licence texts shows the full licence of every component. They travel with the program, as their licences require."
+        ],
+        "tips": [
+          "FFmpeg does the actual conversion. It runs as a separate program under its own GPL licence; the link leads to its source code."
+        ]
+      }
+    }
+  },
+  "about": {
+    "credit": "A Metaverse Media s.r.o. production",
+    "tagline": "Checks footage and fixes what would trip up the edit.",
+    "version": "Version",
+    "owner": "Owner and creator",
+    "ownerBody": "Clipcura is made and owned by {{owner}}, and released as free software under the {{licence}} licence.",
+    "licence": "Licence",
+    "source": "Source code",
+    "authors": "Authors",
+    "authorsBody": "Product, design and development: {{owner}}",
+    "contributors": "All contributors on GitHub",
+    "builtWith": "Built with",
+    "builtWithBody": "Clipcura decides what to fix; proven open-source software does the work.",
+    "media": "Media engine",
+    "service": "Service",
+    "serviceBody": "Python packages of the local service, the command line and the MCP server.",
+    "interface": "Interface",
+    "interfaceBody": "Libraries and fonts of the app window.",
+    "licenceTexts": "Licence texts",
+    "licenceTextsTitle": "Licence texts of included software",
+    "loading": "Loading…",
+    "loadFailed": "Could not load: {{error}}",
+    "copyright": "© {{year}} {{owner}}",
+    "name": "Component",
+    "website": "Website",
+    "ffmpegNote": "Does the actual decoding, filtering and encoding. It runs as a separate program under its own licence; Clipcura calls ffmpeg and ffprobe as processes."
   }
 }

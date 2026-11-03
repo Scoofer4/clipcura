@@ -19,6 +19,9 @@ datas = [
     (str(ROOT / "vendor" / "ffmpeg" / "LICENSE.txt"), "vendor/ffmpeg"),
     (str(ROOT / "vendor" / "ffmpeg" / "BUILD.json"), "vendor/ffmpeg"),
     (str(ROOT / "LICENSE"), "."),
+    # Written by tools/build_installer.py: the About screen's component list and the licence texts.
+    (str(BUILD / "licenses.json"), "."),
+    (str(BUILD / "THIRD-PARTY-NOTICES.txt"), "."),
     (str(ROOT / "NOTICE"), "."),
 ]
 # Rules are found by scanning the package, and uvicorn picks protocol modules at runtime: name them all.

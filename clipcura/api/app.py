@@ -28,7 +28,7 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Res
 from pydantic import BaseModel
 
 from clipcura import __version__, rules
-from clipcura.core import config, events, previews, profiles, security, service
+from clipcura.core import config, events, licenses, previews, profiles, security, service
 from clipcura.core.config import Concurrency
 from clipcura.core.models import Paths
 from clipcura.core.paths import REPO_ROOT
@@ -110,6 +110,16 @@ def create_app() -> FastAPI:
     api = APIRouter(prefix="/api", dependencies=[Depends(require_token)])
 
     system_cache: dict[str, tuple[float, dict]] = {}
+
+    @api.get("/about")
+    def about() -> dict:
+        from clipcura import LICENCE, OWNER, SOURCE
+        return {"name": "Clipcura", "version": __version__, "owner": OWNER, "licence": LICENCE, "source": SOURCE,
+                "components": licenses.components()}
+
+    @api.get("/about/notices", response_class=PlainTextResponse)
+    def notices() -> str:
+        return licenses.notices_text()
 
     @api.get("/system")
     def system() -> dict:

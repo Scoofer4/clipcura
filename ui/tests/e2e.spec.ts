@@ -172,3 +172,43 @@ test("profile editor: duplicate, validate, save and delete", async ({ page }) =>
   await page.getByRole("button", { name: "Delete reels-25" }).click();
   await expect(page.getByRole("button", { name: "Edit reels-25" })).toHaveCount(0);
 });
+
+test("help for each screen, and the About screen with owner and licences", async ({ page }) => {
+  await page.goto(`${base}/?theme=dark&accent=brand&lang=en#token=${token}`);
+  await page.getByRole("button", { name: "Help" }).click();
+  const help = page.getByRole("dialog");
+  await expect(help.getByRole("heading", { name: "Help: Start" })).toBeVisible();
+  await expect(help.getByText("How to use it")).toBeVisible();
+  await shoot(page, "help-start-dark");
+  await page.keyboard.press("Escape");
+  await expect(help).toBeHidden();
+
+  // F1 opens the help of whatever screen is on display.
+  await page.goto(`${base}/jobs`);
+  await page.keyboard.press("F1");
+  await expect(page.getByRole("dialog").getByRole("heading", { name: "Help: Jobs" })).toBeVisible();
+  await page.getByRole("dialog").getByRole("link", { name: "About Clipcura" }).click();
+
+  await expect(page.getByRole("heading", { name: "Clipcura", level: 1 })).toBeVisible();
+  await expect(page.getByText("A Metaverse Media s.r.o. production")).toBeVisible();
+  await expect(page.getByText("Owner and creator")).toBeVisible();
+  const credits = page.getByRole("region", { name: "Service" });
+  await expect(credits.getByRole("cell", { name: "fastapi", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Interface" }).getByRole("cell", { name: "react", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Media engine" }).getByText("FFmpeg", { exact: true })).toBeVisible();
+  await shoot(page, "about-dark");
+
+  await page.getByRole("button", { name: "Licence texts" }).click();
+  const texts = page.getByRole("dialog");
+  await expect(texts.getByText(/Corresponding source code/)).toBeVisible({ timeout: 30_000 });
+  await expect(texts.getByText(/==== react /)).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  await page.goto(`${base}/about?theme=light&lang=cs`);
+  await expect(page.getByText("Vlastník a tvůrce")).toBeVisible();
+  await expect(page.getByText("Vyrobila Metaverse Media s.r.o.")).toBeVisible();
+  await page.keyboard.press("F1");
+  await expect(page.getByRole("dialog").getByRole("heading", { name: "Nápověda: O aplikaci" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await shoot(page, "about-light-cs");
+});

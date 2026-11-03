@@ -65,6 +65,23 @@ export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
+export interface Component {
+  name: string; version: string; licence: string; url: string; kind: "media" | "python" | "ui";
+  source?: string; note?: string;
+}
+
+export interface About {
+  name: string; version: string; licence: string; source: string;
+  owner: { name: string; url: string };
+  components: Component[];
+}
+
+async function text(path: string, auth: boolean): Promise<string> {
+  const res = await fetch(path, { headers: auth ? { Authorization: `Bearer ${token}` } : {} });
+  if (!res.ok) throw new ApiError(res.status, res.statusText);
+  return res.text();
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(path, {
     method,
@@ -80,6 +97,10 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 }
 
 export const api = {
+  about: () => request<About>("GET", "/api/about"),
+  /** Licence texts of the service's components and of the GUI's libraries, one after the other. */
+  notices: async () =>
+    (await Promise.all([text("/api/about/notices", true), text("/ui-licenses.txt", false)])).join("\n\n"),
   system: () => request<SystemReport>("GET", "/api/system"),
   profiles: () => request<Profile[]>("GET", "/api/profiles"),
   rules: () => request<RuleInfo[]>("GET", "/api/rules"),

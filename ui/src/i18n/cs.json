@@ -278,7 +278,9 @@
     "activity": "Aktivita AI",
     "settings": "Nastavení",
     "live": "Živě",
-    "offline": "Připojuji…"
+    "offline": "Připojuji…",
+    "about": "O aplikaci",
+    "help": "Nápověda"
   },
   "palette": {
     "title": "Příkazy",
@@ -287,7 +289,9 @@
     "open": "Příkazy",
     "openScan": "Otevřít {{name}}",
     "light": "Přepnout na světlé téma",
-    "dark": "Přepnout na tmavé téma"
+    "dark": "Přepnout na tmavé téma",
+    "help": "Nápověda k této obrazovce",
+    "about": "O aplikaci Clipcura"
   },
   "connect": {
     "title": "Otevři Clipcuru z aplikace",
@@ -450,5 +454,151 @@
       "dnxhr_hq": "Plynulý střih, velké soubory. Nemá GPU enkodér; GPU přesto dekóduje a mapuje HDR.",
       "auto_h264": "Malé soubory; použije se enkodér, který na tomto počítači naměřil nejvyšší rychlost."
     }
+  },
+  "help": {
+    "open": "Nápověda",
+    "title": "Nápověda: {{screen}}",
+    "purpose": "K čemu obrazovka slouží",
+    "steps": "Jak postupovat",
+    "tips": "Dobré vědět",
+    "keys": "Klávesnice",
+    "close": "Zavřít nápovědu",
+    "about": "O aplikaci Clipcura",
+    "global": [
+      {
+        "key": "Ctrl K",
+        "does": "Paleta příkazů: přejdeš kamkoli, znovu zkontroluješ nedávnou složku"
+      },
+      {
+        "key": "F1",
+        "does": "Tahle nápověda k obrazovce, na které jsi"
+      }
+    ],
+    "screens": {
+      "start": {
+        "name": "Start",
+        "purpose": "Kontrola složky se záběry. Clipcura přečte každý klip a řekne, co by zlobilo ve střihu. Zatím se nic nemění.",
+        "steps": [
+          "Vpravo vyber profil. Určuje cílovou snímkovou frekvenci, největší rozměr a kodek převedených souborů.",
+          "Přetáhni složku do hledáčku, použij Vybrat složku, nebo vlož cestu a stiskni Zkontrolovat.",
+          "Pokud Clipcura do složky ještě nesmí, potvrď Povolit a zkontrolovat. Čte a zapisuje jen v povolených složkách.",
+          "Po kontrole se otevře výsledek."
+        ],
+        "tips": [
+          "Originály se nikdy nemění. Převedené soubory jdou do samostatné složky, ve výchozím stavu 02_edit vedle složky se záběry.",
+          "Nedávné složky zkontroluješ znovu jedním klikem.",
+          "Panel vpravo ukazuje, čím tento počítač převádí: GPU, video paměť, volné místo a změřené nejrychlejší cesty."
+        ]
+      },
+      "results": {
+        "name": "Výsledek kontroly",
+        "purpose": "Všechny klipy zkontrolované složky s tím, co Clipcura našla, a převod klipů, které ho potřebují.",
+        "steps": [
+          "Karty nahoře počítají klipy: v pořádku, opravitelné, vyžadují člověka, chyby. Klikem na kartu zobrazíš jen ty klipy.",
+          "Opravitelné klipy jsou předvybrané. Uprav výběr a stiskni Opravit.",
+          "Zkontroluj souhrn: co se zapíše, kam a kolik místa to zabere. Pak spusť převod.",
+          "Otevři klip a uvidíš naměřené hodnoty, proč nález vadí ve střihu, stejný snímek před a po a přesný příkaz ffmpeg."
+        ],
+        "tips": [
+          "Vyžaduje člověka znamená, že to Clipcura bezpečně opravit neumí, například originály 360°, které se nejdřív exportují v Insta360 Studiu.",
+          "Už převedené klipy se přeskočí, takže opakovaná kontrola a oprava stejné složky je bezpečná."
+        ],
+        "keys": [
+          {
+            "key": "Mezerník",
+            "does": "Vybrat nebo odebrat klip"
+          },
+          {
+            "key": "Enter",
+            "does": "Otevřít detail klipu"
+          },
+          {
+            "key": "F",
+            "does": "Opravit vybrané klipy"
+          },
+          {
+            "key": "Esc",
+            "does": "Zavřít detail"
+          }
+        ]
+      },
+      "jobs": {
+        "name": "Úlohy",
+        "purpose": "Probíhající a dokončené převody s rychlostí a zbývajícím časem.",
+        "steps": [
+          "Běžící úloha ukazuje průběh, rychlost zpracování a zbývající čas. Čekající úloha začne, jakmile se uvolní místo.",
+          "Úlohu zrušíš jejím tlačítkem. Rozepsaný soubor se smaže, originál zůstane nedotčený.",
+          "Dokončená úloha ukazuje, kde je převedený soubor."
+        ],
+        "tips": [
+          "Úlohy označené AI zadal asistent a ty jsi je schválil.",
+          "Zavřením okna Clipcura běží dál v oznamovací oblasti. Její ikona se plní s postupem dávky a Windows ohlásí, když je hotová.",
+          "Kolik úloh běží najednou na GPU a CPU, nastavíš v Nastavení."
+        ]
+      },
+      "activity": {
+        "name": "Aktivita AI",
+        "purpose": "Co asistenti a automatizace přes Clipcuru udělali, a žádosti, které čekají na tvoje schválení.",
+        "steps": [
+          "Žádost asistenta se objeví nahoře se shrnutím, co se stane.",
+          "Každou žádost schval nebo zamítni, případně všechny najednou. Před schválením se nic nepřevádí.",
+          "Časová osa pod tím zaznamenává každou akci: kdo, kdy a s jakým výsledkem."
+        ],
+        "tips": [
+          "Asistenti smějí sami kontrolovat a připravovat plány. Převod čeká na tebe, dokud je v Nastavení zapnuté schvalování.",
+          "Asistenti nemohou přidávat povolené složky ani schvalovat vlastní žádosti."
+        ]
+      },
+      "settings": {
+        "name": "Nastavení",
+        "purpose": "Jak Clipcura na tomto počítači pracuje: složky, které smí používat, asistenti, počet úloh najednou, profily a vzhled.",
+        "steps": [
+          "Povolené složky: přidej složky se záběry. Clipcura čte a zapisuje jen v nich.",
+          "Asistenti a úlohy: nech zapnuté schvalování, ať se asistenti před převodem ptají, a nastav, kolik úloh běží najednou.",
+          "Profily: uprav vestavěný profil nebo ho zduplikuj a vytvoř si vlastní. Upravený vestavěný profil jde vrátit na výchozí.",
+          "Vzhled: téma, barva akcentu, jazyk a animace."
+        ],
+        "tips": [
+          "Systém ukazuje, co na tomto počítači změřil clipcura doctor. Po aktualizaci grafického ovladače ho spusť znovu."
+        ]
+      },
+      "about": {
+        "name": "O aplikaci",
+        "purpose": "Kdo Clipcuru vytváří, pod jakou licencí a z jakého softwaru je postavená.",
+        "steps": [
+          "Licenční texty ukážou plné znění licence každé součásti. Šíří se spolu s programem, jak jejich licence vyžadují."
+        ],
+        "tips": [
+          "Samotný převod dělá FFmpeg. Běží jako samostatný program pod vlastní licencí GPL; odkaz vede na jeho zdrojový kód."
+        ]
+      }
+    }
+  },
+  "about": {
+    "credit": "Vyrobila Metaverse Media s.r.o.",
+    "tagline": "Zkontroluje záběry a opraví, co by zlobilo ve střihu.",
+    "version": "Verze",
+    "owner": "Vlastník a tvůrce",
+    "ownerBody": "Clipcuru vytváří a vlastní {{owner}} a šíří ji jako svobodný software pod licencí {{licence}}.",
+    "licence": "Licence",
+    "source": "Zdrojový kód",
+    "authors": "Autoři",
+    "authorsBody": "Produkt, design a vývoj: {{owner}}",
+    "contributors": "Všichni přispěvatelé na GitHubu",
+    "builtWith": "Postaveno na",
+    "builtWithBody": "Clipcura rozhoduje, co opravit; práci dělá ověřený open-source software.",
+    "media": "Mediální jádro",
+    "service": "Služba",
+    "serviceBody": "Balíčky Pythonu pro místní službu, příkazový řádek a MCP server.",
+    "interface": "Rozhraní",
+    "interfaceBody": "Knihovny a písma okna aplikace.",
+    "licenceTexts": "Licenční texty",
+    "licenceTextsTitle": "Licenční texty přibaleného softwaru",
+    "loading": "Načítám…",
+    "loadFailed": "Nepodařilo se načíst: {{error}}",
+    "copyright": "© {{year}} {{owner}}",
+    "name": "Součást",
+    "website": "Web",
+    "ffmpegNote": "Dělá samotné dekódování, filtry a kódování. Běží jako samostatný program pod vlastní licencí; Clipcura volá ffmpeg a ffprobe jako procesy."
   }
 }
