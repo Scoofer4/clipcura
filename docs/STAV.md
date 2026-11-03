@@ -9,7 +9,7 @@ Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 - **Přejmenování (rozhodnutí vlastníka, #19):** Clipsana koliduje s videoaplikací pro iPhone, nový název je
   **Clipcura**. Balíček, příkaz, exe, proměnné `CLIPCURA_*`, UI, instalátor, dokumentace. Repozitář je
   `Scoofer4/clipcura` (stará adresa přesměrovává). App data se jednou přesunou z `%APPDATA%\Clipsana`
-  do `%APPDATA%\Clipcura` (ověřeno na notebooku vlastníka). Lokální složka `D:\WorkspacePrg\ClipsAna` zůstala.
+  do `%APPDATA%\Clipcura` (ověřeno na notebooku vlastníka). Lokální složka je nově `D:\WorkspacePrg\Clipcura` (dříve `ClipsAna`).
 - **#14 kvalita GPU kodérů:** NVENC bez `-maxrate` škrtil datový tok, takže zrnitý záznam ztrácel 1,1–1,2 VMAF
   proti libx264. Teď `-maxrate 200M`, H.264 profil High a `clipcura doctor` kalibruje CQ proti CPU kodéru
   (VMAF, tolerance 0,5). Tento notebook: všechny čtyři GPU kodéry drží kvalitu (`docs/benchmarks.md`).
