@@ -39,7 +39,11 @@ Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 
 ### Otevřené
 
-- První skutečné vydání (tag `v0.1.0` nebo vyšší) – rozhodne vlastník; vznikne koncept k revizi.
+- **Vydání v0.1.0 je připravené jako koncept** (tag `v0.1.0` na 1dea09c, se souhlasem vlastníka):
+  ZIP + instalátor + `SHA256SUMS.txt`, součty ověřené po stažení, stažený ZIP běží. Čeká na revizi a
+  zveřejnění vlastníkem (GitHub → Releases → Draft → Publish). Teprve pak uvidí novou verzi kontrola
+  aktualizací v aplikaci.
+- Rozhodnutí vlastníka: log se nemaže ani po řádném ukončení (jen rotace).
 - #10 registrace MCP, test na čistých Windows, ochranná známka, ukázka M4 + M5 + dnešních změn.
 
 ## 3. 11. 2026 – přejmenování na Clipcura, M5 (aplikace, tray, instalátor), nápověda a O aplikaci
