@@ -35,6 +35,11 @@ jobs:
       # Playwright drives the Edge that ships with the runner (same engine as WebView2): no browser download.
       - run: npx playwright test
         working-directory: ui
+      # Browser mode (#23) opens the GUI in people's default browser: run the end-to-end cycle in Chrome too.
+      - run: npx playwright test e2e.spec.ts
+        working-directory: ui
+        env:
+          CLIPCURA_BROWSER: chrome
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
