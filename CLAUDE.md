@@ -1,11 +1,13 @@
-# Clipsana – zadání pro realizaci (v0.3)
+# Clipcura – zadání pro realizaci (v0.3)
 
 Vydává Metaverse Media s.r.o. jako open source (Apache-2.0) · Vlastník: Roman · Realizace: Claude Code na Romanově notebooku · Stav: k zahájení
-Zdroj pravdy: interní zadání Metaverse Media s.r.o. „Zadání: Clipsana“. Tento soubor je jeho kopie pro repozitář.
+Zdroj pravdy: interní zadání Metaverse Media s.r.o. „Zadání: Clipcura“. Tento soubor je jeho kopie pro repozitář.
+
+**Název (rozhodnutí vlastníka 3. 11. 2026):** projekt se dříve jmenoval Clipsana. Toto jméno už nese videoaplikace pro iPhone („Clipsana – Video Effects“), proto byl přejmenován na **Clipcura** (clip + lat. *cura*, péče). Podmínka vlastníka: název začíná na „C“ kvůli logu. Rešerše je v issue #19.
 
 ## 1. Cíl
 
-Windows aplikace, která zkontroluje videa ze všech zdrojů (Samsung S21FE, Insta360, Sony A6400, screen recording) a automaticky opraví vlastnosti, kvůli kterým **padá DaVinci Resolve**: proměnná snímková frekvence (VFR), rozdílné fps a rozlišení, HDR, HEVC 10-bit, zvuk mimo 48 kHz. Dnes se to řeší ručně v Shutter Encoderu, který pády spolehlivě odstraňuje. Clipsana má tento převod automatizovat.
+Windows aplikace, která zkontroluje videa ze všech zdrojů (Samsung S21FE, Insta360, Sony A6400, screen recording) a automaticky opraví vlastnosti, kvůli kterým **padá DaVinci Resolve**: proměnná snímková frekvence (VFR), rozdílné fps a rozlišení, HDR, HEVC 10-bit, zvuk mimo 48 kHz. Dnes se to řeší ručně v Shutter Encoderu, který pády spolehlivě odstraňuje. Clipcura má tento převod automatizovat.
 
 Ovládá ji **člověk přes GUI** a **AI přes MCP**. Obojí volá stejné jádro, AI nemá žádné schopnosti navíc. Běží lokálně a využívá GPU.
 
@@ -27,18 +29,18 @@ Ovládá ji **člověk přes GUI** a **AI přes MCP**. Obojí volá stejné jád
  MCP server (stdio, tenký klient) ───────┘                       │
  CLI ───────────────────────────────────────────────────────────►│
                                                                   ▼
-                 JÁDRO clipsana.core: probe → pravidla → plán → fronta úloh → worker → report
+                 JÁDRO clipcura.core: probe → pravidla → plán → fronta úloh → worker → report
                                      SQLite (WAL): soubory, nálezy, plány, úlohy, audit log
                                                                   │
                                               ffmpeg / ffprobe (přibalený build)
 ```
 
-- **Jádro** (`clipsana/core`): čistá knihovna bez UI, veřejné API `scan()`, `plan()`, `apply()`, `status()`, `cancel()`.
-- **Worker** běží v procesu aplikace (nebo headless `clipsana serve`). Souběžnost konfigurovatelná, výchozí 1 GPU + 1 CPU úloha.
-- **Lokální API** (`clipsana/api`): FastAPI na `127.0.0.1`, náhodný port, bearer token uložený v `%APPDATA%\Clipsana\config.json`. WebSocket kanál pro průběh úloh a události (včetně akcí AI).
-- **MCP server** (`clipsana/mcp`): FastMCP, transport stdio. Volá lokální API; když aplikace neběží, spustí headless server.
+- **Jádro** (`clipcura/core`): čistá knihovna bez UI, veřejné API `scan()`, `plan()`, `apply()`, `status()`, `cancel()`.
+- **Worker** běží v procesu aplikace (nebo headless `clipcura serve`). Souběžnost konfigurovatelná, výchozí 1 GPU + 1 CPU úloha.
+- **Lokální API** (`clipcura/api`): FastAPI na `127.0.0.1`, náhodný port, bearer token uložený v `%APPDATA%\Clipcura\config.json`. WebSocket kanál pro průběh úloh a události (včetně akcí AI).
+- **MCP server** (`clipcura/mcp`): FastMCP, transport stdio. Volá lokální API; když aplikace neběží, spustí headless server.
 - **GUI** (`ui/`): React + TypeScript, build do statických souborů, servíruje je API a zobrazuje okno **pywebview** (Edge WebView2, je součástí Windows 10/11).
-- **CLI** (`clipsana` příkaz): `scan`, `plan`, `apply`, `serve`, `doctor`.
+- **CLI** (`clipcura` příkaz): `scan`, `plan`, `apply`, `serve`, `doctor`.
 
 ### Proč webové UI místo PySide6 (změna proti v0.1)
 High-tech vzhled (animace, sklo, glow, plynulé grafy) se ve webovém stacku dělá výrazně lépe a rychleji než v Qt Widgets. API, které UI potřebuje, zároveň poslouží n8n. pywebview zachová jednu Python aplikaci a balení přes PyInstaller.
@@ -64,16 +66,16 @@ Fonty (Inter, JetBrains Mono) přibalit lokálně, žádné CDN. ffmpeg se ší�
 
 ## 5. Cílový stroj: notebook – nejdřív ověřit
 
-Realizace a první provoz jsou na Romanově notebooku (HW ověřit). **První krok M0 je `clipsana doctor`**, který zjistí a uloží:
+Realizace a první provoz jsou na Romanově notebooku (HW ověřit). **První krok M0 je `clipcura doctor`**, který zjistí a uloží:
 - GPU a ovladač (`nvidia-smi`, případně Intel iGPU),
 - `ffmpeg -hwaccels`, dostupné enkodéry (`h264_nvenc`, `hevc_nvenc`, `h264_qsv`, `hevc_qsv`) a filtry (`libplacebo`, `zscale`, `scale_qsv`),
 - volné místo, RAM, CPU.
 
-Backendy akcelerace v pořadí: **CUDA/NVENC → Intel QSV → CPU**. Aplikace musí plně fungovat i na CPU. Výběr backendu ukazuje GUI. Pořadí platí jen bez měření. `clipsana doctor` měří celé úlohy (dekódování → filtry → kódování) a podle kap. 4 vybere nejrychlejší cestu. Měření jednotlivých kroků izolovaně vedlo ke špatné volbě (CPU místo 2,6× rychlejší CUDA). Intel GPU dekóduje přes D3D11VA, QSV slouží ke kódování.
+Backendy akcelerace v pořadí: **CUDA/NVENC → Intel QSV → CPU**. Aplikace musí plně fungovat i na CPU. Výběr backendu ukazuje GUI. Pořadí platí jen bez měření. `clipcura doctor` měří celé úlohy (dekódování → filtry → kódování) a podle kap. 4 vybere nejrychlejší cestu. Měření jednotlivých kroků izolovaně vedlo ke špatné volbě (CPU místo 2,6× rychlejší CUDA). Intel GPU dekóduje přes D3D11VA, QSV slouží ke kódování.
 
 ## 6. Pravidla (pluginy)
 
-Každá kontrola je soubor v `clipsana/rules/`, registrace přes entry point nebo auto-discovery. Nové pravidlo nesmí vyžadovat změnu jádra.
+Každá kontrola je soubor v `clipcura/rules/`, registrace přes entry point nebo auto-discovery. Nové pravidlo nesmí vyžadovat změnu jádra.
 
 ```python
 @dataclass
@@ -200,7 +202,7 @@ Nejdřív **design system** (tokeny, typografie, komponenty: tlačítka, čipy, 
 ## 11. Struktura repozitáře
 
 ```
-clipsana/
+clipcura/
   core/        probe.py, models.py, planner.py, executor.py, worker.py, db.py, profiles.py, backends.py
   rules/       vfr.py, fps_mismatch.py, hdr.py, hevc_10bit.py, resolution.py, audio_rate.py, rotation.py, no_audio.py, insv.py, corrupt.py
   api/         app.py, routes/, events.py (WebSocket)
@@ -218,7 +220,7 @@ docs/          screenshoty, poznámky k vydání
 
 | # | Obsah | Hotovo, když |
 |---|---|---|
-| M0 | Prostředí: git, uv, Node, ffmpeg build, `clipsana doctor` | doctor vypíše HW a schopnosti ffmpeg na notebooku |
+| M0 | Prostředí: git, uv, Node, ffmpeg build, `clipcura doctor` | doctor vypíše HW a schopnosti ffmpeg na notebooku |
 | M1 | Jádro, pravidla, profily, SQLite, CLI, testy | všechna pravidla projdou testy na generovaných klipech; CLI opraví složku |
 | M2 | Lokální API + worker + WebSocket události | průběh úlohy jde sledovat přes API |
 | M3a | Design system + kitchen sink | Roman schválí vizuální styl |
@@ -256,4 +258,4 @@ docs/          screenshoty, poznámky k vydání
 - [ ] Verze DaVinci Resolve (Studio nebo free).
 - [ ] Souhlas se stažením ffmpeg buildu, Node.js a uv; pod jakým GitHub účtem/organizací založit veřejný repozitář.
 - [ ] Barvy brandu Metaverse Media, pokud má být akcent sladěný.
-- [ ] Ověření jména Clipsana: ochranná známka (EUIPO, ÚPV, třída 9) a doména (.app / .dev). PyPI a npm jsou k 2. 11. 2026 volné, repozitář tohoto jména na GitHubu neexistuje.
+- [ ] Ověření jména Clipcura: ochranná známka (EUIPO, ÚPV, třída 9 a 42). K 3. 11. 2026 jsou volné PyPI, npm, GitHub i domény .com, .app a .dev; v TMview není shodná ani podobná známka (rešerše v issue #19). Před vydáním ověřit u ÚPV/EUIPO nebo známkového zástupce.

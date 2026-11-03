@@ -443,7 +443,7 @@ export function KitchenSink() {
         <section className="mt-12">
           <SectionTitle title={t("ks.logo")} intro={t("ks.logoIntro")} />
           <Panel className="flex flex-wrap items-end gap-10 p-6">
-            <LogoMark size={128} title="Clipsana" />
+            <LogoMark size={128} title="Clipcura" />
             <div className="flex items-end gap-5 pb-2">
               <LogoMark size={64} /><LogoMark size={32} /><LogoMark size={20} /><LogoMark size={16} />
             </div>

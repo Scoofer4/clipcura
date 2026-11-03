@@ -17,7 +17,7 @@ jobs:
           key: ffmpeg-${{ hashFiles('tools/fetch_ffmpeg.py') }}
       - run: uv run python tools/fetch_ffmpeg.py
       # Runners have no GPU: this exercises the CPU path, which must always work on its own.
-      - run: uv run clipsana doctor --quick
+      - run: uv run clipcura doctor --quick
       # Also generates the synthetic clips the GUI end-to-end tests use.
       - run: uv run pytest -q
 

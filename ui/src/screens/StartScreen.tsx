@@ -14,7 +14,7 @@ import { DropZone } from "../design-system/DropZone";
 import { Hud, type SystemView } from "../design-system/Hud";
 import { Panel } from "../design-system/Panel";
 
-const PROFILE_KEY = "clipsana.profile";
+const PROFILE_KEY = "clipcura.profile";
 
 function systemView(s: SystemReport | null): SystemView | null {
   if (!s) return null;

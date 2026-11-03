@@ -2,9 +2,9 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from clipsana.api.app import create_app
-from clipsana.core import config, events
-from clipsana.core.worker import Worker
+from clipcura.api.app import create_app
+from clipcura.core import config, events
+from clipcura.core.worker import Worker
 from tests.test_worker import fake_jobs, wait_until  # noqa: F401 (fixture)
 
 BASE = "http://127.0.0.1"
@@ -46,7 +46,7 @@ def test_queue_pause_over_the_api_is_announced_and_human_only(api):
         assert api.post("/api/queue", json={"paused": True}).json() == {"paused": True}
         assert api.get("/api/queue").json() == {"paused": True}
         assert any(e["type"] == "queue" and e["paused"] is True for e in seen)
-        assert api.post("/api/queue", json={"paused": False}, headers={"X-Clipsana-Actor": "ai"}).status_code == 403
+        assert api.post("/api/queue", json={"paused": False}, headers={"X-Clipcura-Actor": "ai"}).status_code == 403
         assert api.post("/api/queue", json={"paused": False}).json() == {"paused": False}
     finally:
         unsubscribe()

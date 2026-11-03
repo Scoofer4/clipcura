@@ -1,5 +1,5 @@
 """What the notification-area icon shows and announces, derived from the job list (#9)."""
-from clipsana.desktop.monitor import BatchMonitor
+from clipcura.desktop.monitor import BatchMonitor
 
 
 def job(jid, status, progress=0.0, actor="human"):
@@ -39,8 +39,8 @@ def test_ai_requests_waiting_for_approval_are_announced_once_and_flag_the_icon()
 
 def test_tooltip_says_what_is_happening():
     m = BatchMonitor(lang="en")
-    assert m.tooltip() == "Clipsana - ready"
+    assert m.tooltip() == "Clipcura - ready"
     m.update([job("a", "running", 40), job("b", "queued"), job("c", "done", 100)])
-    assert m.tooltip() == "Clipsana - converting 2 files, 20 %"
+    assert m.tooltip() == "Clipcura - converting 2 files, 20 %"
     m.paused = True
-    assert m.tooltip() == "Clipsana - queue paused, 2 files waiting"
+    assert m.tooltip() == "Clipcura - queue paused, 2 files waiting"

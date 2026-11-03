@@ -4,8 +4,8 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from clipsana.api.app import create_app
-from clipsana.core import config
+from clipcura.api.app import create_app
+from clipcura.core import config
 from tests.conftest import needs_ffmpeg
 
 BASE = "http://127.0.0.1"
@@ -15,9 +15,9 @@ BASE = "http://127.0.0.1"
 def ui_dir(tmp_path, monkeypatch):
     dist = tmp_path / "dist"
     (dist / "assets").mkdir(parents=True)
-    (dist / "index.html").write_text("<!doctype html><title>Clipsana</title>", encoding="utf-8")
+    (dist / "index.html").write_text("<!doctype html><title>Clipcura</title>", encoding="utf-8")
     (dist / "assets" / "app.js").write_text("console.log(1)", encoding="utf-8")
-    monkeypatch.setenv("CLIPSANA_UI_DIR", str(dist))
+    monkeypatch.setenv("CLIPCURA_UI_DIR", str(dist))
     return dist
 
 
@@ -32,10 +32,10 @@ def api(tmp_path, ui_dir):
 
 def test_ui_is_served_from_the_same_origin_without_token(ui_dir):
     with TestClient(create_app(), base_url=BASE) as client:
-        assert "Clipsana" in client.get("/").text
+        assert "Clipcura" in client.get("/").text
         assert client.get("/assets/app.js").text == "console.log(1)"
         # Client-side routes fall back to index.html so a reload on /jobs works.
-        assert "Clipsana" in client.get("/jobs").text
+        assert "Clipcura" in client.get("/jobs").text
         # ...but unknown API routes stay API errors, never HTML.
         assert client.get("/api/nope").status_code in (401, 404)
 
@@ -56,7 +56,7 @@ def test_config_is_readable_without_token_value(api):
 def test_only_a_human_changes_settings(api, tmp_path):
     folder = tmp_path / "footage"
     folder.mkdir()
-    ai = {"X-Clipsana-Actor": "ai"}
+    ai = {"X-Clipcura-Actor": "ai"}
     assert api.post("/api/config/roots", json={"path": str(folder)}, headers=ai).status_code == 403
     assert api.patch("/api/config", json={"approval_mode": False}, headers=ai).status_code == 403
     assert str(folder.resolve()) in api.post("/api/config/roots", json={"path": str(folder)}).json()["allowed_roots"]

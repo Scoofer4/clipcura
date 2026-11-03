@@ -3,8 +3,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from clipsana.core import executor, service
-from clipsana.core.db import Database
+from clipcura.core import executor, service
+from clipcura.core.db import Database
 from tests.conftest import needs_ffmpeg
 
 
@@ -60,7 +60,7 @@ def test_queued_jobs_of_a_dead_service_are_picked_up(raw_folder):
 
 @needs_ffmpeg
 def test_jobs_of_a_live_process_are_left_alone(raw_folder):
-    # A `clipsana apply` running in another console owns its jobs; a service starting meanwhile must not steal
+    # A `clipcura apply` running in another console owns its jobs; a service starting meanwhile must not steal
     # them or delete the file its ffmpeg is writing.
     (job_id,) = queue_jobs(raw_folder("a44k.mp4"))
     other = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])

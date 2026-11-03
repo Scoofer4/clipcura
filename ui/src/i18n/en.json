@@ -7,7 +7,7 @@
   },
   "statusHint": {
     "ok": "Edit as they are",
-    "fixable": "Clipsana converts these for you",
+    "fixable": "Clipcura converts these for you",
     "needs_human": "A step only you can do",
     "error": "Damaged or unreadable"
   },
@@ -28,7 +28,7 @@
     "receiving": "Release to scan",
     "title": "Drop a folder with footage",
     "titleActive": "Release to scan this folder",
-    "body": "Clipsana checks every clip and tells you what would trip up the edit. Originals are never changed.",
+    "body": "Clipcura checks every clip and tells you what would trip up the edit. Originals are never changed.",
     "choose": "Choose folder",
     "formats": "MP4, MOV, MTS, MKV, Insta360"
   },
@@ -73,7 +73,7 @@
     "jobAria": "Frames of the running job passing through the gate",
     "input": "Recorded",
     "inputValue": "{{fps}} fps on average, uneven",
-    "output": "After Clipsana",
+    "output": "After Clipcura",
     "outputValue": "{{fps}} fps, constant",
     "drop_one": "Leaves out {{count}} frame each second.",
     "drop_other": "Leaves out {{count}} frames each second.",
@@ -150,7 +150,7 @@
     "profiles": "Profiles",
     "profilesIntro": "Targets for conversion. Built-in profiles can be edited; an edited copy can be reset to the default at any time.",
     "system": "System",
-    "systemIntro": "Measured by clipsana doctor. Run it again after a driver update.",
+    "systemIntro": "Measured by clipcura doctor. Run it again after a driver update.",
     "backend": "Acceleration",
     "source": {
       "user": "yours",
@@ -171,7 +171,7 @@
   },
   "ks": {
     "title": "Design system",
-    "intro": "Every building block of Clipsana in one place, working with sample data from real test clips. Switch theme, accent and language at the top; drag a folder onto the viewfinder, select clips, run the demo job.",
+    "intro": "Every building block of Clipcura in one place, working with sample data from real test clips. Switch theme, accent and language at the top; drag a folder onto the viewfinder, select clips, run the demo job.",
     "s1": "Start",
     "s1Intro": "One main action: drop a folder. The frames line up when a folder hovers over the viewfinder.",
     "previewDrag": "Preview drag-over",
@@ -251,7 +251,7 @@
     },
     "corrupt": {
       "label": "Damaged file",
-      "why": "The file cannot be read reliably. Re-encoding would hide the damage, so Clipsana leaves it for you to check."
+      "why": "The file cannot be read reliably. Re-encoding would hide the damage, so Clipcura leaves it for you to check."
     },
     "color_space": {
       "label": "Colours",
@@ -285,14 +285,14 @@
     "dark": "Switch to dark theme"
   },
   "connect": {
-    "title": "Open Clipsana from the app",
-    "body": "This page talks to the Clipsana service on this computer and needs its key. Start Clipsana, or run this in a terminal to open it with the key filled in:",
+    "title": "Open Clipcura from the app",
+    "body": "This page talks to the Clipcura service on this computer and needs its key. Start Clipcura, or run this in a terminal to open it with the key filled in:",
     "token": "Or paste the key",
     "connect": "Connect"
   },
   "start": {
     "title": "Check a folder",
-    "intro": "Clipsana reads every clip, tells you what would trip up the edit and converts what needs it into a separate folder. Originals stay untouched.",
+    "intro": "Clipcura reads every clip, tells you what would trip up the edit and converts what needs it into a separate folder. Originals stay untouched.",
     "pathLabel": "Folder path",
     "pathPlaceholder": "D:\\Footage\\2026-11-02\\01_raw",
     "scan": "Scan",
@@ -300,7 +300,7 @@
     "scanningCount_one": "{{count}} clip read",
     "scanningCount_other": "{{count}} clips read",
     "scanFailed": "Scan failed",
-    "notAllowed": "Clipsana is not allowed to read this folder yet.",
+    "notAllowed": "Clipcura is not allowed to read this folder yet.",
     "allowAndScan": "Allow and scan",
     "allowed": "Folder allowed",
     "allowFailed": "Could not allow the folder",
@@ -316,7 +316,7 @@
     "notFound": "This scan is not available",
     "backToStart": "Back to start",
     "emptyTitle": "No video files here",
-    "emptyBody": "The folder has no clips Clipsana can read. Check the path, or include subfolders.",
+    "emptyBody": "The folder has no clips Clipcura can read. Check the path, or include subfolders.",
     "allReady": "Everything here is ready to edit.",
     "clearSelection": "Clear selection",
     "planFailed": "Could not prepare the conversion",
@@ -330,14 +330,14 @@
     "startConversion": "Start conversion",
     "skip": {
       "done": "is already converted.",
-      "exists": "would overwrite a file Clipsana did not create.",
+      "exists": "would overwrite a file Clipcura did not create.",
       "unsupported": "cannot be converted: {{reason}}"
     }
   },
   "detail": {
     "aria": "Details of {{name}}",
     "close": "Close details",
-    "findings": "What Clipsana found",
+    "findings": "What Clipcura found",
     "preview": "Same frame, before and after",
     "previewFix": "Preview the fix",
     "before": "Before",
@@ -374,7 +374,7 @@
     }
   },
   "activity": {
-    "intro": "Everything assistants and automations did through Clipsana, and the requests waiting for you.",
+    "intro": "Everything assistants and automations did through Clipcura, and the requests waiting for you.",
     "waiting_one": "{{count}} conversion waits for your approval",
     "waiting_other": "{{count}} conversions wait for your approval",
     "waitingBody": "Nothing runs until you approve. Rejected requests are not converted.",
@@ -415,7 +415,7 @@
     "container": "Container",
     "containerClash": "This editing codec needs MOV or MKV: MP4 cannot carry its uncompressed audio.",
     "folder": "Output folder",
-    "folderHint": "Relative to the footage folder (../02_edit), or a folder Clipsana may use.",
+    "folderHint": "Relative to the footage folder (../02_edit), or a folder Clipcura may use.",
     "suffix": "File name suffix",
     "suffixHint": "Added to the name of each converted clip, e.g. _edit.",
     "rules": "Checks",

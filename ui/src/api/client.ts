@@ -1,5 +1,5 @@
 /**
- * Client for the local Clipsana API (same origin as the GUI).
+ * Client for the local Clipcura API (same origin as the GUI).
  *
  * The bearer token arrives once in the URL fragment (#token=...): fragments are never sent to a server or
  * written to logs. It is moved to sessionStorage and removed from the address bar right away.
@@ -45,7 +45,7 @@ export interface SystemReport {
   ffmpeg: { version: string } | null;
 }
 
-const TOKEN_KEY = "clipsana.token";
+const TOKEN_KEY = "clipcura.token";
 
 function readToken(): string {
   const match = window.location.hash.match(/token=([^&]+)/);

@@ -1,13 +1,13 @@
 """The `loudness` rule (issue #15). It is also the acceptance check for CLAUDE.md §13: a new rule is one file in
-clipsana/rules/ plus profile keys, and the core does not change."""
+clipcura/rules/ plus profile keys, and the core does not change."""
 import subprocess
 from pathlib import Path
 
 import pytest
 
-from clipsana import rules
-from clipsana.core import backends, planner, probe, profiles, service
-from clipsana.core.models import Profile
+from clipcura import rules
+from clipcura.core import backends, planner, probe, profiles, service
+from clipcura.core.models import Profile
 from tests.conftest import needs_ffmpeg
 
 pytestmark = needs_ffmpeg

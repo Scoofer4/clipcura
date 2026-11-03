@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from clipsana.core import backends, service
-from clipsana.core.models import Paths
+from clipcura.core import backends, service
+from clipcura.core.models import Paths
 from tests.conftest import needs_ffmpeg
 
 pytestmark = needs_ffmpeg

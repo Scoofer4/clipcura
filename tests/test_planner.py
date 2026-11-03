@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from clipsana.core import planner
-from clipsana.core.models import AudioStream, FixStep, Issue, MediaInfo, Paths, Profile, VideoStream
+from clipcura.core import planner
+from clipcura.core.models import AudioStream, FixStep, Issue, MediaInfo, Paths, Profile, VideoStream
 
 
 def profile(**over) -> Profile:
@@ -63,8 +63,8 @@ def test_vfr_and_audio_rate_produce_one_command_with_merged_audio_and_single_cfr
 
 
 def _scale_step(src_pix="yuv420p"):
-    from clipsana import rules
-    from clipsana.rules.resolution import RULE
+    from clipcura import rules
+    from clipcura.rules.resolution import RULE
     m = media(width=3840, height=2160, pix_fmt=src_pix)
     p = profile(max_long_side=1920)
     return m, p, RULE.fix(RULE.detect(m, p), p), rules
@@ -101,7 +101,7 @@ def test_libplacebo_scale_variant():
 
 
 def test_hdr_uses_libplacebo_tonemapping_and_keeps_cpu_scaling_after_it():
-    from clipsana.rules.hdr import RULE as HDR
+    from clipcura.rules.hdr import RULE as HDR
     m, p, scale_step, _ = _scale_step("yuv420p10le")
     m.video.color_transfer = "arib-std-b67"
     hdr_step = HDR.fix(HDR.detect(m, p), p)
@@ -122,7 +122,7 @@ def test_fallback_args_never_contain_gpu_filters():
 
 
 def step_data(m, p):
-    from clipsana.rules.resolution import RULE
+    from clipcura.rules.resolution import RULE
     return RULE.detect(m, p).data
 
 

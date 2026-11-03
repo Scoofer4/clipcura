@@ -1,5 +1,5 @@
 /*
- * Clipsana design tokens. Every colour in the UI comes from here, so brand changes are one-file edits.
+ * Clipcura design tokens. Every colour in the UI comes from here, so brand changes are one-file edits.
  * Themes: data-theme="dark" (default) | "light"; each sets color-scheme so native scrollbars and controls match. Accents: data-accent="brand" (Metaverse Media crimson,
  * measured from the logo) | "aurora" (violet -> cyan from the original brief).
  */

@@ -3,7 +3,7 @@ import io
 
 from PIL import Image
 
-from clipsana.desktop import icon
+from clipcura.desktop import icon
 
 
 def pixel(img: Image.Image, x: float, y: float) -> tuple[int, int, int, int]:
@@ -37,5 +37,5 @@ def test_attention_badge_for_requests_waiting_for_approval():
 
 def test_png_for_the_tray_and_ico_for_windows(tmp_path):
     assert Image.open(io.BytesIO(icon.png(32, progress=0.3))).size == (32, 32)
-    path = icon.write_ico(tmp_path / "clipsana.ico")
+    path = icon.write_ico(tmp_path / "clipcura.ico")
     assert {(16, 16), (32, 32), (48, 48), (256, 256)} <= Image.open(path).info["sizes"]

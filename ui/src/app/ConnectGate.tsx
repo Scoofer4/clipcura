@@ -7,8 +7,8 @@ import { Lockup } from "../design-system/Logo";
 import { Panel } from "../design-system/Panel";
 
 /**
- * Without a token the API answers nothing, so explain how to open Clipsana properly instead of showing a
- * broken app. The desktop window and `clipsana open` pass the token in the URL fragment automatically.
+ * Without a token the API answers nothing, so explain how to open Clipcura properly instead of showing a
+ * broken app. The desktop window and `clipcura open` pass the token in the URL fragment automatically.
  */
 export function ConnectGate({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
@@ -25,7 +25,7 @@ export function ConnectGate({ children }: { children: ReactNode }) {
         <Lockup size={34} />
         <h1 className="mt-6 text-xl font-semibold text-ink">{t("connect.title")}</h1>
         <p className="mt-2 text-sm text-muted">{t("connect.body")}</p>
-        <pre className="mono mt-4 rounded-[var(--radius-control)] border border-line bg-surface p-3 text-[13px] text-ink">clipsana open</pre>
+        <pre className="mono mt-4 rounded-[var(--radius-control)] border border-line bg-surface p-3 text-[13px] text-ink">clipcura open</pre>
         <form onSubmit={submit} className="mt-6 flex gap-2">
           <label htmlFor="token" className="sr-only">{t("connect.token")}</label>
           <input id="token" type="password" value={value} onChange={(e) => setValue(e.target.value)} autoComplete="off"

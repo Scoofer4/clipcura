@@ -7,7 +7,7 @@
   },
   "statusHint": {
     "ok": "Můžeš stříhat rovnou",
-    "fixable": "Clipsana je převede za tebe",
+    "fixable": "Clipcura je převede za tebe",
     "needs_human": "Krok, který uděláš jen ty",
     "error": "Poškozené nebo nečitelné"
   },
@@ -28,7 +28,7 @@
     "receiving": "Pusť a začne kontrola",
     "title": "Přetáhni složku s videi",
     "titleActive": "Pusť a zkontroluji tuhle složku",
-    "body": "Clipsana projde každý klip a řekne ti, co by zadrhlo střih. Originály nikdy nemění.",
+    "body": "Clipcura projde každý klip a řekne ti, co by zadrhlo střih. Originály nikdy nemění.",
     "choose": "Vybrat složku",
     "formats": "MP4, MOV, MTS, MKV, Insta360"
   },
@@ -74,7 +74,7 @@
     "jobAria": "Políčka běžící úlohy procházejí bránou",
     "input": "Natočeno",
     "inputValue": "průměrně {{fps}} fps, nerovnoměrně",
-    "output": "Po Clipsaně",
+    "output": "Po Clipcuře",
     "outputValue": "{{fps}} fps, konstantně",
     "drop_one": "Každou sekundu vynechá {{count}} snímek.",
     "drop_few": "Každou sekundu vynechá {{count}} snímky.",
@@ -155,7 +155,7 @@
     "profiles": "Profily",
     "profilesIntro": "Cíle převodu. Vestavěné profily jde upravit a upravenou kopii kdykoli vrátit na výchozí.",
     "system": "Systém",
-    "systemIntro": "Změřeno příkazem clipsana doctor. Po aktualizaci ovladačů ho spusť znovu.",
+    "systemIntro": "Změřeno příkazem clipcura doctor. Po aktualizaci ovladačů ho spusť znovu.",
     "backend": "Akcelerace",
     "source": {
       "user": "vlastní",
@@ -176,7 +176,7 @@
   },
   "ks": {
     "title": "Design system",
-    "intro": "Všechny stavební prvky Clipsany na jednom místě, funkční nad ukázkovými daty ze skutečných testovacích klipů. Nahoře přepneš téma, akcent a jazyk; přetáhni složku na hledáček, vyber klipy, spusť ukázkovou úlohu.",
+    "intro": "Všechny stavební prvky Clipcury na jednom místě, funkční nad ukázkovými daty ze skutečných testovacích klipů. Nahoře přepneš téma, akcent a jazyk; přetáhni složku na hledáček, vyber klipy, spusť ukázkovou úlohu.",
     "s1": "Start",
     "s1Intro": "Jedna hlavní akce: přetáhnout složku. Když se složka vznáší nad hledáčkem, políčka se srovnají.",
     "previewDrag": "Ukázat přetahování",
@@ -256,7 +256,7 @@
     },
     "corrupt": {
       "label": "Poškozený soubor",
-      "why": "Soubor nejde spolehlivě přečíst. Převod by poškození zakryl, proto ho Clipsana nechává na tobě."
+      "why": "Soubor nejde spolehlivě přečíst. Převod by poškození zakryl, proto ho Clipcura nechává na tobě."
     },
     "color_space": {
       "label": "Barvy",
@@ -290,14 +290,14 @@
     "dark": "Přepnout na tmavé téma"
   },
   "connect": {
-    "title": "Otevři Clipsanu z aplikace",
-    "body": "Tahle stránka mluví se službou Clipsana na tomto počítači a potřebuje její klíč. Spusť Clipsanu, nebo v terminálu spusť příkaz, který ji otevře i s klíčem:",
+    "title": "Otevři Clipcuru z aplikace",
+    "body": "Tahle stránka mluví se službou Clipcura na tomto počítači a potřebuje její klíč. Spusť Clipcuru, nebo v terminálu spusť příkaz, který ji otevře i s klíčem:",
     "token": "Nebo vlož klíč",
     "connect": "Připojit"
   },
   "start": {
     "title": "Zkontrolovat složku",
-    "intro": "Clipsana projde každý klip, řekne, co by zadrhlo střih, a co je potřeba, převede do samostatné složky. Originály zůstanou beze změny.",
+    "intro": "Clipcura projde každý klip, řekne, co by zadrhlo střih, a co je potřeba, převede do samostatné složky. Originály zůstanou beze změny.",
     "pathLabel": "Cesta ke složce",
     "pathPlaceholder": "D:\\Natáčení\\2026-11-02\\01_raw",
     "scan": "Zkontrolovat",
@@ -306,7 +306,7 @@
     "scanningCount_few": "Přečteny {{count}} klipy",
     "scanningCount_other": "Přečteno {{count}} klipů",
     "scanFailed": "Kontrola selhala",
-    "notAllowed": "Clipsana zatím nesmí číst tuto složku.",
+    "notAllowed": "Clipcura zatím nesmí číst tuto složku.",
     "allowAndScan": "Povolit a zkontrolovat",
     "allowed": "Složka povolena",
     "allowFailed": "Složku se nepodařilo povolit",
@@ -322,7 +322,7 @@
     "notFound": "Tahle kontrola není k dispozici",
     "backToStart": "Zpět na start",
     "emptyTitle": "Žádná videa",
-    "emptyBody": "Složka neobsahuje klipy, které Clipsana umí přečíst. Zkontroluj cestu nebo zahrň podsložky.",
+    "emptyBody": "Složka neobsahuje klipy, které Clipcura umí přečíst. Zkontroluj cestu nebo zahrň podsložky.",
     "allReady": "Všechno tady je připravené ke střihu.",
     "clearSelection": "Zrušit výběr",
     "planFailed": "Převod se nepodařilo připravit",
@@ -337,14 +337,14 @@
     "startConversion": "Spustit převod",
     "skip": {
       "done": "už je převedený.",
-      "exists": "by přepsal soubor, který Clipsana nevytvořila.",
+      "exists": "by přepsal soubor, který Clipcura nevytvořila.",
       "unsupported": "nejde převést: {{reason}}"
     }
   },
   "detail": {
     "aria": "Detail {{name}}",
     "close": "Zavřít detail",
-    "findings": "Co Clipsana našla",
+    "findings": "Co Clipcura našla",
     "preview": "Stejný snímek před a po",
     "previewFix": "Náhled opravy",
     "before": "Před",
@@ -381,7 +381,7 @@
     }
   },
   "activity": {
-    "intro": "Vše, co asistenti a automatizace přes Clipsanu udělali, a požadavky, které čekají na tebe.",
+    "intro": "Vše, co asistenti a automatizace přes Clipcuru udělali, a požadavky, které čekají na tebe.",
     "waiting_one": "{{count}} převod čeká na tvé schválení",
     "waiting_few": "{{count}} převody čekají na tvé schválení",
     "waiting_other": "{{count}} převodů čeká na tvé schválení",
@@ -424,7 +424,7 @@
     "container": "Kontejner",
     "containerClash": "Tento střihový kodek potřebuje MOV nebo MKV: MP4 neunese jeho nekomprimovaný zvuk.",
     "folder": "Výstupní složka",
-    "folderHint": "Relativně ke složce se záznamem (../02_edit), nebo složka, kterou Clipsana smí používat.",
+    "folderHint": "Relativně ke složce se záznamem (../02_edit), nebo složka, kterou Clipcura smí používat.",
     "suffix": "Přípona názvu",
     "suffixHint": "Přidá se k názvu každého převedeného klipu, např. _edit.",
     "rules": "Kontroly",

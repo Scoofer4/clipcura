@@ -1,7 +1,7 @@
 """Profile loading and validation."""
 import pytest
 
-from clipsana.core import profiles
+from clipcura.core import profiles
 
 
 def test_bundled_profiles_are_listed():
@@ -39,7 +39,7 @@ def test_user_profile_dir_overrides_bundled(tmp_path):
 def test_plugin_rule_settings_survive_loading_and_saving(tmp_path, monkeypatch):
     # A rule added as a plugin keeps its settings in the profile under its own id; the core does not need to
     # know them (CLAUDE.md §6: a new rule never requires a core change).
-    monkeypatch.setenv("CLIPSANA_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("CLIPCURA_HOME", str(tmp_path / "home"))
     (tmp_path / "mine.yaml").write_text(
         "name: mine\nlabel: Mine\nfps: 25\nmax_long_side: 1920\naudio_rate: 48000\n"
         "output: {codec: libx264, container: mp4}\nrules: {plugin_x: {level: 3}}\n", encoding="utf-8")

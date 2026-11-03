@@ -2,8 +2,8 @@
 import threading
 from pathlib import Path
 
-from clipsana.core import executor
-from clipsana.core.models import PlanItem
+from clipcura.core import executor
+from clipcura.core.models import PlanItem
 from tests.conftest import needs_ffmpeg
 
 

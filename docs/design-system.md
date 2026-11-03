@@ -1,4 +1,4 @@
-# Clipsana design system
+# Clipcura design system
 
 The living reference is the page `/_kitchen-sink` (`ui/src/screens/KitchenSink.tsx`). It renders every
 building block with sample data and works without the backend. Screenshots for review are in
@@ -16,7 +16,7 @@ building block with sample data and works without the backend. Screenshots for r
 
 ## Motion and 3D
 
-Clipsana comes from a company that works in spatial visualisation, so depth is part of the identity. It
+Clipcura comes from a company that works in spatial visualisation, so depth is part of the identity. It
 has to stay timeless, though, which sets the rules:
 
 - **One motif: the film frame.** Every 3D visual uses the same object, the frame (`ui/src/visuals/Frame.tsx`).
@@ -82,7 +82,7 @@ Tab moves between rows, Space selects, Enter opens the detail, F fixes the selec
 **Monogram** (owner's choice, 2026-11-02): a "C" left open on the right, where playback starts. The arc
 carries the accent gradient and the play triangle uses the text colour, so the mark works on both themes.
 It stays legible at 16 px (tray icon). Source: `ui/src/design-system/Logo.tsx`, favicon `ui/public/favicon.svg`.
-The wordmark is lowercase "clipsana" in Inter Semibold with −0.035 em tracking.
+The wordmark is lowercase "clipcura" in Inter Semibold with −0.035 em tracking.
 
 The viewfinder corners remain the drop zone's motif. They are not part of the logo.
 

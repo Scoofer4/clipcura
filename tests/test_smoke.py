@@ -1,6 +1,6 @@
 """The package imports (basic CI check)."""
-import clipsana
+import clipcura
 
 
 def test_version():
-    assert clipsana.__version__
+    assert clipcura.__version__

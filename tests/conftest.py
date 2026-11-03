@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from clipsana.core import backends
+from clipcura.core import backends
 
 GENERATED = Path(__file__).parent / "fixtures" / "generated" / "clips"
 
@@ -96,4 +96,4 @@ def raw_folder(tmp_path, clips):
 @pytest.fixture(autouse=True)
 def _isolated_app_data(tmp_path, monkeypatch):
     # Database, doctor report and user profiles of a test never touch the real profile.
-    monkeypatch.setenv("CLIPSANA_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("CLIPCURA_HOME", str(tmp_path / "home"))

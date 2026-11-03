@@ -168,7 +168,7 @@ wheels = [
 ]
 
 [[package]]
-name = "clipsana"
+name = "clipcura"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

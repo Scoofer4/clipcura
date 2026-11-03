@@ -1,10 +1,10 @@
-"""Measure a full Clipsana job on 4K HEVC 10-bit HLG footage: CPU only vs the path doctor picked (CLAUDE.md §13).
+"""Measure a full Clipcura job on 4K HEVC 10-bit HLG footage: CPU only vs the path doctor picked (CLAUDE.md §13).
 
 Generates a 10 s 4K 29.97 fps HLG HEVC Main10 clip with 44.1 kHz audio (what a phone records and what trips
 up the editor), then converts it with each path and reports wall time and the output format. Everything is
 written under the given work folder, which must not exist yet; app data stays inside it as well.
 
-Usage:  uv run python tools/benchmark_hevc10.py D:\\Temp\\clipsana-bench [--profile social-30] [--rounds 3]
+Usage:  uv run python tools/benchmark_hevc10.py D:\\Temp\\clipcura-bench [--profile social-30] [--rounds 3]
 """
 from __future__ import annotations
 
@@ -26,11 +26,11 @@ def main() -> None:
     args = ap.parse_args()
     if args.workdir.exists():
         sys.exit(f"{args.workdir} exists; pass a new folder (results and app data are written there)")
-    os.environ["CLIPSANA_HOME"] = str(args.workdir / "app")
+    os.environ["CLIPCURA_HOME"] = str(args.workdir / "app")
 
-    # Imported after CLIPSANA_HOME is set so the database lands in the work folder.
-    from clipsana.core import backends, service
-    from clipsana.core.models import Paths
+    # Imported after CLIPCURA_HOME is set so the database lands in the work folder.
+    from clipcura.core import backends, service
+    from clipcura.core.models import Paths
 
     ffmpeg, ffprobe = backends.find_ffmpeg()
     raw = args.workdir / "01_raw"

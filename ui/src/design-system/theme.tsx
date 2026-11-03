@@ -21,7 +21,7 @@ function initial<T extends string>(key: string, allowed: readonly T[], fallback:
   const fromUrl = new URLSearchParams(window.location.search).get(key);
   if (fromUrl && (allowed as readonly string[]).includes(fromUrl)) return fromUrl as T;
   try {
-    const saved = localStorage.getItem(`clipsana.${key}`);
+    const saved = localStorage.getItem(`clipcura.${key}`);
     if (saved && (allowed as readonly string[]).includes(saved)) return saved as T;
   } catch {
     /* storage can be unavailable in locked-down WebView2 profiles */
@@ -31,7 +31,7 @@ function initial<T extends string>(key: string, allowed: readonly T[], fallback:
 
 function persist(key: string, value: string) {
   try {
-    localStorage.setItem(`clipsana.${key}`, value);
+    localStorage.setItem(`clipcura.${key}`, value);
   } catch {
     /* non-essential */
   }

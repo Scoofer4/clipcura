@@ -14,7 +14,7 @@ const actionIcon: Record<string, typeof Bot> = {
   scan: FileSearch, plan: ListChecks, request_apply: Play, apply: Play, approve: Check, reject: X,
   job_finished: CircleCheck, cancel: X, job_recovered: RotateCcw,
 };
-// "system": Clipsana itself, e.g. resuming jobs a stopped service left behind.
+// "system": Clipcura itself, e.g. resuming jobs a stopped service left behind.
 const actorIcon = { ai: Bot, human: User, n8n: Workflow, system: Cpu } as const;
 
 /** Screen 5: what assistants did over MCP, and the requests waiting for a human decision. */

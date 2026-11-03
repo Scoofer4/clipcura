@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from clipsana.core import backends
-from clipsana.core.models import FfmpegInfo, Probe
+from clipcura.core import backends
+from clipcura.core.models import FfmpegInfo, Probe
 
 HWACCELS = """Hardware acceleration methods:
 cuda
@@ -83,12 +83,12 @@ def _fake_ffmpeg_dir(root: Path) -> Path:
 
 def test_find_ffmpeg_honors_env_override(tmp_path, monkeypatch):
     bin_dir = _fake_ffmpeg_dir(tmp_path / "custom")
-    monkeypatch.setenv("CLIPSANA_FFMPEG", str(bin_dir))
+    monkeypatch.setenv("CLIPCURA_FFMPEG", str(bin_dir))
     ffmpeg, ffprobe = backends.find_ffmpeg()
     assert (Path(ffmpeg), Path(ffprobe)) == (bin_dir / "ffmpeg.exe", bin_dir / "ffprobe.exe")
 
 
 def test_find_ffmpeg_rejects_env_override_without_binaries(tmp_path, monkeypatch):
-    monkeypatch.setenv("CLIPSANA_FFMPEG", str(tmp_path))
-    with pytest.raises(FileNotFoundError, match="CLIPSANA_FFMPEG"):
+    monkeypatch.setenv("CLIPCURA_FFMPEG", str(tmp_path))
+    with pytest.raises(FileNotFoundError, match="CLIPCURA_FFMPEG"):
         backends.find_ffmpeg()

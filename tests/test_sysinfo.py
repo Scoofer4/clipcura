@@ -4,7 +4,7 @@ import sys
 
 import pytest
 
-from clipsana.core import sysinfo
+from clipcura.core import sysinfo
 
 
 def test_parse_nvidia_smi_reads_csv_rows():

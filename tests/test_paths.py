@@ -1,6 +1,6 @@
 """Choosing processing paths from doctor measurements (issue #5): quality first, then measured speed."""
-from clipsana.core import backends
-from clipsana.core.models import Benchmarks, EncoderQuality, FfmpegInfo, Probe
+from clipcura.core import backends
+from clipcura.core.models import Benchmarks, EncoderQuality, FfmpegInfo, Probe
 
 WORKING = ["cuda", "qsv", "h264_nvenc", "h264_qsv", "libplacebo", "zscale"]
 

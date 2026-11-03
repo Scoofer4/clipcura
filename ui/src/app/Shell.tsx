@@ -9,7 +9,7 @@ import { Lockup } from "../design-system/Logo";
 import { useAppearance } from "../design-system/theme";
 import { CommandPalette, type Command } from "./CommandPalette";
 
-export const LAST_SCAN_KEY = "clipsana.lastScan";
+export const LAST_SCAN_KEY = "clipcura.lastScan";
 
 export function lastScanId(): string | null {
   try { return localStorage.getItem(LAST_SCAN_KEY); } catch { return null; }

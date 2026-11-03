@@ -2,8 +2,8 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from clipsana.api.app import create_app
-from clipsana.core import config, profiles
+from clipcura.api.app import create_app
+from clipcura.core import config, profiles
 
 BASE = "http://127.0.0.1"
 
@@ -75,6 +75,6 @@ def test_name_must_be_a_plain_file_name_and_match_the_url(api):
 
 
 def test_only_a_human_edits_profiles(api):
-    ai = {"X-Clipsana-Actor": "ai"}
+    ai = {"X-Clipcura-Actor": "ai"}
     assert api.put("/api/profiles/social-30", json=social(fps=60), headers=ai).status_code == 403
     assert api.delete("/api/profiles/social-30", headers=ai).status_code == 403

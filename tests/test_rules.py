@@ -1,8 +1,8 @@
 """Each rule: detection on synthetic MediaInfo and the FixStep it proposes (no ffmpeg needed)."""
 import pytest
 
-from clipsana import rules
-from clipsana.core.models import AudioStream, MediaInfo, Profile, VideoStream
+from clipcura import rules
+from clipcura.core.models import AudioStream, MediaInfo, Profile, VideoStream
 
 PROFILE = Profile.model_validate({
     "name": "t", "label": "T", "fps": 30, "max_long_side": 3840, "audio_rate": 48000,
@@ -174,5 +174,5 @@ def test_corrupt_reports_probe_and_decode_errors():
 
 
 def test_messages_are_localized(monkeypatch):
-    monkeypatch.setenv("CLIPSANA_LANG", "cs")
+    monkeypatch.setenv("CLIPCURA_LANG", "cs")
     assert "snímková" in detect("vfr", media(r_fps=60.0, avg_fps=50.0)).message

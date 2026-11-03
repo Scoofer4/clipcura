@@ -1,15 +1,15 @@
-﻿; Clipsana installer (Inno Setup 6). Built by tools/build_installer.py after PyInstaller has filled
-; packaging\dist\Clipsana; compile by hand with: ISCC /DAppVersion=0.1.0 /Opackaging\dist packaging\installer.iss
+﻿; Clipcura installer (Inno Setup 6). Built by tools/build_installer.py after PyInstaller has filled
+; packaging\dist\Clipcura; compile by hand with: ISCC /DAppVersion=0.1.0 /Opackaging\dist packaging\installer.iss
 ;
-; Installs per user without administrator rights by default (into %LOCALAPPDATA%\Programs\Clipsana); the
-; wizard offers an all-users install for people who have them. Settings in %APPDATA%\Clipsana stay on uninstall.
+; Installs per user without administrator rights by default (into %LOCALAPPDATA%\Programs\Clipcura); the
+; wizard offers an all-users install for people who have them. Settings in %APPDATA%\Clipcura stay on uninstall.
 
 #ifndef AppVersion
   #define AppVersion "0.0.0"
 #endif
-#define AppName "Clipsana"
-#define AppExe "Clipsana.exe"
-#define AppUrl "https://github.com/Scoofer4/clipsana"
+#define AppName "Clipcura"
+#define AppExe "Clipcura.exe"
+#define AppUrl "https://github.com/Scoofer4/clipcura"
 
 [Setup]
 ; Never change AppId: Windows recognises upgrades and the uninstaller by it.
@@ -30,14 +30,14 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.17763
 LicenseFile=..\LICENSE
-SetupIconFile=build\clipsana.ico
+SetupIconFile=build\clipcura.ico
 UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
-OutputBaseFilename=Clipsana-Setup-{#AppVersion}
+OutputBaseFilename=Clipcura-Setup-{#AppVersion}
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
-; Restart Manager closes a running Clipsana before files are replaced or removed.
+; Restart Manager closes a running Clipcura before files are replaced or removed.
 CloseApplications=yes
 RestartApplications=no
 
@@ -48,10 +48,10 @@ Name: "czech"; MessagesFile: "compiler:Languages\Czech.isl"
 [CustomMessages]
 english.DesktopIcon=Create a desktop shortcut
 czech.DesktopIcon=Vytvořit zástupce na ploše
-english.LaunchApp=Start Clipsana
-czech.LaunchApp=Spustit Clipsanu
-english.NoWebView2=Clipsana shows its window with Microsoft Edge WebView2 Runtime, which is not installed on this computer.%n%nInstall it from https://developer.microsoft.com/microsoft-edge/webview2/ (the "Evergreen" runtime), then start Clipsana. Continue with the installation?
-czech.NoWebView2=Clipsana zobrazuje okno přes Microsoft Edge WebView2 Runtime, který na tomto počítači není.%n%nNainstalujte ho z https://developer.microsoft.com/microsoft-edge/webview2/ (runtime „Evergreen“) a pak Clipsanu spusťte. Pokračovat v instalaci?
+english.LaunchApp=Start Clipcura
+czech.LaunchApp=Spustit Clipcuru
+english.NoWebView2=Clipcura shows its window with Microsoft Edge WebView2 Runtime, which is not installed on this computer.%n%nInstall it from https://developer.microsoft.com/microsoft-edge/webview2/ (the "Evergreen" runtime), then start Clipcura. Continue with the installation?
+czech.NoWebView2=Clipcura zobrazuje okno přes Microsoft Edge WebView2 Runtime, který na tomto počítači není.%n%nNainstalujte ho z https://developer.microsoft.com/microsoft-edge/webview2/ (runtime „Evergreen“) a pak Clipcuru spusťte. Pokračovat v instalaci?
 english.Licences=Licences of included software
 czech.Licences=Licence přibaleného softwaru
 
@@ -59,7 +59,7 @@ czech.Licences=Licence přibaleného softwaru
 Name: "desktopicon"; Description: "{cm:DesktopIcon}"; Flags: unchecked
 
 [Files]
-Source: "dist\Clipsana\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "dist\Clipcura\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 [Icons]
 Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"
@@ -91,19 +91,19 @@ begin
                  '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0);
 end;
 
-// A running Clipsana keeps its files open. Closing its window only hides it to the notification area, so ask
-// it to quit through its notification-area window (WM_APP + 4, see clipsana/desktop/tray.py) and wait (#18).
-procedure StopClipsana();
+// A running Clipcura keeps its files open. Closing its window only hides it to the notification area, so ask
+// it to quit through its notification-area window (WM_APP + 4, see clipcura/desktop/tray.py) and wait (#18).
+procedure StopClipcura();
 var
   Wnd: HWND;
   Waited, ResultCode: Integer;
 begin
-  Wnd := FindWindowByClassName('ClipsanaTray');
+  Wnd := FindWindowByClassName('ClipcuraTray');
   if Wnd <> 0 then
   begin
     PostMessage(Wnd, $8004, 0, 0);
     Waited := 0;
-    while (FindWindowByClassName('ClipsanaTray') <> 0) and (Waited < 30000) do
+    while (FindWindowByClassName('ClipcuraTray') <> 0) and (Waited < 30000) do
     begin
       Sleep(250);
       Waited := Waited + 250;
@@ -111,28 +111,28 @@ begin
   end;
   // The window goes last, but the process still needs a moment to let go of its files.
   Waited := 0;
-  while ProcessRunning('Clipsana.exe') and (Waited < 10000) do
+  while ProcessRunning('Clipcura.exe') and (Waited < 10000) do
   begin
     Sleep(250);
     Waited := Waited + 250;
   end;
-  if ProcessRunning('Clipsana.exe') then
-    Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /T /IM Clipsana.exe', '', SW_HIDE,
+  if ProcessRunning('Clipcura.exe') then
+    Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /T /IM Clipcura.exe', '', SW_HIDE,
          ewWaitUntilTerminated, ResultCode);
   // A service without a window (started by an AI assistant through MCP) holds the same files.
-  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /T /IM clipsana-cli.exe', '', SW_HIDE, ewWaitUntilTerminated,
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /T /IM clipcura-cli.exe', '', SW_HIDE, ewWaitUntilTerminated,
        ResultCode);
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
-  StopClipsana();
+  StopClipcura();
   Result := '';
 end;
 
 function InitializeUninstall(): Boolean;
 begin
-  StopClipsana();
+  StopClipcura();
   Result := True;
 end;
 

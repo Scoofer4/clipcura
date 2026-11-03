@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from clipsana.core import config, security
+from clipcura.core import config, security
 
 
 def test_first_load_creates_config_with_random_token():

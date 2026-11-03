@@ -1,5 +1,5 @@
 """ffprobe JSON -> MediaInfo, and the PTS-based variable frame rate measurement."""
-from clipsana.core import probe
+from clipcura.core import probe
 
 PHONE_HEVC = {
     "streams": [

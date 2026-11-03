@@ -22,22 +22,22 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGING = ROOT / "packaging"
 BUILD = PACKAGING / "build"
 DIST = PACKAGING / "dist"
-APP_DIR = DIST / "Clipsana"
+APP_DIR = DIST / "Clipcura"
 
 sys.path.insert(0, str(ROOT))
-from clipsana import __version__
+from clipcura import __version__
 
 VERSION_TEMPLATE = """VSVersionInfo(
   ffi=FixedFileInfo(filevers={t}, prodvers={t}, mask=0x3f, flags=0x0, OS=0x40004, fileType=0x1, subtype=0x0,
                     date=(0, 0)),
   kids=[StringFileInfo([StringTable('040904B0', [
           StringStruct('CompanyName', 'Metaverse Media s.r.o.'),
-          StringStruct('FileDescription', 'Clipsana - check and fix footage before editing'),
+          StringStruct('FileDescription', 'Clipcura - check and fix footage before editing'),
           StringStruct('FileVersion', '{v}'),
-          StringStruct('InternalName', 'Clipsana'),
+          StringStruct('InternalName', 'Clipcura'),
           StringStruct('LegalCopyright', 'Apache-2.0'),
-          StringStruct('OriginalFilename', 'Clipsana.exe'),
-          StringStruct('ProductName', 'Clipsana'),
+          StringStruct('OriginalFilename', 'Clipcura.exe'),
+          StringStruct('ProductName', 'Clipcura'),
           StringStruct('ProductVersion', '{v}')])]),
         VarFileInfo([VarStruct('Translation', [1033, 1200])])])
 """
@@ -70,10 +70,10 @@ def runtime_distributions() -> list[str]:
 def third_party_notices(target: Path) -> Path:
     """One file with the licence of every bundled Python package (MIT/BSD/Apache all require the text to travel
     with the program) plus where ffmpeg's source is."""
-    parts = ["Clipsana bundles the following third-party software.\n"]
+    parts = ["Clipcura bundles the following third-party software.\n"]
     build = json.loads((ROOT / "vendor" / "ffmpeg" / "BUILD.json").read_text(encoding="utf-8"))
     parts.append(f"\n==== FFmpeg ({build['asset']}) ====\nLicence: {build['license']}; the full text is in "
-                 f"vendor\\ffmpeg\\LICENSE.txt.\nFFmpeg runs as a separate program; Clipsana calls it as a process.\n"
+                 f"vendor\\ffmpeg\\LICENSE.txt.\nFFmpeg runs as a separate program; Clipcura calls it as a process.\n"
                  f"Corresponding source code: {build['ffmpeg_source']}\nBuild scripts: {build['build_scripts']}\n"
                  f"Binary release: {build['release']}\n")
     missing = []
@@ -100,25 +100,25 @@ def third_party_notices(target: Path) -> Path:
 
 
 def prepare() -> None:
-    from clipsana.desktop import icon
+    from clipcura.desktop import icon
 
     BUILD.mkdir(parents=True, exist_ok=True)
-    icon.write_ico(BUILD / "clipsana.ico")
+    icon.write_ico(BUILD / "clipcura.ico")
     parts = [int(p) for p in __version__.split(".")[:3]] + [0]
     (BUILD / "version.txt").write_text(VERSION_TEMPLATE.format(t=tuple(parts), v=__version__), encoding="utf-8")
     third_party_notices(BUILD / "THIRD-PARTY-NOTICES.txt")
 
 
 def pyinstaller() -> None:
-    run([sys.executable, "-m", "PyInstaller", str(PACKAGING / "clipsana.spec"), "--noconfirm",
+    run([sys.executable, "-m", "PyInstaller", str(PACKAGING / "clipcura.spec"), "--noconfirm",
          "--workpath", str(BUILD / "pyinstaller"), "--distpath", str(DIST)])
     shutil.copy2(BUILD / "THIRD-PARTY-NOTICES.txt", APP_DIR / "THIRD-PARTY-NOTICES.txt")
 
 
 def smoke_test() -> None:
     """The frozen CLI runs, finds its bundled ffmpeg, profiles and rules."""
-    cli = APP_DIR / "clipsana-cli.exe"
-    env = os.environ | {"CLIPSANA_HOME": str(BUILD / "smoke-home")}
+    cli = APP_DIR / "clipcura-cli.exe"
+    env = os.environ | {"CLIPCURA_HOME": str(BUILD / "smoke-home")}
     for args in (["version"], ["doctor", "--quick", "--json"]):
         out = subprocess.run([str(cli), *args], capture_output=True, text=True, check=True, env=env,
                              timeout=120).stdout

@@ -1,16 +1,16 @@
 """Checks on real footage, which never goes into git (CLAUDE.md §14).
 
-Put samples in tests/fixtures/real/ or point CLIPSANA_REAL_DIR at a folder; without samples these skip.
+Put samples in tests/fixtures/real/ or point CLIPCURA_REAL_DIR at a folder; without samples these skip.
 """
 import os
 from pathlib import Path
 
 import pytest
 
-from clipsana.core import probe, service
+from clipcura.core import probe, service
 from tests.conftest import needs_ffmpeg
 
-REAL_DIR = Path(os.environ.get("CLIPSANA_REAL_DIR", Path(__file__).parent / "fixtures" / "real"))
+REAL_DIR = Path(os.environ.get("CLIPCURA_REAL_DIR", Path(__file__).parent / "fixtures" / "real"))
 SAMPLES = sorted(p for p in REAL_DIR.glob("*") if p.suffix.lower() in service.VIDEO_EXTENSIONS) \
     if REAL_DIR.is_dir() else []
 

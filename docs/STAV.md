@@ -1,4 +1,4 @@
-# Stav projektu Clipsana
+# Stav projektu Clipcura
 
 Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 
@@ -6,7 +6,7 @@ Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 
 ### Hotovo
 
-- `clipsana/mcp/server.py` (MCP SDK 2.3, `MCPServer`, stdio) a příkaz `clipsana mcp`. Je to tenký klient
+- `clipcura/mcp/server.py` (MCP SDK 2.3, `MCPServer`, stdio) a příkaz `clipcura mcp`. Je to tenký klient
   lokálního API a volá ho jako actor `ai`. Nástroje odpovídají kap. 8: `system_info`, `list_profiles`,
   `list_rules`, `scan_folder`, `get_report`, `plan_fixes`, `apply_fixes`, `job_status`, `cancel_job`.
   Nástroj pro schválení záměrně neexistuje. Odpovědi jsou strukturovaný JSON a krátké shrnutí (`lang` en/cs).
@@ -16,7 +16,7 @@ Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
   Windows a zabije ji s relací. Proto vznikla:
 - Obnova po pádu: úloha si pamatuje PID procesu, který ji vlastní (`jobs.owner_pid`). Nová služba po
   startu převezme jen úlohy mrtvého procesu: běžící úlohu restartuje a smaže její `.partial` soubor,
-  čekající úlohu zařadí do fronty. Úlohy živého procesu (např. souběžné `clipsana apply`) nechá být.
+  čekající úlohu zařadí do fronty. Úlohy živého procesu (např. souběžné `clipcura apply`) nechá být.
   V časové ose je to akce „Obnoveno po restartu“ (actor `system`).
 - Hromadné schválení/zamítnutí v GUI posílá požadavky souběžně (dřív postupně, mohlo zůstat napůl).
 - Ukázka M4 na skutečné stdio relaci: AI udělá scan → report → plán → apply, 3 převody čekají v GUI,
@@ -84,7 +84,7 @@ Další krok: M3b, tedy obrazovky 1–6 napojené na lokální API, paleta pří
 - Playwright přes nainstalovaný Edge (bez stahování prohlížeče): 6 testů, screenshoty v
   `docs/screenshots/m3a/`.
 
-### Bezpečnostní poznámka (mimo Clipsanu)
+### Bezpečnostní poznámka (mimo Clipcuru)
 
 - Některé stránky ve firemním prostoru Confluence obsahují čitelná hesla a klíče (stránky o PostgreSQL a n8n
   na Synology, Kurzy a vzdělání). Hodnoty se nikde neuvádějí. Doporučeno přesunout je do správce hesel.
@@ -94,7 +94,7 @@ Další krok: M3b, tedy obrazovky 1–6 napojené na lokální API, paleta pří
 ### Hotovo
 
 - `core/config.py`: `config.json` v app data – token (vygeneruje se), port, povolené složky (výchozí žádná),
-  schvalovací režim (výchozí zapnuto), souběžnost 1 GPU + 1 CPU. CLI `clipsana config show|allow|approval`
+  schvalovací režim (výchozí zapnuto), souběžnost 1 GPU + 1 CPU. CLI `clipcura config show|allow|approval`
   (token se nikdy nevypisuje, jen maskovaný).
 - `core/security.py`: whitelist složek po úplném rozlišení cesty (`..`, symlink i junction nevyskočí ven).
 - `core/events.py` + `core/worker.py`: sběrnice událostí a worker se sloty GPU/CPU. `service.run_job` sdílí CLI
@@ -103,7 +103,7 @@ Další krok: M3b, tedy obrazovky 1–6 napojené na lokální API, paleta pří
 - `api/app.py`: FastAPI jen na 127.0.0.1, bearer token, kontrola hlavičky Host (DNS rebinding), bez CORS.
   Endpointy kopírují nástroje MCP (system, profiles, rules, scans, plans, apply, jobs, cancel, approve,
   reject) + WebSocket `/api/events`. AI/n8n nesmí schvalovat. Výstupy plánu musí ležet v povolených složkách.
-- `clipsana serve` (`api/server.py`) zapíše `server.json` (url, port, pid) pro GUI a MCP.
+- `clipcura serve` (`api/server.py`) zapíše `server.json` (url, port, pid) pro GUI a MCP.
 - Ukázka na skutečném serveru: AI naskenovala, naplánovala a požádala o převod → `awaiting_approval`,
   sama si schválit nemohla (403), člověk schválil, worker převedl, WebSocket přenesl všech 31 událostí.
 - Testy: 158 prošlo. #5 a #6 uzavřené, commity `950f674`, `67b778e`, CI zelené.
@@ -117,7 +117,7 @@ Další krok: M3b, tedy obrazovky 1–6 napojené na lokální API, paleta pří
 
 ### Hotovo
 
-- `clipsana/core`: `probe` (barvy čte ze snímků, ne z kontejneru; hloubkový test VFR z PTS; kontrolní
+- `clipcura/core`: `probe` (barvy čte ze snímků, ne z kontejneru; hloubkový test VFR z PTS; kontrolní
   dekódování přes ffprobe), `profiles` (YAML + pydantic, uživatelské profily v app data mají přednost),
   `planner` (všechny opravy v **jednom** ffmpeg příkazu, slučování filtrů, CPU záloha), `executor` (průběh,
   dočasný soubor a atomické přejmenování, úklid při chybě nebo zrušení, kontrola místa), `db` (SQLite WAL,
@@ -127,7 +127,7 @@ Další krok: M3b, tedy obrazovky 1–6 napojené na lokální API, paleta pří
   jen když se soubor převádí kvůli jinému problému). Kritérium „nové pravidlo jedním souborem“ je ověřené.
 - CLI: `scan`, `plan`, `apply`, `fix` (`--dry-run`, `--deep`, `--force`, `--json`). Návratové kódy 0/1/2.
 - Orientace se zachovává (na výšku zůstává na výšku), limit rozlišení platí pro delší stranu.
-- Testy: 112 prošlo (jednotkové + integrační na klipech z lavfi + reálné vzorky přes `CLIPSANA_REAL_DIR`).
+- Testy: 112 prošlo (jednotkové + integrační na klipech z lavfi + reálné vzorky přes `CLIPCURA_REAL_DIR`).
   CI si stahuje ffmpeg s cache.
 - Reálné vzorky z `data/` převedené přes CUDA za 3 min 17 s: CFR 30/1, DNxHR HQ, PCM 48 kHz, rotace
   fyzicky provedená, opakovaný běh nic nepřevádí. Synchronizace zvuku odpovídá originálu.
@@ -139,20 +139,20 @@ Další krok: M3b, tedy obrazovky 1–6 napojené na lokální API, paleta pří
   cpu/cuda/d3d11va a scaleru, libplacebo tone-mapping kvůli kvalitě), oprava dekódování na Intelu (D3D11VA
   místo QSV) a barevných značek u zdrojů bez značek (`setparams`).
 
-## 2. 11. 2026 – M0 (prostředí + `clipsana doctor`)
+## 2. 11. 2026 – M0 (prostředí + `clipcura doctor`)
 
 ### Hotovo
 
-- Veřejný repozitář <https://github.com/Scoofer4/clipsana>, první commit `20e020d` (kostra ze zadání).
+- Veřejný repozitář <https://github.com/Scoofer4/clipcura>, první commit `20e020d` (kostra ze zadání).
   Commity se podepisují noreply identitou Scoofer4, nastavenou lokálně v repozitáři.
 - Python 3.12.15 přes uv (`.python-version`), `uv sync --group dev`.
 - `tools/fetch_ffmpeg.py` stáhne zafixovaný build BtbN ffmpeg **8.1** (`autobuild-2026-11-02-12-51`),
   ověří SHA-256 a uloží ho do `vendor/ffmpeg` i s `BUILD.json` (zdroj a licence pro instalátor).
-- `clipsana doctor` (`--json`, `--quick`, `--path`) zjistí OS, CPU, RAM, disky a GPU
+- `clipcura doctor` (`--json`, `--quick`, `--path`) zjistí OS, CPU, RAM, disky a GPU
   (nvidia-smi + Windows adaptéry bez virtuálních). Funkčně otestuje ffmpeg: zařízení CUDA/QSV/Vulkan,
   HW dekódování HEVC 10-bit, enkodéry NVENC/QSV/x264/DNxHR/ProRes a filtry libplacebo/zscale.
   Vybere backend CUDA → QSV → CPU a report uloží do `doctor.json` v app data
-  (`%APPDATA%\Clipsana`, přepíše ho `CLIPSANA_HOME`).
+  (`%APPDATA%\Clipcura`, přepíše ho `CLIPCURA_HOME`).
 - Testy: 21 prošlo, ruff čistý (lokálně).
 
 ### Rozpracováno / čeká na vlastníka

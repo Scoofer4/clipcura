@@ -8,12 +8,12 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /**
- * End-to-end against the real service: `clipsana serve` with throw-away app data, generated clips, the built
+ * End-to-end against the real service: `clipcura serve` with throw-away app data, generated clips, the built
  * GUI. Covers the M3b acceptance criterion: the whole cycle works with the keyboard alone.
  */
 const REPO = resolve(__dirname, "..", "..");
 const CLIPS = join(REPO, "tests", "fixtures", "generated", "clips");
-const OUT = process.env.CLIPSANA_SCREENSHOTS ? join(REPO, "docs", "screenshots", "m3b") : join(REPO, "ui", "test-results", "screens", "m3b");
+const OUT = process.env.CLIPCURA_SCREENSHOTS ? join(REPO, "docs", "screenshots", "m3b") : join(REPO, "ui", "test-results", "screens", "m3b");
 const NEEDED = ["vfr.mp4", "a44k.mp4", "ok.mp4", "hlg.mp4"];
 
 let server: ChildProcess | undefined;
@@ -31,14 +31,14 @@ test.describe.configure({ mode: "serial" });
 test.beforeAll(async () => {
   test.skip(!NEEDED.every((n) => existsSync(join(CLIPS, n))), "generated clips missing: run pytest first");
   // Long path form: the runner's temp dir is an 8.3 short name (RUNNER~1), the service stores resolved paths.
-  home = realpathSync.native(mkdtempSync(join(tmpdir(), "clipsana-e2e-")));
+  home = realpathSync.native(mkdtempSync(join(tmpdir(), "clipcura-e2e-")));
   raw = join(home, "footage", "raw");
   mkdirSync(raw, { recursive: true });
   for (const n of NEEDED) copyFileSync(join(CLIPS, n), join(raw, n));
-  const env = { ...process.env, CLIPSANA_HOME: join(home, "app"), CLIPSANA_UI_DIR: join(REPO, "ui", "dist") };
-  const allow = uv(["clipsana", "config", "allow", join(home, "footage")], env);
+  const env = { ...process.env, CLIPCURA_HOME: join(home, "app"), CLIPCURA_UI_DIR: join(REPO, "ui", "dist") };
+  const allow = uv(["clipcura", "config", "allow", join(home, "footage")], env);
   expect(allow.status, allow.stderr).toBe(0);
-  server = spawn("uv", ["run", "--project", REPO, "clipsana", "serve"], { env, shell: process.platform === "win32" });
+  server = spawn("uv", ["run", "--project", REPO, "clipcura", "serve"], { env, shell: process.platform === "win32" });
   const announce = join(home, "app", "server.json");
   for (let i = 0; i < 150 && !existsSync(announce); i++) await new Promise((r) => setTimeout(r, 200));
   base = JSON.parse(readFileSync(announce, "utf-8")).url;
@@ -62,7 +62,7 @@ test.afterAll(() => {
 
 async function shoot(page: Page, name: string) {
   // CI runners have no GPU: software WebGL makes a screenshot of the 3D views take most of a minute.
-  if (process.env.CI && !process.env.CLIPSANA_SCREENSHOTS) return;
+  if (process.env.CI && !process.env.CLIPCURA_SCREENSHOTS) return;
   mkdirSync(OUT, { recursive: true });
   await page.waitForTimeout(700);
   await page.screenshot({ path: join(OUT, `${name}.png`) });
@@ -109,7 +109,7 @@ test("whole cycle with the keyboard only: scan, fix, watch jobs finish", async (
 });
 
 test("AI request waits in AI activity until a human approves it", async ({ page }) => {
-  const ai = { Authorization: `Bearer ${token}`, "X-Clipsana-Actor": "ai", "Content-Type": "application/json" };
+  const ai = { Authorization: `Bearer ${token}`, "X-Clipcura-Actor": "ai", "Content-Type": "application/json" };
   const scan = await (await fetch(`${base}/api/scans`, { method: "POST", headers: ai, body: JSON.stringify({ path: raw, profile: "ipad-light" }) })).json();
   const plan = await (await fetch(`${base}/api/plans`, { method: "POST", headers: ai, body: JSON.stringify({ scan_id: scan.scan_id }) })).json();
   const applied = await (await fetch(`${base}/api/plans/${plan.plan_id}/apply`, { method: "POST", headers: ai })).json();

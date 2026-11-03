@@ -5,7 +5,7 @@ import { Frame, FRAME_H, FRAME_W } from "./Frame";
 import { useScene } from "./Scene";
 
 /**
- * "What Clipsana does to this clip", as a working instrument rather than decoration:
+ * "What Clipcura does to this clip", as a working instrument rather than decoration:
  * frames arrive at the clip's real cadence (uneven for VFR), pass through the viewfinder gate and leave at the
  * chosen target rate. Frame density on each side is proportional to the actual frame rates, so picking 24, 30
  * or 60 visibly changes how many frames are dropped or repeated.

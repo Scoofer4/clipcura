@@ -23,12 +23,12 @@ def test_parse_checksums_maps_file_names_to_hashes():
 
 def test_verify_sha256_accepts_matching_file(tmp_path):
     f = tmp_path / "x.bin"
-    f.write_bytes(b"clipsana")
-    fetch_ffmpeg.verify_sha256(f, hashlib.sha256(b"clipsana").hexdigest().upper())
+    f.write_bytes(b"clipcura")
+    fetch_ffmpeg.verify_sha256(f, hashlib.sha256(b"clipcura").hexdigest().upper())
 
 
 def test_verify_sha256_rejects_tampered_file(tmp_path):
     f = tmp_path / "x.bin"
     f.write_bytes(b"tampered")
     with pytest.raises(ValueError, match="SHA-256 mismatch"):
-        fetch_ffmpeg.verify_sha256(f, hashlib.sha256(b"clipsana").hexdigest())
+        fetch_ffmpeg.verify_sha256(f, hashlib.sha256(b"clipcura").hexdigest())

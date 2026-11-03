@@ -10,9 +10,9 @@ import pytest
 from fastapi.testclient import TestClient
 from mcp.server.mcpserver.exceptions import ToolError
 
-from clipsana.api.app import create_app
-from clipsana.core import config
-from clipsana.mcp.server import build_server
+from clipcura.api.app import create_app
+from clipcura.core import config
+from clipcura.mcp.server import build_server
 from tests.conftest import needs_ffmpeg
 
 BASE = "http://127.0.0.1"
@@ -28,7 +28,7 @@ def mcp(tmp_path):
     with TestClient(create_app(), base_url=BASE) as human:
         human.headers["Authorization"] = f"Bearer {cfg.token}"
         ai = TestClient(human.app, base_url=BASE)
-        ai.headers.update({"Authorization": f"Bearer {cfg.token}", "X-Clipsana-Actor": "ai"})
+        ai.headers.update({"Authorization": f"Bearer {cfg.token}", "X-Clipcura-Actor": "ai"})
         server = build_server(connect=lambda: ai)
         yield server, human
 
@@ -106,13 +106,13 @@ def test_cancel_withdraws_a_waiting_request(mcp, raw_folder):
 
 
 def test_stdio_server_starts_the_service_on_demand(tmp_path):
-    """What Claude Code actually runs: `clipsana mcp` over stdio, with no Clipsana window open."""
+    """What Claude Code actually runs: `clipcura mcp` over stdio, with no Clipcura window open."""
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
 
     home = tmp_path / "stdio-home"
-    env = os.environ | {"CLIPSANA_HOME": str(home)}
-    params = StdioServerParameters(command=sys.executable, args=["-m", "clipsana.cli", "mcp"], env=env)
+    env = os.environ | {"CLIPCURA_HOME": str(home)}
+    params = StdioServerParameters(command=sys.executable, args=["-m", "clipcura.cli", "mcp"], env=env)
 
     async def session() -> tuple[set[str], dict]:
         async with stdio_client(params) as (read, write), ClientSession(read, write) as s:

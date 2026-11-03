@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from clipsana.api.app import create_app
-from clipsana.core import config
+from clipcura.api.app import create_app
+from clipcura.core import config
 from tests.conftest import needs_ffmpeg
 
 BASE = "http://127.0.0.1"
@@ -90,7 +90,7 @@ def test_full_cycle_with_live_progress_events(api, raw_folder):
 @needs_ffmpeg
 def test_ai_jobs_wait_for_human_approval(api, raw_folder):
     raw = raw_folder("a44k.mp4", "fps25.mp4")
-    ai = {"X-Clipsana-Actor": "ai"}
+    ai = {"X-Clipcura-Actor": "ai"}
     scan = api.post("/api/scans", json={"path": str(raw)}, headers=ai).json()
     plan = api.post("/api/plans", json={"scan_id": scan["scan_id"], "paths": {"decode": "cpu"}}, headers=ai).json()
     a, b = api.post(f"/api/plans/{plan['plan_id']}/apply", headers=ai).json()["jobs"]

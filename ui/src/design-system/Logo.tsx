@@ -1,7 +1,7 @@
 import { useId } from "react";
 
 /**
- * Clipsana logo (owner's choice, 2026-11-02): a "C" left open on the right, where playback starts.
+ * Clipcura logo (owner's choice, 2026-11-02): a "C" left open on the right, where playback starts.
  * 64-unit grid with strokes that stay legible at 16 px (tray icon). The arc follows the active accent.
  */
 export function LogoMark({ size = 64, title }: { size?: number; title?: string }) {
@@ -25,7 +25,7 @@ export function LogoMark({ size = 64, title }: { size?: number; title?: string }
 export function Wordmark({ size = 28 }: { size?: number }) {
   return (
     <span className="font-semibold text-ink" style={{ fontSize: size, letterSpacing: "-0.035em", lineHeight: 1 }}>
-      clipsana
+      clipcura
     </span>
   );
 }

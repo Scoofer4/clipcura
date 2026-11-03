@@ -1,4 +1,4 @@
-"""`clipsana serve` (headless API + worker) and `clipsana config`."""
+"""`clipcura serve` (headless API + worker) and `clipcura config`."""
 import json
 import os
 import subprocess
@@ -8,8 +8,8 @@ import time
 import httpx
 from typer.testing import CliRunner
 
-from clipsana.cli import app
-from clipsana.core import config
+from clipcura.cli import app
+from clipcura.core import config
 
 runner = CliRunner()
 
@@ -30,23 +30,23 @@ def test_config_approval_can_be_switched(tmp_path):
 
 
 def test_no_running_server_is_detected_from_stale_file(tmp_path, monkeypatch):
-    from clipsana.api import server
-    monkeypatch.setenv("CLIPSANA_HOME", str(tmp_path))
+    from clipcura.api import server
+    monkeypatch.setenv("CLIPCURA_HOME", str(tmp_path))
     assert server.running_server() is None
     (tmp_path / "server.json").write_text('{"url": "http://127.0.0.1:9", "port": 9, "pid": 1}', encoding="utf-8")
     assert server.running_server() is None  # nothing answers there: a leftover from a crash
 
 
 def test_gui_url_carries_token_only_in_fragment():
-    from clipsana.api import server
+    from clipcura.api import server
     url = server.gui_url("http://127.0.0.1:5000", "abc")
     assert url == "http://127.0.0.1:5000/#token=abc"  # fragments never reach servers or logs
 
 
 def test_serve_starts_api_on_loopback_and_announces_port(tmp_path):
     home = tmp_path / "home"
-    env = os.environ | {"CLIPSANA_HOME": str(home)}
-    proc = subprocess.Popen([sys.executable, "-m", "clipsana.cli", "serve"], env=env,
+    env = os.environ | {"CLIPCURA_HOME": str(home)}
+    proc = subprocess.Popen([sys.executable, "-m", "clipcura.cli", "serve"], env=env,
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         server_file = home / "server.json"
@@ -80,9 +80,9 @@ def test_service_stops_promptly_while_the_gui_listens_for_events(tmp_path, monke
     # The desktop app's Quit waited 30 s: the event stream never noticed the server closing the socket.
     from websockets.sync.client import connect
 
-    from clipsana.api.server import ServiceThread
+    from clipcura.api.server import ServiceThread
 
-    monkeypatch.setenv("CLIPSANA_HOME", str(tmp_path))
+    monkeypatch.setenv("CLIPCURA_HOME", str(tmp_path))
     service = ServiceThread()
     info = service.start()
     ws_url = info["url"].replace("http", "ws") + f"/api/events?token={config.load_config().token}"

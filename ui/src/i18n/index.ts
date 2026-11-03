@@ -10,7 +10,7 @@ function initialLanguage(): Language {
   const fromUrl = new URLSearchParams(window.location.search).get("lang");
   if (fromUrl === "en" || fromUrl === "cs") return fromUrl;
   try {
-    const saved = localStorage.getItem("clipsana.lang");
+    const saved = localStorage.getItem("clipcura.lang");
     if (saved === "en" || saved === "cs") return saved;
   } catch {
     /* storage unavailable */
@@ -29,7 +29,7 @@ export function setLanguage(lang: Language) {
   void i18n.changeLanguage(lang);
   document.documentElement.lang = lang;
   try {
-    localStorage.setItem("clipsana.lang", lang);
+    localStorage.setItem("clipcura.lang", lang);
   } catch {
     /* non-essential */
   }

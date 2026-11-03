@@ -4,9 +4,9 @@ import tailwindcss from "@tailwindcss/vite";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-/** In development, proxy /api to the running `clipsana serve` (found via its server.json announcement). */
+/** In development, proxy /api to the running `clipcura serve` (found via its server.json announcement). */
 function apiTarget(): string | undefined {
-  const home = process.env.CLIPSANA_HOME ?? (process.env.APPDATA ? join(process.env.APPDATA, "Clipsana") : undefined);
+  const home = process.env.CLIPCURA_HOME ?? (process.env.APPDATA ? join(process.env.APPDATA, "Clipcura") : undefined);
   const file = home && join(home, "server.json");
   if (!file || !existsSync(file)) return undefined;
   try {

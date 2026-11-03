@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { eventsUrl, hasToken, type JobStatus } from "./client";
 
-/** One message from /api/events (see clipsana/core/events.py). */
+/** One message from /api/events (see clipcura/core/events.py). */
 export interface ApiEvent {
   type: "scan.file" | "scan.done" | "plan.created" | "job.status" | "job.progress" | "audit";
   ts: string;

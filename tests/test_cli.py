@@ -4,7 +4,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from clipsana.cli import app
+from clipcura.cli import app
 from tests.conftest import needs_ffmpeg
 
 pytestmark = needs_ffmpeg

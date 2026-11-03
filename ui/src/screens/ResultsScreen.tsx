@@ -40,7 +40,7 @@ export function ResultsScreen() {
     api.getScan(scanId).then((s) => {
       setScan(s);
       try { localStorage.setItem(LAST_SCAN_KEY, s.scan_id); } catch { /* ignore */ }
-      // Pre-select everything Clipsana can fix: the common case is "fix all of it".
+      // Pre-select everything Clipcura can fix: the common case is "fix all of it".
       setSelected(new Set(s.files.filter((f) => f.status === "fixable").map((f) => f.id)));
     }).catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, [scanId]);

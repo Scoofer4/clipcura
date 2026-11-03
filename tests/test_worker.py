@@ -4,8 +4,8 @@ import time
 
 import pytest
 
-from clipsana.core import service
-from clipsana.core.worker import Worker
+from clipcura.core import service
+from clipcura.core.worker import Worker
 
 
 @pytest.fixture

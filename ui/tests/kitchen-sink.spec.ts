@@ -2,9 +2,9 @@ import { expect, test } from "@playwright/test";
 
 // Screenshots for the owner's visual review (CLAUDE.md §9): every theme x accent, plus key interactive states.
 // Committed review screenshots are only rewritten on request (npm run screenshots), not on every test run.
-const OUT = process.env.CLIPSANA_SCREENSHOTS ? "../docs/screenshots/m3a" : "test-results/screens/m3a";
+const OUT = process.env.CLIPCURA_SCREENSHOTS ? "../docs/screenshots/m3a" : "test-results/screens/m3a";
 // CI runners have no GPU: with software WebGL one screenshot of the 3D scenes can take over a minute.
-const SHOOT = !process.env.CI || !!process.env.CLIPSANA_SCREENSHOTS;
+const SHOOT = !process.env.CI || !!process.env.CLIPCURA_SCREENSHOTS;
 
 for (const theme of ["dark", "light"] as const) {
   for (const accent of ["brand", "aurora"] as const) {
