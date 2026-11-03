@@ -42,9 +42,21 @@ Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
   - Vysvětlit u skutečně selhané úlohy naostro: diagnóza správná, po úpravě pokynů i rada;
   - porovnání šesti modelů: spolehlivé jsou qwen3.8:27b, qwen3.6:27b a gemma4:26b, menší modely vynechávají
     kroky. Tabulka je v `docs/assistant-ollama.md`, opravy jsou v 3806379.
+- **Nedostupný Ollama server (abcf157):**
+  - Zastavit ukončí úkol hned, i když server uprostřed odpovědi přestane odpovídat (dřív čekal na 5min limit);
+  - obrazovka Asistent se serveru při otevření zeptá a nedostupnost ukáže hned, s tlačítkem „Zkusit znovu“;
+  - nedostupnost, vypršení limitu, odmítnutý klíč i chybějící model končí srozumitelnou hláškou, zbytek
+    Clipcury na Ollamě nezávisí.
+  - pytest 302 / 2 přeskočeny, Playwright 15/15 (včetně nedostupného serveru), CI zelená. Skutečný výpadek
+    serveru neověřen (simulováno v testech).
+- **Lokální přenosný build s asistentem:** `packaging/dist/Clipcura/Clipcura.exe` a
+  `Clipcura-0.1.0-win64-portable.zip` z abcf157 (`tools/build_installer.py --no-installer`, smoke test prošel).
+  Instalátor nesestaven. Ručně nespuštěno, testuje vlastník.
 
 ### Otevřené
 
+- **Koncept vydání v0.1.0 na GitHubu je starší build (1dea09c) bez asistenta.** Před zveřejněním přestavět
+  (workflow Release ručně, nebo nový tag).
 - Ollama server má mít před sebou proxy s klíčem (návod v `docs/assistant-ollama.md`), pak ověřit spojení s klíčem.
 - **#27 po pilotu:** vizuální kontrola výstupu modelem, který vidí obraz, a „druhý názor“ na technická data
   souboru.
