@@ -2,6 +2,34 @@
 
 Předávací zápis mezi relacemi. Aktualizovat na konci každé relace.
 
+## 23. 11. 2026 – Clipcura v Claude Desktop, rozšíření s logem (#28)
+
+### Hotovo
+
+- **Claude Desktop připojen ručně:** do `%APPDATA%\Claude\claude_desktop_config.json` přidán záznam `mcpServers.clipcura`
+  (`D:\Apps\Clipcura\clipcura-cli.exe mcp`, přenosná kopie z abcf157). Ostatní klíče zůstaly beze změny. Záloha
+  původního souboru je v pomocné složce relace. Claude Desktop hlásí „Connected“, ale ukazuje obecnou ikonu.
+- **Rozšíření `Clipcura-<verze>.mcpb` (ea2441f):**
+  - Claude Desktop ukazuje logo jen u rozšíření, ne u serverů z konfigurace.
+  - Balíček má manifest, logo a README (~37 kB). Spouští `clipcura-cli.exe mcp` ze složky zvolené při instalaci,
+    výchozí je složka instalace pro jednoho uživatele.
+  - MCP server navíc hlásí verzi, web a logo (`serverInfo.icons`).
+  - Build ho přidává k balíčkům a do `SHA256SUMS.txt`, `release.yml` ho nahrává. README a poznámky k vydání ho popisují.
+- **Nové issue #29:** akce v CI cílí na zastaralý Node.js 20 (jen varování).
+
+### Ověřeno
+
+- pytest 306 prošlo / 2 přeskočeny, ruff čistý, CI zelené pro ea2441f.
+- Manifest prošel oficiálním schématem MCPB v0.3 s 0 chybami.
+- Neproběhlo: instalace `.mcpb` v Claude Desktop (vlastník). Po ní smazat ruční záznam z konfigurace, jinak bude Clipcura
+  vidět dvakrát, a pak zavřít #28.
+
+### Otevřené
+
+- Lokální `packaging\dist\Clipcura-0.1.0.mcpb` je sestavený z ea2441f a funguje i s kopií v `D:\Apps\Clipcura`.
+  Logo v `serverInfo` přinese až příští build aplikace.
+- Koncept vydání v0.1.0 je pořád starý (1dea09c). Přestavět, teď už i s `.mcpb`.
+
 ## 3. 11. 2026 (večer) – vestavěný asistent s Ollamou (#27)
 
 ### Hotovo
