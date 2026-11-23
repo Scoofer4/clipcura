@@ -16,6 +16,7 @@ NOTES = """## Download
 |---|---|
 | `Clipcura-Setup-{v}.exe` | Install for the current user (no administrator rights). Start menu entry, uninstaller. |
 | `Clipcura-{v}-win64-portable.zip` | No installation: unzip anywhere (also a USB drive) and run `Clipcura\\Clipcura.exe`. Settings and history stay in the `data` folder next to it. |
+| `Clipcura-{v}.mcpb` | Optional: connects Claude Desktop to the Clipcura installed above, with its logo. Open the file (or Settings → Extensions → Install) and pick the Clipcura folder if it is not the default one. |
 
 Both contain the same app, including FFmpeg. Windows 10 22H2 or newer, 64-bit. Check a download against
 `SHA256SUMS.txt`: `Get-FileHash <file> -Algorithm SHA256` in PowerShell.

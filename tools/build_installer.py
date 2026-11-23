@@ -1,5 +1,5 @@
 """Build the Windows packages (M5, #21): UI -> icon, version and licence files -> PyInstaller (onedir) -> smoke test
--> portable ZIP -> Inno Setup installer -> SHA256SUMS.txt.
+-> portable ZIP -> Inno Setup installer -> Claude Desktop extension (.mcpb) -> SHA256SUMS.txt.
 
     uv run python tools/build_installer.py              # everything, packages in packaging/dist/
     uv run python tools/build_installer.py --no-installer   # app folder and portable ZIP (no Inno Setup needed)
@@ -31,6 +31,7 @@ from clipcura.core.paths import PORTABLE_MARKER
 
 PORTABLE_ZIP = DIST / f"Clipcura-{__version__}-win64-portable.zip"
 INSTALLER = DIST / f"Clipcura-Setup-{__version__}.exe"
+EXTENSION = DIST / f"Clipcura-{__version__}.mcpb"
 CHECKSUMS = DIST / "SHA256SUMS.txt"
 PORTABLE_NOTE = """This file makes this copy of Clipcura portable: its settings, history and previews are kept in the
 "data" folder next to Clipcura.exe, so the whole folder can move (to another disk or a USB drive).
@@ -112,6 +113,15 @@ def portable_zip() -> Path:
     return PORTABLE_ZIP
 
 
+def claude_extension() -> Path:
+    """Claude Desktop extension (#28): manifest and logo only, it starts the installed app's MCP server."""
+    from clipcura.mcp import extension
+
+    extension.write_mcpb(EXTENSION)
+    print("Claude Desktop extension:", EXTENSION)
+    return EXTENSION
+
+
 def sha256(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as f:
@@ -156,6 +166,7 @@ def main() -> None:
     if not args.no_installer:
         installer(find_iscc(args.iscc))
         packages.append(INSTALLER)
+    packages.append(claude_extension())
     write_checksums(packages)
 
 

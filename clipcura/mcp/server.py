@@ -6,6 +6,7 @@ conversion an assistant requests waits for a human in the Clipcura window.
 """
 from __future__ import annotations
 
+import base64
 import logging
 from collections.abc import Callable
 from pathlib import Path, PurePath
@@ -14,7 +15,10 @@ from typing import Any, Literal
 import httpx
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
-from mcp.types import ToolAnnotations
+from mcp.types import Icon, ToolAnnotations
+
+from clipcura import SOURCE, __version__
+from clipcura.desktop import icon
 
 Lang = Literal["en", "cs"]
 
@@ -51,8 +55,16 @@ def _size(n: int) -> str:
     return f"{n / 2**30:.1f} GB" if n >= 2**30 else f"{max(1, round(n / 2**20))} MB"
 
 
+def _logo() -> Icon:
+    # Embedded rather than linked: the server is local and must not depend on the network. Clients that show
+    # server icons (MCP 2025-11-25) use it; Claude Desktop shows only an extension's icon (clipcura/mcp/extension.py).
+    data = base64.b64encode(icon.png(64)).decode("ascii")
+    return Icon(src=f"data:image/png;base64,{data}", mime_type="image/png", sizes=["64x64"])
+
+
 def build_server(connect: Callable[[], httpx.Client] = _connect) -> MCPServer:
-    mcp = MCPServer(name="clipcura", title="Clipcura", instructions=INSTRUCTIONS)
+    mcp = MCPServer(name="clipcura", title="Clipcura", version=__version__, instructions=INSTRUCTIONS,
+                    website_url=SOURCE, icons=[_logo()])
     holder: dict[str, httpx.Client] = {}
 
     def call(method: str, path: str, **kwargs: Any) -> Any:

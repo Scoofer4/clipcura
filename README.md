@@ -133,6 +133,13 @@ claude mcp add clipcura -s user -- uv run --project D:\path\to\clipcura clipcura
 claude mcp add clipcura -s user -- "%LOCALAPPDATA%\Programs\Clipcura\clipcura-cli.exe" mcp   # installed app
 ```
 
+**Claude Desktop:** download `Clipcura-<version>.mcpb` from the release and open it, or use **Settings →
+Extensions → Install extension**. The extension holds only a manifest and the logo. It starts `clipcura-cli.exe mcp`
+from your Clipcura folder, which is the per-user install folder by default; pick another folder in the extension's
+settings for an all-users install or a portable copy. You can also add the server to `claude_desktop_config.json` by
+hand (`"command": "<Clipcura folder>\\clipcura-cli.exe", "args": ["mcp"]`). It works the same, but Claude Desktop
+shows a generic icon for servers added that way. Use one method or the other, not both, or Clipcura shows up twice.
+
 ## Built-in assistant (Ollama)
 
 Clipcura can also run the assistant itself, on a model from your own Ollama server, with nothing else installed.

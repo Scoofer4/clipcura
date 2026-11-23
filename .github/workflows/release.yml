@@ -46,7 +46,7 @@ jobs:
       # Inno Setup 6 (found by tools/build_installer.py in its default folder).
       - run: choco install innosetup --no-progress -y
 
-      # UI build, PyInstaller, smoke test of the frozen CLI with its bundled FFmpeg, ZIP, installer, checksums.
+      # UI build, PyInstaller, smoke test of the frozen CLI with its bundled FFmpeg, ZIP, installer, Claude Desktop extension, checksums.
       - run: uv run python tools/build_installer.py
 
       - uses: actions/upload-artifact@v4
@@ -55,6 +55,7 @@ jobs:
           path: |
             packaging/dist/*.zip
             packaging/dist/*.exe
+            packaging/dist/*.mcpb
             packaging/dist/SHA256SUMS.txt
           retention-days: 7
 
@@ -67,4 +68,4 @@ jobs:
           uv run python tools/release_notes.py release-notes.md
           gh release create "$GITHUB_REF_NAME" --draft --title "Clipcura ${GITHUB_REF_NAME#v}" \
             --notes-file release-notes.md --generate-notes \
-            packaging/dist/*.zip packaging/dist/*.exe packaging/dist/SHA256SUMS.txt
+            packaging/dist/*.zip packaging/dist/*.exe packaging/dist/*.mcpb packaging/dist/SHA256SUMS.txt
